@@ -1,4 +1,4 @@
-import 'package:canxe/common/loadingstate/loading.dart';
+import 'loading.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
+// firebase_auth: 0.16.0
+//  cloud_firestore: ^0.13.5
+//#web dep:
+//firebase: ^7.3.0
 class AuthService<T> {
   final FirebaseAuth auth = FirebaseAuth.instance;
   CollectionReference _ref = Firestore.instance.collection('users');
