@@ -1,7 +1,7 @@
 import 'dart:html' as html;
 
 import 'package:flutter/material.dart';
-import 'package:lucidgoft/common/web_utils.dart';
+import 'web_utils.dart';
 
 import 'common.dart';
 

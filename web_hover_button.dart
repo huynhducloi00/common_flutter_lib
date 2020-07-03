@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucidgoft/common/web_utils.dart';
+import 'web_utils.dart';
 
 class HoverButton extends StatefulWidget {
   final String title;
