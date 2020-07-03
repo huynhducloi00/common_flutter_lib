@@ -45,7 +45,7 @@ class _HoverButtonState extends State<HoverButton> {
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
           child: Row(
               children: [
-            widget.iconData == null ? null : Icon(widget.iconData),
+            widget.iconData == null ? null : Icon(widget.iconData, color: Colors.black,),
             (widget.iconData != null && widget.title != null)
                 ? SizedBox(
                     width: 20,

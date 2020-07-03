@@ -1,4 +1,3 @@
-import 'package:canxe/data/cloud_obj.dart';
 
 class User<AccountType> {
   String name;
