@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:lucidgoft/common/utils.dart';
+import 'package:lucidgoft/common/web_utils.dart';
 
-class CallToActionButton extends StatefulWidget {
+class HoverButton extends StatefulWidget {
   final String title;
   final Color regularColor;
   final Color hoverColor;
 
-  CallToActionButton({this.title, this.regularColor, this.hoverColor});
+  HoverButton({this.title, this.regularColor, this.hoverColor});
 
   @override
-  _CallToActionButtonState createState() => _CallToActionButtonState();
+  _HoverButtonState createState() => _HoverButtonState();
 }
 
-class _CallToActionButtonState extends State<CallToActionButton> {
+class _HoverButtonState extends State<HoverButton> {
   bool _hovering=false;
 
   @override
