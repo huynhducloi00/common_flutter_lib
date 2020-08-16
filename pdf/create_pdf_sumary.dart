@@ -1,9 +1,9 @@
 import 'dart:html';
 
-import 'package:canxe/common/data/cloud_obj.dart';
-import 'package:canxe/common/data/cloud_table.dart';
-import 'package:canxe/common/utils.dart';
-import 'package:canxe/common/pdf/pdf_utils.dart';
+import '../data/cloud_obj.dart';
+import '../data/cloud_table.dart';
+import '../utils.dart';
+import 'pdf_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
