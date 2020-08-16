@@ -57,6 +57,11 @@ String formatNumber(int num) {
   return num == null ? "" : NUM_FORMAT.format(num);
 }
 
+int sum(List args) {
+  return args.reduce((value, element) {
+    return (value ?? 0) + (element ?? 0);
+  });
+}
 String formatTimestamp(BuildContext context, Timestamp timestamp) {
   if (timestamp == null) return "";
   DateTime dateTime = timestamp.toDate();
