@@ -1,6 +1,6 @@
-import 'package:canxe/common/utils.dart';
-import 'package:canxe/common/utils/value_notifier.dart';
-import 'package:canxe/common/widget/common.dart';
+import '../utils.dart';
+import '../utils/value_notifier.dart';
+import '../widget/common.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

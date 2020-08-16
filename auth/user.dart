@@ -1,11 +1,8 @@
-
-import 'package:canxe/common/data/cloud_obj.dart';
-import 'package:canxe/data/canxe_user.dart';
+import '../data/cloud_obj.dart';
 
 class User extends CloudObject {
   String name;
   String email;
-  AccountType type;
   String photoUrl;
 
   User(docId, dataMap):super(docId, dataMap){
@@ -16,6 +13,6 @@ class User extends CloudObject {
 
   @override
   String toString() {
-    return 'email: $email type: $type';
+    return 'email: $email';
   }
 }

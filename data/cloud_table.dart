@@ -1,6 +1,6 @@
 import 'dart:core';
 
-import 'package:canxe/common/data/cloud_obj.dart';
+import '../data/cloud_obj.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 typedef UseDataCalculation = dynamic Function(List<dynamic> data);

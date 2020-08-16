@@ -1,10 +1,41 @@
-import 'package:canxe/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'data/cloud_table.dart';
+
 final NumberFormat NUM_FORMAT = NumberFormat("#,###");
 final TABLE_OF_TWO_DIVIDER = "TABLE_OF_TWO_DIVIDER";
+
+
+final TextStyle BIG_FONT = TextStyle(fontSize: 18);
+final TextStyle MEDIUM_FONT = TextStyle(fontSize: 14);
+
+const EDIT_TABLE_BORDER_SIDE =
+BorderSide(width: 1, color: Colors.brown, style: BorderStyle.solid);
+
+class TableWidthAndSize {
+  double width;
+  Map<int, TableColumnWidth> colWidths;
+
+  TableWidthAndSize({this.width, this.colWidths});
+}
+
+TableWidthAndSize getEditTableColWidths(
+    context, Map<String, InputInfo> inputInfoMap) {
+  int numDevide = inputInfoMap.keys.length <= 7 ? inputInfoMap.keys.length : 7;
+  double standardColWidth = screenWidth(context) / numDevide;
+  Map<int, TableColumnWidth> colWidths = Map();
+  int index = 0;
+  double sumWidth = 0;
+  inputInfoMap.forEach((fieldName, inputInfo) {
+    double width = inputInfo.flex * standardColWidth;
+    sumWidth += width;
+    colWidths[index] = FixedColumnWidth(width);
+    index++;
+  });
+  return TableWidthAndSize(width: sumWidth, colWidths: colWidths);
+}
 
 String formatDateOnly(context, DateTime dt) {
   final MaterialLocalizations localizations = MaterialLocalizations.of(context);

@@ -1,13 +1,12 @@
-import 'package:canxe/common/data/cloud_obj.dart';
-import 'package:canxe/common/loadingstate/loading_stream_builder.dart';
-import 'package:canxe/common/utils.dart';
-import 'package:canxe/common/widget/edit_table/child_param.dart';
+import '../../data/cloud_obj.dart';
+import '../../loadingstate/loading_stream_builder.dart';
+import '../../utils.dart';
+import '../../widget/edit_table/child_param.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:canxe/fake_files/no_op_create_pdf.dart'
-    if (dart.library.html) 'package:canxe/pdf/pdf_creator.dart' as create_pdf;
-import '../../../constants.dart';
+import '../../pdf/no_op_create_pdf.dart'
+    if (dart.library.html) '../../pdf/pdf_creator.dart' as create_pdf;
 import '../../data/cloud_table.dart';
 import '../../utils/auto_form.dart';
 import '../common.dart';
