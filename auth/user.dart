@@ -1,30 +1,21 @@
 
-class User<AccountType> {
+import 'package:canxe/common/data/cloud_obj.dart';
+import 'package:canxe/data/canxe_user.dart';
+
+class User extends CloudObject {
   String name;
   String email;
   AccountType type;
   String photoUrl;
 
-  User({this.name, this.email, this.type, this.photoUrl});
+  User(docId, dataMap):super(docId, dataMap){
+    name= dataMap['name'];
+    email= dataMap['email'];
+    photoUrl= dataMap['photo_url'];
+  }
 
   @override
   String toString() {
     return 'email: $email type: $type';
   }
-
-  void setData(data) {
-    name= data['name'];
-    email= data['email'];
-    photoUrl= data['photo_url'];
-  }
-//  Client please implement those
-//
-//  AccountType convertIntToEnum(int accountTypeInt) {
-//    throw 'Not implemented';
-//  }
-//
-//  int convertEnumToInt(AccountType accountType) {
-//    throw 'Not implemented';
-//  }
-
 }

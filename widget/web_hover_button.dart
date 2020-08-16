@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 
 import 'web_utils.dart';
 
-Widget createButton(
-  Function onPressed, {
-  String title,
-  TextAlign align = TextAlign.start,
-  IconData iconData,
-  Color regularColor,
-  Color hoverColor,
-  Color textColor,
-}) {
-  return HoverButton(
-      onPressed, title, align, iconData, regularColor, hoverColor, textColor);
+Widget createButton(Function onPressed,
+    {String title,
+    TextAlign align = TextAlign.start,
+    IconData iconData,
+    Color regularColor,
+    Color hoverColor,
+    Color textColor = Colors.white,
+    Color iconColor = Colors.black,
+    bool isDense = false}) {
+  return HoverButton(onPressed, title, align, iconData, regularColor,
+      hoverColor, textColor, iconColor, isDense);
 }
 
 class HoverButton extends StatefulWidget {
@@ -22,10 +22,20 @@ class HoverButton extends StatefulWidget {
   IconData iconData;
   Color regularColor;
   Color hoverColor;
-  Color textColor = Colors.white;
+  Color iconColor;
+  Color textColor;
+  bool isDense;
 
-  HoverButton(this.onPressed, this.title, this.align, this.iconData,
-      this.regularColor, this.hoverColor, this.textColor);
+  HoverButton(
+      this.onPressed,
+      this.title,
+      this.align,
+      this.iconData,
+      this.regularColor,
+      this.hoverColor,
+      this.textColor,
+      this.iconColor,
+      this.isDense);
 
   @override
   _HoverButtonState createState() => _HoverButtonState();
@@ -42,10 +52,17 @@ class _HoverButtonState extends State<HoverButton> {
         onEnter: (e) => hover(true),
         onExit: (e) => hover(false),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+          padding: widget.isDense
+              ? EdgeInsets.zero
+              : const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
           child: Row(
               children: [
-            widget.iconData == null ? null : Icon(widget.iconData, color: Colors.black,),
+            widget.iconData == null
+                ? null
+                : Icon(
+                    widget.iconData,
+                    color: widget.iconColor,
+                  ),
             (widget.iconData != null && widget.title != null)
                 ? SizedBox(
                     width: 20,
