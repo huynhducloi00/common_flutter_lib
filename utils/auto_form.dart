@@ -17,20 +17,34 @@ const InputDecoration EDIT_TEXT_INPUT_DECORATION = InputDecoration(
     focusedBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.pink, width: 2.0)));
 
-typedef SaveClickFuture =Future Function(Map<String, dynamic>);
+typedef SaveClickFuture = Future Function(Map<String, dynamic>);
+typedef OnPop = void Function();
+
 class AutoForm extends StatefulWidget {
   Map<String, InputInfo> inputInfoMap;
   Map<String, dynamic> initialValue;
   SaveClickFuture saveClickFuture;
+  OnPop onPop;
 
-  static createAutoForm(context,Map<String, InputInfo> inputInfoMap, Map<String, dynamic> initialValue,
-      {SaveClickFuture saveClickFuture}) {
-    return Provider.value(
-        value: Provider.of<LoiButtonStyle>(context, listen: false),
-        child: AutoForm._internal(context, inputInfoMap, initialValue, saveClickFuture));
+  static createAutoForm(context, Map<String, InputInfo> inputInfoMap,
+      Map<String, dynamic> initialValue,
+      {SaveClickFuture saveClickFuture, OnPop onPop}) {
+    return WillPopScope(
+      onWillPop: () async {
+        if (onPop != null) {
+          onPop();
+        }
+        return true;
+      },
+      child: Provider.value(
+          value: Provider.of<LoiButtonStyle>(context, listen: false),
+          child: AutoForm._internal(
+              context, inputInfoMap, initialValue, saveClickFuture)),
+    );
   }
 
-  AutoForm._internal(context, this.inputInfoMap, this.initialValue, this.saveClickFuture);
+  AutoForm._internal(
+      context, this.inputInfoMap, this.initialValue, this.saveClickFuture);
 
   @override
   _AutoFormState createState() => _AutoFormState();
@@ -92,15 +106,53 @@ class _AutoFormState extends State<AutoForm> {
         return null;
         break;
       case DataType.string:
-        resultWidget = TextFormField(
-          controller: _textEditingControllers[fieldName],
-          enabled: inputInfo.canUpdate,
-          decoration: EDIT_TEXT_INPUT_DECORATION.copyWith(
-              fillColor: inputInfo.canUpdate ? Colors.white : disabledColor),
-          validator: (val) =>
-              inputInfo.validator == null ? null : inputInfo.validator(val),
-          obscureText: false,
-        );
+        if (inputInfo.options == null) {
+          resultWidget = TextFormField(
+            controller: _textEditingControllers[fieldName],
+            enabled: inputInfo.canUpdate,
+            decoration: EDIT_TEXT_INPUT_DECORATION.copyWith(
+                fillColor: inputInfo.canUpdate ? Colors.white : disabledColor),
+            validator: (val) =>
+                inputInfo.validator == null ? null : inputInfo.validator(val),
+            obscureText: false,
+          );
+        } else {
+          resultWidget = Builder(
+            builder: (BuildContext context) {
+              var controller = _textEditingControllers[fieldName];
+              return DropdownButtonHideUnderline(
+                child: DropdownButtonFormField(
+                  validator: (val) => inputInfo.validator == null
+                      ? null
+                      : inputInfo.validator(val),
+                  isExpanded: true,
+                  focusColor: Colors.white,
+                  value: controller.text,
+                  items: [
+                        DropdownMenuItem(
+                            value: controller.text,
+                            child: TextField(
+                              decoration: EDIT_TEXT_INPUT_DECORATION.copyWith(
+                                  fillColor: inputInfo.canUpdate
+                                      ? Colors.white
+                                      : disabledColor),
+                              controller: controller,
+                            ))
+                      ] +
+                      inputInfo.options
+                          .where((option) => option != controller.text)
+                          .map((option) => DropdownMenuItem(
+                              value: option as String, child: Text(option)))
+                          .toList(),
+                  onChanged: (value) {
+                    controller.value = controller.value.copyWith(text: value);
+                    setState(() {});
+                  },
+                ),
+              );
+            },
+          );
+        }
         break;
 //      case DataType.html:
 //        resultWidget = Row(

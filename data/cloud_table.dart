@@ -22,6 +22,7 @@ class InputInfo {
   bool canUpdate;
   DataType dataType;
   CalculateFunction calculate;
+  List<dynamic> options;
 
   // good for 6 figures
   static const SMALL_INT_COLUMN = 0.4;
@@ -33,7 +34,8 @@ class InputInfo {
       this.fieldDes,
       this.calculate,
       this.canUpdate = true,
-      this.flex}) {
+      this.flex,
+      this.options}) {
     if (flex == null) {
       if (dataType == DataType.int)
         flex = SMALL_INT_COLUMN;
@@ -42,7 +44,7 @@ class InputInfo {
     }
   }
 
-  static void Function(String) nonNullValidator =
+  static String Function(String) nonNullValidator =
       (String value) => value.isEmpty ? CANT_BE_NULL : null;
 }
 
