@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:html';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:danhgiadn/common/data/cloud_obj.dart';
-import 'package:danhgiadn/common/data/cloud_table.dart';
+import '../data/cloud_obj.dart';
+import '../data/cloud_table.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
 
@@ -85,7 +85,7 @@ class ExcelOperation {
     Map<String, InputInfo> inputInfoMap = Map();
     deciderFields.forEach((value) {
       inputInfoMap[value.fieldName] = InputInfo(DataType.string,
-          fieldDes: value.fieldDes, options: inFileNames, validator: (inFile) {
+          fieldDes: value.fieldDes, optionMap: InputInfo.createSameKeyValueMap(inFileNames), validator: (inFile) {
         return InputInfo.nonNullValidator(inFile) ??
             (inFileNames.contains(inFile)
                 ? null

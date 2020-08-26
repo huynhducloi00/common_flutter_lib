@@ -11,7 +11,6 @@ class CloudObject<T> {
   Map<String, dynamic> dataMap;
 
   CloudObject(this.documentId, this.dataMap);
-
 // Copy the following static
 //  static ItemLookup _convertToItemLookUp(docId, dynamic data) {
 //    return ItemLookup(docId, data);

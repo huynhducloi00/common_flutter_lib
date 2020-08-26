@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'edit_table/edit_table_wrapper.dart';
+import 'edit_table/parent_param.dart';
 import 'mobile_hover_button.dart' if (dart.library.html) 'web_hover_button.dart'
     as hover_button;
 import 'mobile_mouse_hover_ext.dart'
@@ -40,6 +42,14 @@ Route createMaterialPageRoute(parentContext, WidgetBuilder builder) {
 }
 
 abstract class CommonButton {
+  static Widget createOpenButton(context, table, title, icon) {
+    return CommonButton.getOpenButton(
+        context,
+        EditTableWrapper(table, ParentParam(filterDataWrappers: {})),
+        title,
+        icon);
+  }
+
   static Widget getOpenButton(context, Widget page, title, iconData,
       {regularColor, hoverColor}) {
     return getButton(context, () {

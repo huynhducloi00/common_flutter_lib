@@ -22,7 +22,9 @@ class InputInfo {
   bool canUpdate;
   DataType dataType;
   CalculateFunction calculate;
-  List<dynamic> options;
+  // option to option description
+  Map<dynamic, String> optionMap;
+  bool limitToOptions;
 
   // good for 6 figures
   static const SMALL_INT_COLUMN = 0.4;
@@ -35,7 +37,8 @@ class InputInfo {
       this.calculate,
       this.canUpdate = true,
       this.flex,
-      this.options}) {
+      this.optionMap,
+      this.limitToOptions = false}) {
     if (flex == null) {
       if (dataType == DataType.int)
         flex = SMALL_INT_COLUMN;
@@ -43,9 +46,15 @@ class InputInfo {
         flex = 1.0;
     }
   }
-
+  static Map<dynamic, String> createSameKeyValueMap(List<dynamic> vals){
+    Map<dynamic, String> tmp=Map();
+    for (var val in vals){
+      tmp[val]=val;
+    }
+    return tmp;
+  }
   static String Function(String) nonNullValidator =
-      (String value) => value.isEmpty ? CANT_BE_NULL : null;
+      (String value) => (value?.isEmpty ?? false) ? CANT_BE_NULL : null;
 }
 
 abstract class CloudTableSchema<T extends CloudObject> {

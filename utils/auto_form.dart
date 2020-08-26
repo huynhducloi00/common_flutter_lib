@@ -1,3 +1,5 @@
+import 'package:canxe/common/utils/auto_form_helper.dart';
+
 import '../utils.dart';
 import '../utils/value_notifier.dart';
 import '../widget/common.dart';
@@ -21,6 +23,7 @@ typedef SaveClickFuture = Future Function(Map<String, dynamic>);
 typedef OnPop = void Function();
 
 class AutoForm extends StatefulWidget {
+  static final Color disabledColor = Colors.grey[400];
   Map<String, InputInfo> inputInfoMap;
   Map<String, dynamic> initialValue;
   SaveClickFuture saveClickFuture;
@@ -70,7 +73,6 @@ class _AutoFormState extends State<AutoForm> {
   final SizedBox divider = SizedBox(
     width: 20,
   );
-  final Color disabledColor = Colors.grey[400];
 
   @override
   void dispose() {
@@ -86,7 +88,7 @@ class _AutoFormState extends State<AutoForm> {
       if (inputInfo.dataType == DataType.string ||
           inputInfo.dataType == DataType.int) {
         _textEditingControllers[fieldName] = TextEditingController(
-            text: toText(context, widget.initialValue[fieldName]));
+            text: widget.initialValue[fieldName]?.toString());
       } else if (inputInfo.dataType == DataType.boolean) {
         _checkBoxControllers[fieldName] =
             CheckBoxController(widget.initialValue[fieldName] ?? false);
@@ -101,57 +103,27 @@ class _AutoFormState extends State<AutoForm> {
   Widget _getWidgetFromDataType(String fieldName) {
     var resultWidget;
     var inputInfo = widget.inputInfoMap[fieldName];
+    if (inputInfo.calculate != null) return null;
     switch (inputInfo.dataType) {
       case DataType.html:
         return null;
         break;
       case DataType.string:
-        if (inputInfo.options == null) {
+        if (inputInfo.optionMap == null) {
           resultWidget = TextFormField(
             controller: _textEditingControllers[fieldName],
             enabled: inputInfo.canUpdate,
             decoration: EDIT_TEXT_INPUT_DECORATION.copyWith(
-                fillColor: inputInfo.canUpdate ? Colors.white : disabledColor),
+                fillColor: inputInfo.canUpdate
+                    ? Colors.white
+                    : AutoForm.disabledColor),
             validator: (val) =>
                 inputInfo.validator == null ? null : inputInfo.validator(val),
             obscureText: false,
           );
         } else {
-          resultWidget = Builder(
-            builder: (BuildContext context) {
-              var controller = _textEditingControllers[fieldName];
-              return DropdownButtonHideUnderline(
-                child: DropdownButtonFormField(
-                  validator: (val) => inputInfo.validator == null
-                      ? null
-                      : inputInfo.validator(val),
-                  isExpanded: true,
-                  focusColor: Colors.white,
-                  value: controller.text,
-                  items: [
-                        DropdownMenuItem(
-                            value: controller.text,
-                            child: TextField(
-                              decoration: EDIT_TEXT_INPUT_DECORATION.copyWith(
-                                  fillColor: inputInfo.canUpdate
-                                      ? Colors.white
-                                      : disabledColor),
-                              controller: controller,
-                            ))
-                      ] +
-                      inputInfo.options
-                          .where((option) => option != controller.text)
-                          .map((option) => DropdownMenuItem(
-                              value: option as String, child: Text(option)))
-                          .toList(),
-                  onChanged: (value) {
-                    controller.value = controller.value.copyWith(text: value);
-                    setState(() {});
-                  },
-                ),
-              );
-            },
-          );
+          resultWidget = AutoFormHelper.dropDownText(
+              _textEditingControllers[fieldName], inputInfo);
         }
         break;
 //      case DataType.html:
@@ -198,17 +170,22 @@ class _AutoFormState extends State<AutoForm> {
 //        );
         break;
       case DataType.int:
-        resultWidget = TextFormField(
-            enabled: inputInfo.canUpdate,
-            controller: _textEditingControllers[fieldName],
-            decoration: EDIT_TEXT_INPUT_DECORATION,
-            validator: (val) =>
-                inputInfo.validator == null ? null : inputInfo.validator(val),
-            obscureText: false,
-            keyboardType: TextInputType.number,
-            inputFormatters: <TextInputFormatter>[
-              WhitelistingTextInputFormatter.digitsOnly
-            ]);
+        if (inputInfo.optionMap == null) {
+          resultWidget = TextFormField(
+              enabled: inputInfo.canUpdate,
+              controller: _textEditingControllers[fieldName],
+              decoration: EDIT_TEXT_INPUT_DECORATION,
+              validator: (val) =>
+                  inputInfo.validator == null ? null : inputInfo.validator(val),
+              obscureText: false,
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                WhitelistingTextInputFormatter.digitsOnly
+              ]);
+        } else {
+          resultWidget = AutoFormHelper.dropDownInt(
+              _textEditingControllers[fieldName], inputInfo);
+        }
         break;
       case DataType.timestamp:
         resultWidget =
@@ -256,31 +233,35 @@ class _AutoFormState extends State<AutoForm> {
                 if (widget.saveClickFuture != null) {
                   Map<String, dynamic> result = Map();
                   widget.inputInfoMap.forEach((fieldName, inputInfo) {
-                    switch (inputInfo.dataType) {
-                      case DataType.string:
-                        result[fieldName] =
-                            _textEditingControllers[fieldName].text;
-                        break;
-                      case DataType.html:
+                    if (inputInfo.calculate == null) {
+                      switch (inputInfo.dataType) {
+                        case DataType.string:
+                          result[fieldName] =
+                              _textEditingControllers[fieldName].text;
+                          break;
+                        case DataType.html:
                         // TODO: Handle this case.
-                        break;
-                      case DataType.int:
-                        result[fieldName] =
-                            int.parse(_textEditingControllers[fieldName].text);
-                        break;
-                      case DataType.timestamp:
-                        result[fieldName] =
-                            _dateTimeControllers[fieldName].value == null
-                                ? null
-                                : Timestamp.fromDate(
-                                    _dateTimeControllers[fieldName].value);
-                        break;
-                      case DataType.boolean:
-                        result[fieldName] =
-                            _checkBoxControllers[fieldName].value == null
-                                ? null
-                                : _checkBoxControllers[fieldName].value;
-                        break;
+                          break;
+                        case DataType.int:
+                          if (_textEditingControllers[fieldName].text
+                              .isNotEmpty)
+                            result[fieldName] = int.parse(
+                                _textEditingControllers[fieldName].text);
+                          break;
+                        case DataType.timestamp:
+                          result[fieldName] =
+                          _dateTimeControllers[fieldName].value == null
+                              ? null
+                              : Timestamp.fromDate(
+                              _dateTimeControllers[fieldName].value);
+                          break;
+                        case DataType.boolean:
+                          result[fieldName] =
+                          _checkBoxControllers[fieldName].value == null
+                              ? null
+                              : _checkBoxControllers[fieldName].value;
+                          break;
+                      }
                     }
                   });
                   await widget.saveClickFuture(result);

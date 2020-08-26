@@ -37,6 +37,15 @@ class _ChildEditTableState
     super.initState();
   }
 
+  String inducedField(val, InputInfo inputInfo) {
+    var calculated;
+    if (val != null) {
+      calculated =
+          inputInfo.optionMap == null ? null : inputInfo.optionMap[val];
+    }
+    return '${toText(context, val ?? '')} ${calculated==null ? '' : '($calculated)'}';
+  }
+
   @override
   Widget delegateBuild(BuildContext context) {
     _selectedIndexChangeNotifier.value = null;
@@ -65,39 +74,36 @@ class _ChildEditTableState
                         children:
                             schemaAndData.data.asMap().entries.map((entry) {
                           int index = entry.key;
-                          var eachRowMap = entry.value;
+                          CloudObject eachRowMap = entry.value;
                           var dataRow = TableRow(
                               children: schemaAndData
                                   .cloudTableSchema.inputInfoMap.keys
-                                  .map((field) => TableCell(
-                                          child: InkWell(
-                                        onTap: () {
-                                          selectedIndexNotifier.value = index;
-                                        },
-                                        child: Container(
-                                          color: index ==
-                                                  selectedIndexNotifier.value
-                                              ? Colors.red[50]
-                                              : Colors.white,
-                                          alignment: schemaAndData
-                                                      .cloudTableSchema
-                                                      .inputInfoMap[field]
-                                                      .dataType ==
-                                                  DataType.int
-                                              ? Alignment.centerRight
-                                              : Alignment.centerLeft,
-                                          child: Text(
-                                            toText(
-                                                    context,
-                                                    eachRowMap
-                                                        .dataMap[field]) ??
-                                                '',
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(fontSize: 20),
-                                          ),
-                                        ),
-                                      )))
-                                  .toList());
+                                  .map((field) {
+                            InputInfo inputInfo = schemaAndData
+                                .cloudTableSchema.inputInfoMap[field];
+                            return TableCell(
+                                child: InkWell(
+                              onTap: () {
+                                selectedIndexNotifier.value = index;
+                              },
+                              child: Container(
+                                color: index == selectedIndexNotifier.value
+                                    ? Colors.red[50]
+                                    : Colors.white,
+                                alignment: schemaAndData.cloudTableSchema
+                                            .inputInfoMap[field].dataType ==
+                                        DataType.int
+                                    ? Alignment.centerRight
+                                    : Alignment.centerLeft,
+                                child: Text(
+                                  inducedField(
+                                      eachRowMap.dataMap[field], inputInfo),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 20),
+                                ),
+                              ),
+                            ));
+                          }).toList());
                           return dataRow;
                         }).toList());
                   },
@@ -218,30 +224,31 @@ class _ChildEditTableState
     );
   }
 
-  Widget printDefault(
-          SchemaAndData oldSchemaAndData, ParentParam parentParam) {
+  Widget printDefault(SchemaAndData oldSchemaAndData, ParentParam parentParam) {
     return CommonButton.getButtonAsync(context, () async {
       var allQuery = applyFilterToQuery(widget.databaseRef, parentParam)
           .orderBy(parentParam.sortKey,
-          descending: parentParam.sortKeyDescending) as Query;
+              descending: parentParam.sortKeyDescending) as Query;
       allQuery.getDocuments().then((querySnapshot) async {
         var creator = create_pdf.PdfCreator();
         await creator.init();
         List<CloudObject> data = querySnapshot.documents
             .map((e) => CloudObject(e.documentID, e.data))
             .toList();
-        var newSchemaAndData = SchemaAndData<CloudObject>(
-            oldSchemaAndData.cloudTableSchema, data);
+        var newSchemaAndData =
+            SchemaAndData<CloudObject>(oldSchemaAndData.cloudTableSchema, data);
         await creator.createPdfSummary(
             context, '', DateTime.now(), newSchemaAndData);
       });
     }, title: 'In mặc định', iconData: Icons.print);
   }
-  Widget newButton(schemaAndData) => CommonButton.getButton(context, () {
+
+  Widget newButton(SchemaAndData schemaAndData) =>
+      CommonButton.getButton(context, () {
         AlertDialog alert = AlertDialog(
-          content:
-              AutoForm.createAutoForm(context, schemaAndData.inputInfoMap, {},
-                  saveClickFuture: (resultMap) {
+          content: AutoForm.createAutoForm(
+              context, schemaAndData.cloudTableSchema.inputInfoMap, {},
+              saveClickFuture: (resultMap) {
             return widget.databaseRef.document().setData(resultMap);
           }),
         );
@@ -277,7 +284,8 @@ class _ChildEditTableState
         isEnabled: selectedIndexChangeNotifier.value != null);
   }
 
-  Widget deleteButton(schemaAndData, selectedIndexChangeNotifier) =>
+  Widget deleteButton(
+          SchemaAndData schemaAndData, selectedIndexChangeNotifier) =>
       CommonButton.getButton(context, () {
         AlertDialog alert = AlertDialog(
           actions: [
@@ -291,7 +299,7 @@ class _ChildEditTableState
             CommonButton.getCloseButton(context, 'Không')
           ],
           content: Text(
-              'Bạn thật sự muốn xoá ${schemaAndData.data[selectedIndexChangeNotifier.value].dataMap[schemaAndData.inputInfoMap.keys.elementAt(0)]}?'),
+              'Bạn thật sự muốn xoá ${schemaAndData.data[selectedIndexChangeNotifier.value].dataMap[schemaAndData.cloudTableSchema.inputInfoMap.keys.elementAt(0)]}?'),
         );
         showDialog(
             context: context,
