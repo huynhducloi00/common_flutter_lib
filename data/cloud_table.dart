@@ -61,7 +61,6 @@ abstract class CloudTableSchema<T extends CloudObject> {
   String tableName;
   Map<String, InputInfo> inputInfoMap;
   List<String> printInputInfoList;
-
   CloudTableSchema(
       {this.tableName, this.printInputInfoList, this.inputInfoMap}) {
     if (printInputInfoList == null) {
