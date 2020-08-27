@@ -43,7 +43,7 @@ class _ChildEditTableState
       calculated =
           inputInfo.optionMap == null ? null : inputInfo.optionMap[val];
     }
-    return '${toText(context, val ?? '')} ${calculated==null ? '' : '($calculated)'}';
+    return calculated == null ? '${toText(context, val ?? '')}' : '$calculated';
   }
 
   @override
@@ -210,22 +210,40 @@ class _ChildEditTableState
                 (BuildContext context,
                     SelectedIndexChangeNotifier selectedIndexChangeNotifier,
                     Widget child) {
+              PrintInfo defaultPrint = schemaAndData.cloudTableSchema.printInfos
+                  .where((element) => element.isDefault)
+                  .toList()[0];
+              List<PrintInfo> otherPrints = schemaAndData
+                  .cloudTableSchema.printInfos
+                  .where((element) => !element.isDefault)
+                  .toList();
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  printDefault(schemaAndData, parentParam),
+                  printDefault(defaultPrint, parentParam),
+                  otherPrints.length > 0
+                      ? DropdownButton(
+                          items: otherPrints
+                              .map((e) => DropdownMenuItem(
+                                    child: printDefault(e, parentParam),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {},
+                        )
+                      : null,
                   newButton(schemaAndData),
                   editButton(schemaAndData, selectedIndexChangeNotifier),
                   deleteButton(schemaAndData, selectedIndexChangeNotifier)
-                ],
+                ].where((element) => element != null).toList(),
               );
             })
           ])),
     );
   }
 
-  Widget printDefault(SchemaAndData oldSchemaAndData, ParentParam parentParam) {
+  Widget printDefault(PrintInfo printInfo, ParentParam fallBackParentParam) {
     return CommonButton.getButtonAsync(context, () async {
+      var parentParam = printInfo.parentParam ?? fallBackParentParam;
       var allQuery = applyFilterToQuery(widget.databaseRef, parentParam)
           .orderBy(parentParam.sortKey,
               descending: parentParam.sortKeyDescending) as Query;
@@ -235,12 +253,11 @@ class _ChildEditTableState
         List<CloudObject> data = querySnapshot.documents
             .map((e) => CloudObject(e.documentID, e.data))
             .toList();
-        var newSchemaAndData =
-            SchemaAndData<CloudObject>(oldSchemaAndData.cloudTableSchema, data);
+        SchemaAndData.fillInCalculatedData(data, printInfo.inputInfoMap);
         await creator.createPdfSummary(
-            context, '', DateTime.now(), newSchemaAndData);
+            context, DateTime.now(), printInfo, data);
       });
-    }, title: 'In mặc định', iconData: Icons.print);
+    }, title: printInfo.buttonTitle, iconData: Icons.print);
   }
 
   Widget newButton(SchemaAndData schemaAndData) =>

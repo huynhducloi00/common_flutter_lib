@@ -5,5 +5,5 @@ class PdfCreator{
   Future init() {
   }
 
-  Future createPdfSummary(BuildContext context, String title,DateTime timeOfPrint, SchemaAndData schemaAndData) {}
+  Future createPdfSummary(BuildContext context, DateTime timeOfPrint, PrintInfo printInfo, List data) {}
 }

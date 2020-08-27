@@ -13,15 +13,14 @@ import 'package:printing/printing.dart';
 class PdfSummary {
   static final COLUMN_GAP = pw.SizedBox(height: 15);
 
-  static Future<void> createPdfSummary(BuildContext buildContext, String title,
-      DateTime timeOfPrint, SchemaAndData schemaAndData) async {
+  static Future<void> createPdfSummary(BuildContext buildContext,
+      DateTime timeOfPrint, PrintInfo printInfo, List data) async {
     await Printing.layoutPdf(onLayout: (PdfPageFormat format) async {
       final Document pdf = pw.Document();
       Map<int, pw.TableColumnWidth> colWidths = Map();
       double sumFraction = 0;
 
-      Map<String, InputInfo> usedInputInfoMap =
-          schemaAndData.cloudTableSchema.printInputInfoMap;
+      Map<String, InputInfo> usedInputInfoMap = printInfo.inputInfoMap;
       usedInputInfoMap.entries.forEach((e) {
         InputInfo inputInfo = e.value;
         sumFraction += inputInfo.flex;
@@ -41,7 +40,7 @@ class PdfSummary {
       List<pw.TableRow> tableRows = List();
       List<pw.Table> tables = List();
       Map<String, int> aggregationStatInt = Map();
-      schemaAndData.data.forEach((row) {
+      data.forEach((row) {
         count++;
         tableRows.add(pw.TableRow(
             children: usedInputInfoMap.keys.map((fieldName) {
@@ -63,7 +62,7 @@ class PdfSummary {
           tableRows = List();
         }
       });
-      if (tableRows.length!=0){
+      if (tableRows.length != 0) {
         tables.add(pw.Table(columnWidths: colWidths, children: tableRows));
       }
       pdf.addPage(pw.MultiPage(
@@ -83,7 +82,7 @@ class PdfSummary {
               PdfUtils.writeRegular(PdfUtils.REPORT_TITLE),
               PdfUtils.writeLight(PdfUtils.REPORT_SUBTITLE),
               PdfUtils.center(
-                PdfUtils.writeRegular(title),
+                PdfUtils.writeRegular(printInfo.title),
               ),
               PdfUtils.center(PdfUtils.writeRegular(
                   'Ngày in: ${formatDatetime(buildContext, timeOfPrint)}')),
@@ -100,11 +99,10 @@ class PdfSummary {
             if (tables.length > 1) {
               children.addAll([header, tables.last]);
             }
-            int LAST_PAGE_COLUMN_NUM = 3;
+            const LAST_PAGE_COLUMN_NUM = 3;
             List<Map<String, String>> maps = partitionMap(
                 aggregationStatInt.map((fieldName, value) => MapEntry(
-                    schemaAndData
-                        .cloudTableSchema.inputInfoMap[fieldName].fieldDes,
+                    printInfo.inputInfoMap[fieldName].fieldDes,
                     toText(buildContext, value))),
                 LAST_PAGE_COLUMN_NUM);
             List<pw.Widget> mapWidgets = maps

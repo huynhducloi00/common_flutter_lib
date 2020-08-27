@@ -1,5 +1,7 @@
 import 'dart:core';
 
+import 'package:canxe/common/widget/edit_table/parent_param.dart';
+
 import '../data/cloud_obj.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -22,6 +24,7 @@ class InputInfo {
   bool canUpdate;
   DataType dataType;
   CalculateFunction calculate;
+
   // option to option description
   Map<dynamic, String> optionMap;
   bool limitToOptions;
@@ -46,34 +49,69 @@ class InputInfo {
         flex = 1.0;
     }
   }
-  static Map<dynamic, String> createSameKeyValueMap(List<dynamic> vals){
-    Map<dynamic, String> tmp=Map();
-    for (var val in vals){
-      tmp[val]=val;
+
+  static Map<dynamic, String> createSameKeyValueMap(List<dynamic> vals) {
+    Map<dynamic, String> tmp = Map();
+    for (var val in vals) {
+      tmp[val] = val;
     }
     return tmp;
   }
+
   static String Function(String) nonNullValidator =
       (String value) => (value?.isEmpty ?? false) ? CANT_BE_NULL : null;
 }
 
-abstract class CloudTableSchema<T extends CloudObject> {
-  String tableName;
+class PrintInfo {
+  bool isDefault;
+  String title;
+  String buttonTitle;
+  List<String> printFields;
+  ParentParam parentParam;
+  bool printVertical;
   Map<String, InputInfo> inputInfoMap;
-  List<String> printInputInfoList;
-  CloudTableSchema(
-      {this.tableName, this.printInputInfoList, this.inputInfoMap}) {
-    if (printInputInfoList == null) {
-      printInputInfoList = inputInfoMap.keys.toList();
-    }
+
+  PrintInfo(Map<String, InputInfo> allInputInfoMap,
+      {this.title,
+      this.buttonTitle,
+      this.printFields,
+      this.parentParam,
+      this.printVertical = false,
+      this.isDefault = false}) {
+    inputInfoMap = _printInputInfoMap(allInputInfoMap);
   }
 
-  Map<String, InputInfo> get printInputInfoMap {
+  Map<String, InputInfo> _printInputInfoMap(
+      Map<String, InputInfo> allInputInfoMap) {
     Map<String, InputInfo> tmp = Map();
-    printInputInfoList.forEach((fieldName) {
-      tmp[fieldName] = inputInfoMap[fieldName];
+    printFields.forEach((fieldName) {
+      tmp[fieldName] = allInputInfoMap[fieldName];
     });
     return tmp;
+  }
+}
+
+abstract class CloudTableSchema<T extends CloudObject> {
+  String tableName;
+  String tableDescription;
+  Map<String, InputInfo> inputInfoMap;
+  List<PrintInfo> printInfos;
+
+  CloudTableSchema(
+      {this.tableName,
+      this.tableDescription,
+      this.printInfos,
+      this.inputInfoMap}) {
+    if (printInfos == null) {
+      printInfos = [
+        PrintInfo(inputInfoMap,
+            title: tableDescription ?? tableName,
+            buttonTitle: 'In mặc định',
+            isDefault: true,
+            printFields: inputInfoMap.keys.toList(),
+            parentParam: null)
+      ];
+    }
   }
 
   SchemaAndData<T> convertSnapshotToDataList(List<DocumentSnapshot> event);
@@ -84,8 +122,12 @@ class SchemaAndData<T extends CloudObject> {
   List<T> data;
 
   SchemaAndData(this.cloudTableSchema, this.data) {
+    fillInCalculatedData(data, cloudTableSchema.inputInfoMap);
+  }
+
+  static void fillInCalculatedData(data, inputInfoMap) {
     data.forEach((row) {
-      cloudTableSchema.inputInfoMap.forEach((fieldName, inputInfo) {
+      inputInfoMap.forEach((fieldName, inputInfo) {
         if (inputInfo.calculate != null) {
           var list = inputInfo.calculate.fieldNames
               .map((fieldName) => row.dataMap[fieldName])

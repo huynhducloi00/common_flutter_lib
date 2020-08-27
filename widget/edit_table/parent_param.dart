@@ -3,18 +3,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/cloud_obj.dart';
 import '../../data/cloud_table.dart';
 
-final String _CONTAIN_STR = 'CONTAIN_STR';
-final String _EXACT_MATCH_STR = 'EXACT_MATCH_STR';
+const String _CONTAIN_STR = 'CONTAIN_STR';
+const String _EXACT_MATCH_STR = 'EXACT_MATCH_STR';
 Map<String, InputInfo> STRING_FILTER_INFO_MAP = {
   _CONTAIN_STR: InputInfo(DataType.string,
       fieldDes: 'Bắt đầu bằng', validator: InputInfo.nonNullValidator),
   _EXACT_MATCH_STR: InputInfo(DataType.boolean,
       fieldDes: 'Chính xác', validator: InputInfo.nonNullValidator),
 };
-final String _START_DATE = '_START_DATE';
-final String _END_DATE = '_END_DATE';
-final String _INCLUDE_START_DATE = '_INCLUDE_START_DATE';
-final String _INCLUDE_END_DATE = '_INCLUDE_END_DATE';
+const String _START_DATE = '_START_DATE';
+const String _END_DATE = '_END_DATE';
+const String _INCLUDE_START_DATE = '_INCLUDE_START_DATE';
+const String _INCLUDE_END_DATE = '_INCLUDE_END_DATE';
 Map<String, InputInfo> TIME_STAMP_FILTER_INFO_MAP = {
   _START_DATE: InputInfo(DataType.timestamp,
       fieldDes: 'Ngày bắt đầu', validator: InputInfo.nonNullValidator),
@@ -51,10 +51,10 @@ FilterDataWrapper convertFromStringFilterMap(Map val) {
   }
 }
 
-Query specificFilter(
-    var original, String fieldName, FilterDataWrapper filterDataWrapper, bool toSort) {
+Query specificFilter(var original, String fieldName,
+    FilterDataWrapper filterDataWrapper, bool toSort) {
   if (filterDataWrapper.exactMatchValue == null) {
-    if (toSort){
+    if (toSort) {
       original = original.orderBy(fieldName);
     }
     return original.where(fieldName,
@@ -80,11 +80,16 @@ dynamic applyFilterToQuery(
     CollectionReference collectionReference, ParentParam parentParam) {
   var result;
   parentParam.filterDataWrappers.forEach((fieldName, filterDataWrapper) {
-      if (result == null) {
-        result = collectionReference;
-      }
-      // Only sort for other filter keys and not sortKey.
-      result = specificFilter(result, fieldName, filterDataWrapper, /* toSort= */ fieldName != parentParam.sortKey);
+    if (result == null) {
+      result = collectionReference;
+    }
+    // Only sort for other filter keys and not sortKey.
+    result = specificFilter(
+        result,
+        fieldName,
+        filterDataWrapper,
+        /* toSort= */
+        fieldName != parentParam.sortKey);
   });
   return result ?? collectionReference;
 }
@@ -103,6 +108,7 @@ class FilterDataWrapper {
     this.filterStartValue,
     this.exactMatchValue,
   });
+
   @override
   String toString() {
     return '$filterStartValue $filterEndValue $exactMatchValue';
@@ -114,14 +120,10 @@ class ParentParam {
   bool sortKeyDescending;
   Map<String, FilterDataWrapper> filterDataWrappers;
 
-  ParentParam(
-      {
-      this.filterDataWrappers,
-      this.sortKey,
-      this.sortKeyDescending});
+  ParentParam({this.filterDataWrappers, this.sortKey, this.sortKeyDescending=false});
+
   @override
   String toString() {
-    // TODO: implement toString
     return 'SortKey:${sortKey} ${filterDataWrappers}';
   }
 }

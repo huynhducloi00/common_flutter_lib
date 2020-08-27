@@ -8,8 +8,8 @@ class PdfCreator {
     return PdfUtils.init();
   }
 
-  Future createPdfSummary(BuildContext context, String title,
-      DateTime timeOfPrint, SchemaAndData schemaAndData) {
-    return PdfSummary.createPdfSummary(context, title, timeOfPrint, schemaAndData);
+  Future createPdfSummary(BuildContext context,
+      DateTime timeOfPrint, PrintInfo printInfo, List data) {
+    return PdfSummary.createPdfSummary(context, timeOfPrint, printInfo, data);
   }
 }
