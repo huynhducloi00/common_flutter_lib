@@ -1,6 +1,6 @@
 import 'dart:core';
 
-import 'package:canxe/common/widget/edit_table/parent_param.dart';
+import '../widget/edit_table/parent_param.dart';
 
 import '../data/cloud_obj.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

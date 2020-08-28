@@ -1,4 +1,4 @@
-import 'package:canxe/common/utils/auto_form_helper.dart';
+import '../utils/auto_form_helper.dart';
 
 import '../utils.dart';
 import '../utils/value_notifier.dart';
@@ -276,7 +276,7 @@ class _AutoFormState extends State<AutoForm> {
                     }
                   }
                 });
-                if (otherError == null) {
+                if (otherError?.isEmpty ?? false) {
                   if (widget.saveClickFuture != null) {
                     await widget.saveClickFuture(result);
                   }
