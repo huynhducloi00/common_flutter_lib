@@ -58,8 +58,11 @@ class InputInfo {
     return tmp;
   }
 
-  static String Function(String) nonNullValidator =
+  static String Function(String) nonEmptyStrValidator =
       (String value) => (value?.isEmpty ?? false) ? CANT_BE_NULL : null;
+  static String Function(dynamic) nonNullValidator =
+      (dynamic value) => value==null ? CANT_BE_NULL : null;
+
 }
 
 class PrintInfo {
@@ -78,6 +81,9 @@ class PrintInfo {
       this.parentParam,
       this.printVertical = false,
       this.isDefault = false}) {
+    if (printFields==null){
+      printFields=allInputInfoMap.keys.toList();
+    }
     inputInfoMap = _printInputInfoMap(allInputInfoMap);
   }
 
@@ -96,19 +102,26 @@ abstract class CloudTableSchema<T extends CloudObject> {
   String tableDescription;
   Map<String, InputInfo> inputInfoMap;
   List<PrintInfo> printInfos;
-
+  List<String> defaultPrintFields;
+  bool defaultPrintVertical;
   CloudTableSchema(
       {this.tableName,
       this.tableDescription,
       this.printInfos,
-      this.inputInfoMap}) {
+      this.inputInfoMap,
+      this.defaultPrintFields,
+      this.defaultPrintVertical=true}) {
+    if (defaultPrintFields==null){
+      defaultPrintFields = inputInfoMap.keys.toList();
+    }
     if (printInfos == null) {
       printInfos = [
         PrintInfo(inputInfoMap,
-            title: tableDescription ?? tableName,
+            title: 'TẤT CẢ $tableDescription' ?? tableName,
             buttonTitle: 'In mặc định',
             isDefault: true,
-            printFields: inputInfoMap.keys.toList(),
+            printFields: defaultPrintFields,
+            printVertical: defaultPrintVertical,
             parentParam: null)
       ];
     }

@@ -198,6 +198,15 @@ class _AutoFormState extends State<AutoForm> {
     return resultWidget;
   }
 
+  String validateNonStrField(String originalErrorStr, dynamic val, inputInfo) {
+    var hasError = inputInfo.validator(val);
+    if (inputInfo.validator != null && hasError != null) {
+      // violation
+      originalErrorStr += '$hasError:${inputInfo.fieldDes}\n';
+    }
+    return originalErrorStr;
+  }
+
   @override
   Widget build(BuildContext context) {
     List<TableRow> editBoxes = new List();
@@ -230,43 +239,51 @@ class _AutoFormState extends State<AutoForm> {
                 if (!_formKey.currentState.validate()) {
                   return;
                 }
-                if (widget.saveClickFuture != null) {
-                  Map<String, dynamic> result = Map();
-                  widget.inputInfoMap.forEach((fieldName, inputInfo) {
-                    if (inputInfo.calculate == null) {
-                      switch (inputInfo.dataType) {
-                        case DataType.string:
-                          result[fieldName] =
-                              _textEditingControllers[fieldName].text;
-                          break;
-                        case DataType.html:
+                Map<String, dynamic> result = Map();
+                String otherError = '';
+                widget.inputInfoMap.forEach((fieldName, inputInfo) {
+                  if (inputInfo.calculate == null) {
+                    switch (inputInfo.dataType) {
+                      case DataType.string:
+                        result[fieldName] =
+                            _textEditingControllers[fieldName].text;
+                        break;
+                      case DataType.html:
                         // TODO: Handle this case.
-                          break;
-                        case DataType.int:
-                          if (_textEditingControllers[fieldName].text
-                              .isNotEmpty)
-                            result[fieldName] = int.parse(
-                                _textEditingControllers[fieldName].text);
-                          break;
-                        case DataType.timestamp:
-                          result[fieldName] =
-                          _dateTimeControllers[fieldName].value == null
-                              ? null
-                              : Timestamp.fromDate(
-                              _dateTimeControllers[fieldName].value);
-                          break;
-                        case DataType.boolean:
-                          result[fieldName] =
-                          _checkBoxControllers[fieldName].value == null
-                              ? null
-                              : _checkBoxControllers[fieldName].value;
-                          break;
-                      }
+                        break;
+                      case DataType.int:
+                        otherError = validateNonStrField(otherError,
+                            _textEditingControllers[fieldName].text, inputInfo);
+                        if (_textEditingControllers[fieldName].text.isNotEmpty)
+                          result[fieldName] = int.parse(
+                              _textEditingControllers[fieldName].text);
+                        break;
+                      case DataType.timestamp:
+                        otherError = validateNonStrField(otherError,
+                            _dateTimeControllers[fieldName].value, inputInfo);
+                        result[fieldName] =
+                            _dateTimeControllers[fieldName].value == null
+                                ? null
+                                : Timestamp.fromDate(
+                                    _dateTimeControllers[fieldName].value);
+                        break;
+                      case DataType.boolean:
+                        result[fieldName] =
+                            _checkBoxControllers[fieldName].value == null
+                                ? null
+                                : _checkBoxControllers[fieldName].value;
+                        break;
                     }
-                  });
-                  await widget.saveClickFuture(result);
+                  }
+                });
+                if (otherError == null) {
+                  if (widget.saveClickFuture != null) {
+                    await widget.saveClickFuture(result);
+                  }
+                  Navigator.pop(context);
+                } else {
+                  return showInformation(context, "Lỗi", otherError);
                 }
-                Navigator.pop(context);
               },
                   regularColor: Colors.transparent,
                   iconData: Icons.save,

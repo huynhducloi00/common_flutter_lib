@@ -86,7 +86,7 @@ class ExcelOperation {
     deciderFields.forEach((value) {
       inputInfoMap[value.fieldName] = InputInfo(DataType.string,
           fieldDes: value.fieldDes, optionMap: InputInfo.createSameKeyValueMap(inFileNames), validator: (inFile) {
-        return InputInfo.nonNullValidator(inFile) ??
+        return InputInfo.nonEmptyStrValidator(inFile) ??
             (inFileNames.contains(inFile)
                 ? null
                 : "Cột này không có trong file");

@@ -31,12 +31,6 @@ class _ChildEditTableState
   SelectedIndexChangeNotifier _selectedIndexChangeNotifier =
       SelectedIndexChangeNotifier(null);
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-  }
-
   String inducedField(val, InputInfo inputInfo) {
     var calculated;
     if (val != null) {

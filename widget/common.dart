@@ -1,3 +1,4 @@
+import 'package:canxe/common/data/cloud_table.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -42,10 +43,14 @@ Route createMaterialPageRoute(parentContext, WidgetBuilder builder) {
 }
 
 abstract class CommonButton {
-  static Widget createOpenButton(context, table, title, icon) {
+  static Widget createOpenButton(context,CloudTableSchema table, title, icon) {
     return CommonButton.getOpenButton(
         context,
-        EditTableWrapper(table, ParentParam(filterDataWrappers: {})),
+        EditTableWrapper(table, ParentParam(
+            sortKey: 'date',
+            sortKeyDescending: true,
+            filterDataWrappers: {
+        })),
         title,
         icon);
   }
@@ -56,7 +61,7 @@ abstract class CommonButton {
       Navigator.push(
         context,
         createMaterialPageRoute(
-            context, (_) => Scaffold(appBar: AppBar(), body: page)),
+            context, (_) => Scaffold(appBar: AppBar(title: Text(title),), body: page)),
       );
     },
         title: title,

@@ -11,7 +11,11 @@ import 'package:pdf/widgets.dart';
 import 'package:printing/printing.dart';
 
 class PdfSummary {
-  static final COLUMN_GAP = pw.SizedBox(height: 15);
+  static final _columnGap = pw.SizedBox(height: 15);
+  static const HORIZONTAL_FIRST_PAGE_LIMIT = 32;
+  static const HORIZONTAL_OTHER_PAGE_LIMIT = 37;
+  static const VERTICAL_FIRST_PAGE_LIMIT = 50;
+  static const VERTICAL_OTHER_PAGE_LIMIT = 55;
 
   static Future<void> createPdfSummary(BuildContext buildContext,
       DateTime timeOfPrint, PrintInfo printInfo, List data) async {
@@ -30,7 +34,12 @@ class PdfSummary {
       });
       int count = 0;
       // for landscape
-      final int LIMIT = 32;
+      var limitFirstPage = printInfo.printVertical
+          ? VERTICAL_FIRST_PAGE_LIMIT
+          : HORIZONTAL_FIRST_PAGE_LIMIT;
+      var limitOtherPage = printInfo.printVertical
+          ? VERTICAL_OTHER_PAGE_LIMIT
+          : HORIZONTAL_OTHER_PAGE_LIMIT;
       pw.Table header = pw.Table(columnWidths: colWidths, children: [
         pw.TableRow(
             children: usedInputInfoMap.entries
@@ -56,7 +65,8 @@ class PdfSummary {
               toText(buildContext, row.dataMap[fieldName]) ?? "",
               maxLine: 1);
         }).toList()));
-        if (count == LIMIT) {
+        if ((tables.length == 0 && count == limitFirstPage) ||
+            (tables.length > 0 && count == limitOtherPage)) {
           tables.add(pw.Table(columnWidths: colWidths, children: tableRows));
           count = 0;
           tableRows = List();
@@ -68,7 +78,9 @@ class PdfSummary {
       pdf.addPage(pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: pw.EdgeInsets.all(15),
-          orientation: pw.PageOrientation.landscape,
+          orientation: printInfo.printVertical
+              ? pw.PageOrientation.natural
+              : pw.PageOrientation.landscape,
           footer: (pw.Context context) {
             return pw.Container(
                 alignment: pw.Alignment.centerRight,
@@ -86,20 +98,25 @@ class PdfSummary {
               ),
               PdfUtils.center(PdfUtils.writeRegular(
                   'Ngày in: ${formatDatetime(buildContext, timeOfPrint)}')),
-              COLUMN_GAP,
+              _columnGap,
               header,
             ]);
             if (tables.length == 0) {
               return children;
             }
-            children.addAll([tables[0], pw.NewPage()]);
-            for (int i = 1; i < tables.length - 1; i++) {
-              children.addAll([header, tables[i], pw.NewPage()]);
+            int lastCount = limitFirstPage - tables[0].children.length;
+            children.addAll([tables[0]]);
+            for (int i = 1; i < tables.length; i++) {
+              children.addAll([pw.NewPage(), header, tables[i]]);
+              lastCount = limitOtherPage - tables[i].children.length;
             }
-            if (tables.length > 1) {
-              children.addAll([header, tables.last]);
-            }
+
+            // add summary for last page
             const LAST_PAGE_COLUMN_NUM = 3;
+            if (lastCount < LAST_PAGE_COLUMN_NUM) {
+              // NOT enough space for adding summary
+              children.add(pw.NewPage());
+            }
             List<Map<String, String>> maps = partitionMap(
                 aggregationStatInt.map((fieldName, value) => MapEntry(
                     printInfo.inputInfoMap[fieldName].fieldDes,
@@ -111,7 +128,6 @@ class PdfSummary {
             children.add(pw.Container(
                 decoration:
                     pw.BoxDecoration(border: pw.BoxBorder(bottom: true))));
-            // add summary for last page
             children.add(pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 mainAxisSize: pw.MainAxisSize.max,

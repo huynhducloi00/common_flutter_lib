@@ -7,9 +7,9 @@ const String _CONTAIN_STR = 'CONTAIN_STR';
 const String _EXACT_MATCH_STR = 'EXACT_MATCH_STR';
 Map<String, InputInfo> STRING_FILTER_INFO_MAP = {
   _CONTAIN_STR: InputInfo(DataType.string,
-      fieldDes: 'Bắt đầu bằng', validator: InputInfo.nonNullValidator),
+      fieldDes: 'Bắt đầu bằng', validator: InputInfo.nonEmptyStrValidator),
   _EXACT_MATCH_STR: InputInfo(DataType.boolean,
-      fieldDes: 'Chính xác', validator: InputInfo.nonNullValidator),
+      fieldDes: 'Chính xác', validator: InputInfo.nonEmptyStrValidator),
 };
 const String _START_DATE = '_START_DATE';
 const String _END_DATE = '_END_DATE';
@@ -17,13 +17,13 @@ const String _INCLUDE_START_DATE = '_INCLUDE_START_DATE';
 const String _INCLUDE_END_DATE = '_INCLUDE_END_DATE';
 Map<String, InputInfo> TIME_STAMP_FILTER_INFO_MAP = {
   _START_DATE: InputInfo(DataType.timestamp,
-      fieldDes: 'Ngày bắt đầu', validator: InputInfo.nonNullValidator),
+      fieldDes: 'Ngày bắt đầu', validator: InputInfo.nonEmptyStrValidator),
   _INCLUDE_START_DATE: InputInfo(DataType.boolean,
-      fieldDes: 'Bao gồm ngày bắt đầu', validator: InputInfo.nonNullValidator),
+      fieldDes: 'Bao gồm ngày bắt đầu', validator: InputInfo.nonEmptyStrValidator),
   _END_DATE: InputInfo(DataType.timestamp,
-      fieldDes: 'Ngày kết thúc', validator: InputInfo.nonNullValidator),
+      fieldDes: 'Ngày kết thúc', validator: InputInfo.nonEmptyStrValidator),
   _INCLUDE_END_DATE: InputInfo(DataType.boolean,
-      fieldDes: 'Bao gồm ngày kết thúc', validator: InputInfo.nonNullValidator),
+      fieldDes: 'Bao gồm ngày kết thúc', validator: InputInfo.nonEmptyStrValidator),
 };
 
 FilterDataWrapper convertFromTimeStampFilterMap(Map val) {
