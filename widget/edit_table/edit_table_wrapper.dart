@@ -1,3 +1,7 @@
+import 'package:canxe/common/widget/edit_table/common_child_table.dart';
+import 'package:canxe/common/widget/edit_table/phone_child_edit_table.dart';
+import 'package:responsive_builder/responsive_builder.dart';
+
 import '../../data/cloud_obj.dart';
 import '../../data/cloud_table.dart';
 import '../../loadingstate/loading_stream_builder.dart';
@@ -28,8 +32,124 @@ class EditTableWrapper extends StatefulWidget {
 }
 
 class _EditTableWrapperState extends State<EditTableWrapper> {
-  @override
-  Widget build(BuildContext context) {
+  Widget getFilterButton() {
+    return ExpansionTile(
+      title: Text('Lọc'),
+      children: widget.cloudTable.inputInfoMap.entries
+          .map((entry) {
+            var fieldName = entry.key;
+            var inputInfo = entry.value;
+            if (inputInfo.calculate == null) {
+              return ListTile(
+                  title: Text(inputInfo.fieldDes),
+                  subtitle: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Text('Sắp xếp'),
+                        toggleSort(fieldName),
+                        Text('Lọc'),
+                        toggleFilter(inputInfo, fieldName)
+                      ]));
+            }
+            return null;
+          })
+          .where((element) => element != null)
+          .toList(),
+    );
+  }
+
+  Widget toggleSort(String fieldName) {
+    return SizedBox(
+        height: 20,
+        child: CommonButton.getButton(context, () {
+          if (widget.parentParam.sortKey == fieldName) {
+            // change sort direction
+            widget.parentParam.sortKeyDescending =
+                !widget.parentParam.sortKeyDescending;
+          } else {
+            widget.parentParam.sortKey = fieldName;
+            widget.parentParam.sortKeyDescending = false;
+          }
+          setState(() {});
+        },
+            iconData: widget.parentParam.sortKey == fieldName
+                ? (widget.parentParam.sortKeyDescending
+                    ? Icons.arrow_downward
+                    : Icons.arrow_upward)
+                : Icons.check_box_outline_blank,
+            isDense: true,
+            regularColor: Colors.transparent));
+  }
+
+  Widget toggleFilter(InputInfo inputInfo, String fieldName) {
+    return SizedBox(
+      height: 20,
+      child: CommonButton.getButton(context, () {
+        if (widget.parentParam.filterDataWrappers.containsKey(fieldName)) {
+          widget.parentParam.filterDataWrappers.remove(fieldName);
+          setState(() {});
+          return;
+        }
+        Map usedMap;
+        switch (inputInfo.dataType) {
+          case DataType.string:
+            usedMap = STRING_FILTER_INFO_MAP;
+            // TODO: Handle this case.
+            break;
+          case DataType.html:
+            // TODO: Handle this case.
+            break;
+          case DataType.int:
+            // TODO: Handle this case.
+            break;
+          case DataType.timestamp:
+            usedMap = TIME_STAMP_FILTER_INFO_MAP;
+            // TODO: Handle this case.
+            break;
+          case DataType.boolean:
+            // TODO: Handle this case.
+            break;
+        }
+        showAlertDialog(context, title: "Bộ loc ${inputInfo.fieldDes}",
+            builder: (_) {
+          return AutoForm.createAutoForm(context, usedMap, {},
+              saveClickFuture: (valueMap) {
+            FilterDataWrapper filterResult;
+            switch (inputInfo.dataType) {
+              case DataType.string:
+                filterResult = convertFromStringFilterMap(valueMap);
+                break;
+              case DataType.html:
+                // TODO: Handle this case.
+                break;
+              case DataType.int:
+                // TODO: Handle this case.
+                break;
+              case DataType.timestamp:
+                filterResult = convertFromTimeStampFilterMap(valueMap);
+                break;
+              case DataType.boolean:
+                // TODO: Handle this case.
+                break;
+            }
+
+            widget.parentParam.filterDataWrappers[fieldName] = filterResult;
+
+            setState(() {});
+            return null;
+          });
+        });
+      },
+          iconColor: widget.parentParam.filterDataWrappers[fieldName] == null
+              ? null
+              : Colors.red,
+          iconData: Icons.filter_list,
+          regularColor: Colors.transparent,
+          isDense: true),
+    );
+  }
+
+  List getHeaderRow() {
     var tableCells = widget.cloudTable.inputInfoMap.entries.map((e) {
       var fieldName = e.key;
       var inputInfo = e.value;
@@ -45,128 +165,54 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
                 style: BIG_FONT,
                 maxLines: 2,
               )),
-              SizedBox(
-                height: 20,
-                child: CommonButton.getButton(context, () {
-                  if (widget.parentParam.sortKey == fieldName) {
-                    // change sort direction
-                    widget.parentParam.sortKeyDescending =
-                        !widget.parentParam.sortKeyDescending;
-                  } else {
-                    widget.parentParam.sortKey = fieldName;
-                    widget.parentParam.sortKeyDescending = false;
-                  }
-                  setState(() {});
-                },
-                    iconData: widget.parentParam.sortKey == fieldName
-                        ? (widget.parentParam.sortKeyDescending
-                            ? Icons.arrow_downward
-                            : Icons.arrow_upward)
-                        : Icons.check_box_outline_blank,
-                    isDense: true),
-              ),
-              SizedBox(
-                height: 20,
-                child: CommonButton.getButton(context, () {
-                  if (widget.parentParam.filterDataWrappers
-                      .containsKey(fieldName)) {
-                    widget.parentParam.filterDataWrappers.remove(fieldName);
-                    setState(() {});
-                    return;
-                  }
-                  Map usedMap;
-                  switch (inputInfo.dataType) {
-                    case DataType.string:
-                      usedMap = STRING_FILTER_INFO_MAP;
-                      // TODO: Handle this case.
-                      break;
-                    case DataType.html:
-                      // TODO: Handle this case.
-                      break;
-                    case DataType.int:
-                      // TODO: Handle this case.
-                      break;
-                    case DataType.timestamp:
-                      usedMap = TIME_STAMP_FILTER_INFO_MAP;
-                      // TODO: Handle this case.
-                      break;
-                    case DataType.boolean:
-                      // TODO: Handle this case.
-                      break;
-                  }
-                  showDialog(
-                      context: context,
-                      builder: (_) {
-                        return AlertDialog(
-                          title: Text("Bộ loc ${inputInfo.fieldDes}"),
-                          content: AutoForm.createAutoForm(context, usedMap, {},
-                              saveClickFuture: (valueMap) {
-                            FilterDataWrapper filterResult;
-                            switch (inputInfo.dataType) {
-                              case DataType.string:
-                                filterResult =
-                                    convertFromStringFilterMap(valueMap);
-                                break;
-                              case DataType.html:
-                                // TODO: Handle this case.
-                                break;
-                              case DataType.int:
-                                // TODO: Handle this case.
-                                break;
-                              case DataType.timestamp:
-                                filterResult =
-                                    convertFromTimeStampFilterMap(valueMap);
-                                break;
-                              case DataType.boolean:
-                                // TODO: Handle this case.
-                                break;
-                            }
-
-                            widget.parentParam.filterDataWrappers[fieldName] =
-                                filterResult;
-
-                            setState(() {});
-                            return null;
-                          }),
-                        );
-                      });
-                },
-                    iconColor:
-                        widget.parentParam.filterDataWrappers[fieldName] == null
-                            ? null
-                            : Colors.red,
-                    iconData: Icons.filter_list,
-                    isDense: true),
-              )
+              toggleSort(fieldName),
+              toggleFilter(inputInfo, fieldName)
             ]),
       );
     }).toList();
     TableWidthAndSize tableWidthAndSize =
         getEditTableColWidths(context, widget.cloudTable.inputInfoMap);
-    Table headerRow = Table(
-      columnWidths: tableWidthAndSize.colWidths,
-      border: TableBorder(
-          top: EDIT_TABLE_BORDER_SIDE,
-          bottom: EDIT_TABLE_BORDER_SIDE,
-          verticalInside: EDIT_TABLE_BORDER_SIDE,
-          horizontalInside: EDIT_TABLE_BORDER_SIDE),
-      children: [TableRow(children: tableCells)],
-    );
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        width: tableWidthAndSize.width,
-        child: Column(
-          children: [
-            headerRow,
-            Provider.value(
-                value: widget.parentParam,
-                child: TableWrapper(widget.cloudTable))
-          ],
-        ),
+    return [
+      Table(
+        columnWidths: tableWidthAndSize.colWidths,
+        border: TableBorder(
+            top: EDIT_TABLE_BORDER_SIDE,
+            bottom: EDIT_TABLE_BORDER_SIDE,
+            verticalInside: EDIT_TABLE_BORDER_SIDE,
+            horizontalInside: EDIT_TABLE_BORDER_SIDE),
+        children: [TableRow(children: tableCells)],
       ),
-    );
+      tableWidthAndSize.width
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var content = Provider.value(
+        value: widget.parentParam, child: TableWrapper(widget.cloudTable));
+    return ScreenTypeLayout(
+        mobile: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.max, children: [
+            getFilterButton(),
+            content,
+          ]),
+        ),
+        tablet: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+          var headerRow = getHeaderRow();
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: headerRow[1],
+              child: Column(
+                children: [
+                  headerRow[0],
+                  content,
+                ],
+              ),
+            ),
+          );
+        }));
   }
 }
 
@@ -234,10 +280,8 @@ class _TableWrapperState extends State<TableWrapper> {
           }
         }
         query = query.limit(LIMIT);
-//        print(query.buildArguments());
-
         Stream<SchemaAndData<CloudObject>> newSnapshot =
-        (query as Query).snapshots().map((event) {
+            (query as Query).snapshots().map((event) {
           List<DocumentSnapshot> snapshots = List();
           snapshots.addAll(event.documents);
           if (reverse) {
@@ -245,8 +289,11 @@ class _TableWrapperState extends State<TableWrapper> {
           }
           return widget.cloudTable.convertSnapshotToDataList(snapshots);
         });
-        return createStreamBuilder<SchemaAndData<CloudObject>, ChildEditTable>(
-            stream: newSnapshot, child: ChildEditTable(_databaseRef));
+        return createStreamBuilder<SchemaAndData<CloudObject>, Widget>(
+            stream: newSnapshot,
+            child: ScreenTypeLayout(
+                tablet: ChildEditTable(_databaseRef),
+                mobile: PhoneChildEditTable(_databaseRef)));
       },
     ));
   }

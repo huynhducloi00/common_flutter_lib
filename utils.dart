@@ -207,30 +207,46 @@ CurrentLastNextMonthInfo getCurrentLastNextMonthInfo() {
       Timestamp.fromDate(DateTime(info.pYear, info.pMonth));
   return info;
 }
-FilterDataWrapper createFilterDataWrapperThisMonth(CurrentLastNextMonthInfo currentMonthInfo){
+
+FilterDataWrapper createFilterDataWrapperThisMonth(
+    CurrentLastNextMonthInfo currentMonthInfo) {
   return FilterDataWrapper(
       filterStartValue: currentMonthInfo.thisMonthTimeStamp,
       filterEndValue: currentMonthInfo.nextMonthTimeStamp,
       filterEndIncludeValue: false);
 }
-FilterDataWrapper createFilterDataWrapperLastMonth(CurrentLastNextMonthInfo currentMonthInfo){
+
+FilterDataWrapper createFilterDataWrapperLastMonth(
+    CurrentLastNextMonthInfo currentMonthInfo) {
   return FilterDataWrapper(
       filterStartValue: currentMonthInfo.lastMonthTimeStamp,
       filterEndValue: currentMonthInfo.thisMonthTimeStamp,
       filterEndIncludeValue: false);
 }
-Future showInformation(context, title, content) {
-  return showDialog(
-      context: context,
-      builder: (_) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(content),
-          actions: [
-            CommonButton.getButton(context, () {
-              Navigator.pop(context);
-            }, title:'Ok')
-          ],
-        );
-      });
+
+Future showInformation(context, String title, String content) {
+  return showAlertDialog(context, title: title, builder: (_) {
+    return Text(content);
+  }, actions: [
+    CommonButton.getButton(context, () {
+      Navigator.pop(context);
+    }, title: 'Ok')
+  ]);
+}
+
+Column columnWithGap(List<Widget> children,
+    {crossAxisAlignment = CrossAxisAlignment.start, double gap = 8}) {
+  List<Widget> result = List();
+  children.forEach((element) {
+    result.add(element);
+    result.add(SizedBox(
+      height: gap,
+    ));
+  });
+  result.removeLast();
+  return Column(
+    crossAxisAlignment: crossAxisAlignment,
+    mainAxisSize: MainAxisSize.min,
+    children: result,
+  );
 }

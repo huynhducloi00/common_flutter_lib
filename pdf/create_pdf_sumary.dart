@@ -53,7 +53,7 @@ class PdfSummary {
         count++;
         tableRows.add(pw.TableRow(
             children: usedInputInfoMap.keys.map((fieldName) {
-          if (usedInputInfoMap[fieldName].dataType == DataType.int) {
+          if (usedInputInfoMap[fieldName].dataType == DataType.int && usedInputInfoMap[fieldName].optionMap==null) {
             if (aggregationStatInt.containsKey(fieldName)) {
               aggregationStatInt[fieldName] =
                   sum([aggregationStatInt[fieldName], row.dataMap[fieldName]]);

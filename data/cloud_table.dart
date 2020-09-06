@@ -5,14 +5,7 @@ import '../widget/edit_table/parent_param.dart';
 import '../data/cloud_obj.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-typedef UseDataCalculation = dynamic Function(List<dynamic> data);
-
-class CalculateFunction {
-  List<String> fieldNames;
-  UseDataCalculation useDataCalculation;
-
-  CalculateFunction(this.fieldNames, this.useDataCalculation);
-}
+typedef UseDataCalculation = dynamic Function(Map<String, dynamic> data);
 
 class InputInfo {
   String field;
@@ -23,7 +16,7 @@ class InputInfo {
   Function validator;
   bool canUpdate;
   DataType dataType;
-  CalculateFunction calculate;
+  UseDataCalculation calculate;
 
   // option to option description
   Map<dynamic, String> optionMap;
@@ -61,8 +54,7 @@ class InputInfo {
   static String Function(String) nonEmptyStrValidator =
       (String value) => (value?.isEmpty ?? false) ? CANT_BE_NULL : null;
   static String Function(dynamic) nonNullValidator =
-      (dynamic value) => value==null ? CANT_BE_NULL : null;
-
+      (dynamic value) => value == null ? CANT_BE_NULL : null;
 }
 
 class PrintInfo {
@@ -81,8 +73,8 @@ class PrintInfo {
       this.parentParam,
       this.printVertical = false,
       this.isDefault = false}) {
-    if (printFields==null){
-      printFields=allInputInfoMap.keys.toList();
+    if (printFields == null) {
+      printFields = allInputInfoMap.keys.toList();
     }
     inputInfoMap = _printInputInfoMap(allInputInfoMap);
   }
@@ -102,16 +94,22 @@ abstract class CloudTableSchema<T extends CloudObject> {
   String tableDescription;
   Map<String, InputInfo> inputInfoMap;
   List<PrintInfo> printInfos;
-  List<String> defaultPrintFields;
   bool defaultPrintVertical;
+  // The following is for phone view
+  List<String> primaryFields;
+  List<String> subtitleFields;
+  List<String> trailingFields;
   CloudTableSchema(
       {this.tableName,
       this.tableDescription,
       this.printInfos,
       this.inputInfoMap,
-      this.defaultPrintFields,
-      this.defaultPrintVertical=true}) {
-    if (defaultPrintFields==null){
+      List<String> defaultPrintFields,
+      this.defaultPrintVertical = true,
+      this.primaryFields,
+      this.subtitleFields,
+      this.trailingFields}) {
+    if (defaultPrintFields == null) {
       defaultPrintFields = inputInfoMap.keys.toList();
     }
     if (printInfos == null) {
@@ -124,6 +122,12 @@ abstract class CloudTableSchema<T extends CloudObject> {
             printVertical: defaultPrintVertical,
             parentParam: null)
       ];
+    }
+    if (primaryFields==null){
+      List<String> allKeys=inputInfoMap.keys.toList();
+      primaryFields=allKeys.sublist(0,1);
+      subtitleFields=allKeys.sublist(1);
+      trailingFields=List();
     }
   }
 
@@ -142,10 +146,20 @@ class SchemaAndData<T extends CloudObject> {
     data.forEach((row) {
       inputInfoMap.forEach((fieldName, inputInfo) {
         if (inputInfo.calculate != null) {
-          var list = inputInfo.calculate.fieldNames
-              .map((fieldName) => row.dataMap[fieldName])
-              .toList();
-          row.dataMap[fieldName] = inputInfo.calculate.useDataCalculation(list);
+          row.dataMap[fieldName] =
+              inputInfo.calculate(row.dataMap);
+        }
+      });
+    });
+  }
+
+  static void fillInOptionData(data, Map<String, InputInfo> inputInfoMap) {
+    data.forEach((row) {
+      inputInfoMap.forEach((fieldName, inputInfo) {
+        if (inputInfo.optionMap != null) {
+          row.dataMap[fieldName] =
+              inputInfo.optionMap[row.dataMap[fieldName]] ??
+                  row.dataMap[fieldName];
         }
       });
     });

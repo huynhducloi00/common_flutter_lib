@@ -7,8 +7,8 @@ Widget createButton(Function onPressed,
     return Container(
       color: regularColor,
       child: IconButton(
+        padding: EdgeInsets.all(isDense ? 0 :8),
         iconSize: 24,
-        padding: EdgeInsets.all(0),
         icon: Icon(iconData, color: iconColor),
         onPressed: onPressed,
       ),
@@ -17,7 +17,9 @@ Widget createButton(Function onPressed,
   return Container(
     color: regularColor,
     child: FlatButton(
+      padding: EdgeInsets.all(isDense ? 0 :8),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           iconData == null ? null : Icon(iconData, color: iconColor,),
           title == null ? null :Text(title,style:TextStyle(color: textColor), textAlign: align),

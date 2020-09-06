@@ -2,7 +2,7 @@ import 'loading.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-Widget createStreamBuilder<L, W extends StatefulWidget>(
+Widget createStreamBuilder<L, W extends Widget>(
     {Stream<L> stream, W child}) {
   return StreamBuilder(
     builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {

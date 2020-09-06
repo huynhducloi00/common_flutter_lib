@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:html';
 
+import '../widget/common.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/cloud_obj.dart';
 import '../data/cloud_table.dart';
 import 'package:excel/excel.dart';
-import 'package:flutter/material.dart';
 
 import 'auto_form.dart';
 
@@ -65,7 +65,7 @@ class ExcelOperation {
 
   Future<void> _createAddFuture(row) async {
     await collectionReference.document().setData(row);
-    _wholeProcess.sink.add("Thêm ${row}");
+    _wholeProcess.sink.add("Thêm $row");
   }
 
   Future<bool> _decodeTableAndSave(Map<String, String> map) async {
@@ -85,7 +85,9 @@ class ExcelOperation {
     Map<String, InputInfo> inputInfoMap = Map();
     deciderFields.forEach((value) {
       inputInfoMap[value.fieldName] = InputInfo(DataType.string,
-          fieldDes: value.fieldDes, optionMap: InputInfo.createSameKeyValueMap(inFileNames), validator: (inFile) {
+          fieldDes: value.fieldDes,
+          optionMap: InputInfo.createSameKeyValueMap(inFileNames),
+          validator: (inFile) {
         return InputInfo.nonEmptyStrValidator(inFile) ??
             (inFileNames.contains(inFile)
                 ? null
@@ -96,8 +98,8 @@ class ExcelOperation {
     deciderFields.forEach((element) {
       initValue[element.fieldName] = element.inFileDes;
     });
-    AlertDialog alert = AlertDialog(
-      content: AutoForm.createAutoForm(context, inputInfoMap, initValue,
+    showAlertDialog(context, builder: (_) {
+      return AutoForm.createAutoForm(context, inputInfoMap, initValue,
           saveClickFuture: (resultMap) {
         if (resultMap.values.length != resultMap.values.toSet().length) {
           // list contains duplicate
@@ -108,13 +110,8 @@ class ExcelOperation {
         return null;
       }, onPop: () {
         completer.complete(null);
-      }),
-    );
-    showDialog(
-        context: context,
-        builder: (_) {
-          return alert;
-        });
+      });
+    });
     return completer.future;
   }
 
@@ -140,7 +137,7 @@ class ExcelOperation {
       });
       // at this step, we know that table contains all required fields.
       fieldNames = columnIndexMap;
-      List<List> rowList=table.rows;
+      List<List> rowList = table.rows;
       rowList.removeAt(0);
       rows = List(rowList.length);
       rowList.asMap().entries.forEach((pair) {
@@ -184,6 +181,7 @@ class ExcelOperation {
       });
     });
   }
+
   static Future downloadWeb(Excel excel, fileName) async {
     Completer<String> completer = Completer();
     excel.encode().then((bytes) {
@@ -191,9 +189,9 @@ class ExcelOperation {
       // Encode our file in base64
       final _base64 = base64Encode(bytes);
       // Create the link with the file
-      final anchor = AnchorElement(
-          href: 'data:application/octet-stream;base64,$_base64')
-        ..target = 'blank';
+      final anchor =
+          AnchorElement(href: 'data:application/octet-stream;base64,$_base64')
+            ..target = 'blank';
       // add the name
       if (downloadName != null) {
         anchor.download = downloadName;

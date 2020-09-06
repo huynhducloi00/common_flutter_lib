@@ -1,3 +1,5 @@
+import 'package:canxe/common/widget/edit_table/common_child_table.dart';
+
 import '../../data/cloud_obj.dart';
 import '../../loadingstate/loading_stream_builder.dart';
 import '../../utils.dart';
@@ -214,108 +216,32 @@ class _ChildEditTableState
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  printDefault(defaultPrint, parentParam),
+                  ChildTableUtils.printDefault(
+                      context, widget.databaseRef, defaultPrint, parentParam),
                   otherPrints.length > 0
                       ? DropdownButton(
                           items: otherPrints
-                              .map((e) => DropdownMenuItem(
-                                    child: printDefault(e, parentParam),
+                              .map((printInfo) => DropdownMenuItem(
+                                    child: ChildTableUtils.printDefault(
+                                        context,
+                                        widget.databaseRef,
+                                        printInfo,
+                                        parentParam),
                                   ))
                               .toList(),
                           onChanged: (value) {},
                         )
                       : null,
-                  newButton(schemaAndData),
-                  editButton(schemaAndData, selectedIndexChangeNotifier),
-                  deleteButton(schemaAndData, selectedIndexChangeNotifier)
+                  ChildTableUtils.newButton(
+                      context, widget.databaseRef, schemaAndData),
+                  ChildTableUtils.editButton(context, widget.databaseRef,
+                      schemaAndData, selectedIndexChangeNotifier.value),
+                  ChildTableUtils.deleteButton(context, widget.databaseRef,
+                      schemaAndData, selectedIndexChangeNotifier.value)
                 ].where((element) => element != null).toList(),
               );
             })
           ])),
     );
   }
-
-  Widget printDefault(PrintInfo printInfo, ParentParam fallBackParentParam) {
-    return CommonButton.getButtonAsync(context, () async {
-      var parentParam = printInfo.parentParam ?? fallBackParentParam;
-      var allQuery = applyFilterToQuery(widget.databaseRef, parentParam)
-          .orderBy(parentParam.sortKey,
-              descending: parentParam.sortKeyDescending) as Query;
-      allQuery.getDocuments().then((querySnapshot) async {
-        var creator = create_pdf.PdfCreator();
-        await creator.init();
-        List<CloudObject> data = querySnapshot.documents
-            .map((e) => CloudObject(e.documentID, e.data))
-            .toList();
-        SchemaAndData.fillInCalculatedData(data, printInfo.inputInfoMap);
-        await creator.createPdfSummary(
-            context, DateTime.now(), printInfo, data);
-      });
-    }, title: printInfo.buttonTitle, iconData: Icons.print);
-  }
-
-  Widget newButton(SchemaAndData schemaAndData) =>
-      CommonButton.getButton(context, () {
-        AlertDialog alert = AlertDialog(
-          content: AutoForm.createAutoForm(
-              context, schemaAndData.cloudTableSchema.inputInfoMap, {},
-              saveClickFuture: (resultMap) {
-            return widget.databaseRef.document().setData(resultMap);
-          }),
-        );
-        showDialog(
-            context: context,
-            builder: (_) {
-              return alert;
-            });
-      }, title: 'Mới', iconData: Icons.create);
-
-  Widget editButton(SchemaAndData schemaAndData, selectedIndexChangeNotifier) {
-    return CommonButton.getButton(context, () {
-      AlertDialog alert = AlertDialog(
-        content: AutoForm.createAutoForm(
-          context,
-          schemaAndData.cloudTableSchema.inputInfoMap,
-          schemaAndData.data[selectedIndexChangeNotifier.value].dataMap,
-          saveClickFuture: (resultMap) async {
-            await widget.databaseRef
-                .document(schemaAndData
-                    .data[selectedIndexChangeNotifier.value].documentId)
-                .setData(resultMap);
-          },
-        ),
-      );
-      showDialog(
-          context: context,
-          builder: (_) {
-            return alert;
-          });
-    },
-        title: "Chỉnh sửa",
-        isEnabled: selectedIndexChangeNotifier.value != null);
-  }
-
-  Widget deleteButton(
-          SchemaAndData schemaAndData, selectedIndexChangeNotifier) =>
-      CommonButton.getButton(context, () {
-        AlertDialog alert = AlertDialog(
-          actions: [
-            CommonButton.getButtonAsync(context, () async {
-              await widget.databaseRef
-                  .document(schemaAndData
-                      .data[selectedIndexChangeNotifier.value].documentId)
-                  .delete();
-              Navigator.of(context).pop();
-            }, title: 'Có'),
-            CommonButton.getCloseButton(context, 'Không')
-          ],
-          content: Text(
-              'Bạn thật sự muốn xoá ${schemaAndData.data[selectedIndexChangeNotifier.value].dataMap[schemaAndData.cloudTableSchema.inputInfoMap.keys.elementAt(0)]}?'),
-        );
-        showDialog(
-            context: context,
-            builder: (_) {
-              return alert;
-            });
-      }, title: "Xoá", isEnabled: selectedIndexChangeNotifier.value != null);
 }

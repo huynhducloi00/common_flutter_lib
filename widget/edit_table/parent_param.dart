@@ -19,11 +19,13 @@ Map<String, InputInfo> TIME_STAMP_FILTER_INFO_MAP = {
   _START_DATE: InputInfo(DataType.timestamp,
       fieldDes: 'Ngày bắt đầu', validator: InputInfo.nonEmptyStrValidator),
   _INCLUDE_START_DATE: InputInfo(DataType.boolean,
-      fieldDes: 'Bao gồm ngày bắt đầu', validator: InputInfo.nonEmptyStrValidator),
+      fieldDes: 'Bao gồm ngày bắt đầu',
+      validator: InputInfo.nonEmptyStrValidator),
   _END_DATE: InputInfo(DataType.timestamp,
       fieldDes: 'Ngày kết thúc', validator: InputInfo.nonEmptyStrValidator),
   _INCLUDE_END_DATE: InputInfo(DataType.boolean,
-      fieldDes: 'Bao gồm ngày kết thúc', validator: InputInfo.nonEmptyStrValidator),
+      fieldDes: 'Bao gồm ngày kết thúc',
+      validator: InputInfo.nonEmptyStrValidator),
 };
 
 FilterDataWrapper convertFromTimeStampFilterMap(Map val) {
@@ -53,26 +55,27 @@ FilterDataWrapper convertFromStringFilterMap(Map val) {
 
 Query specificFilter(var original, String fieldName,
     FilterDataWrapper filterDataWrapper, bool toSort) {
-  if (filterDataWrapper.exactMatchValue == null) {
-    if (toSort) {
-      original = original.orderBy(fieldName);
-    }
+  if (filterDataWrapper.exactMatchValue != null) {
     return original.where(fieldName,
-        isGreaterThan: filterDataWrapper.filterStartIncludeValue
-            ? null
-            : filterDataWrapper.filterStartValue,
-        isGreaterThanOrEqualTo: filterDataWrapper.filterStartIncludeValue
-            ? filterDataWrapper.filterStartValue
-            : null,
-        isLessThanOrEqualTo: filterDataWrapper.filterEndIncludeValue
-            ? filterDataWrapper.filterEndValue
-            : null,
-        isLessThan: filterDataWrapper.filterEndIncludeValue
-            ? null
-            : filterDataWrapper.filterEndValue);
+        isEqualTo: filterDataWrapper.exactMatchValue);
+  }
+  // use inequality
+  if (toSort) {
+    original = original.orderBy(fieldName);
   }
   return original.where(fieldName,
-      isEqualTo: filterDataWrapper.exactMatchValue);
+      isGreaterThan: filterDataWrapper.filterStartIncludeValue
+          ? null
+          : filterDataWrapper.filterStartValue,
+      isGreaterThanOrEqualTo: filterDataWrapper.filterStartIncludeValue
+          ? filterDataWrapper.filterStartValue
+          : null,
+      isLessThanOrEqualTo: filterDataWrapper.filterEndIncludeValue
+          ? filterDataWrapper.filterEndValue
+          : null,
+      isLessThan: filterDataWrapper.filterEndIncludeValue
+          ? null
+          : filterDataWrapper.filterEndValue);
 }
 
 //Sometimes there is no filter
@@ -93,20 +96,22 @@ dynamic applyFilterToQuery(
   });
   return result ?? collectionReference;
 }
-
+// return true to include the row
+typedef PostFilterFunction=bool  Function(Map row);
 class FilterDataWrapper {
   dynamic filterStartValue;
   bool filterStartIncludeValue;
   dynamic filterEndValue;
   bool filterEndIncludeValue;
   dynamic exactMatchValue;
-
+  PostFilterFunction postFilterFunction;
   FilterDataWrapper({
     this.filterEndIncludeValue = true,
     this.filterEndValue,
     this.filterStartIncludeValue = true,
     this.filterStartValue,
     this.exactMatchValue,
+    this.postFilterFunction
   });
 
   @override
@@ -120,10 +125,11 @@ class ParentParam {
   bool sortKeyDescending;
   Map<String, FilterDataWrapper> filterDataWrappers;
 
-  ParentParam({this.filterDataWrappers, this.sortKey, this.sortKeyDescending=false});
+  ParentParam(
+      {this.filterDataWrappers, this.sortKey, this.sortKeyDescending = false});
 
   @override
   String toString() {
-    return 'SortKey:${sortKey} ${filterDataWrappers}';
+    return 'SortKey:$sortKey $filterDataWrappers';
   }
 }

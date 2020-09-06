@@ -35,22 +35,31 @@ Route createMaterialPageRoute(parentContext, WidgetBuilder builder) {
     },
     transitionDuration: Duration(seconds: 0),
   );
-//    MaterialPageRoute( builder: (context) {
-//    return Provider.value(
-//        value: Provider.of<LoiButtonStyle>(parentContext, listen: false),
-//        child: builder(context));
-//  });
+}
+
+Future showAlertDialog(BuildContext context,
+    {WidgetBuilder builder, String title, List<Widget> actions}) {
+  return showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: title == null ? null : Text(title),
+          content: builder(context),
+          actions: actions,
+        );
+      });
 }
 
 abstract class CommonButton {
-  static Widget createOpenButton(context,CloudTableSchema table, title, icon) {
+  static Widget createOpenButton(context, CloudTableSchema table, title, icon) {
     return CommonButton.getOpenButton(
         context,
-        EditTableWrapper(table, ParentParam(
-            sortKey: 'date',
-            sortKeyDescending: true,
-            filterDataWrappers: {
-        })),
+        EditTableWrapper(
+            table,
+            ParentParam(
+                sortKey: table.inputInfoMap.keys.first,
+                sortKeyDescending: true,
+                filterDataWrappers: {})),
         title,
         icon);
   }
@@ -61,7 +70,12 @@ abstract class CommonButton {
       Navigator.push(
         context,
         createMaterialPageRoute(
-            context, (_) => Scaffold(appBar: AppBar(title: Text(title),), body: page)),
+            context,
+            (_) => Scaffold(
+                appBar: AppBar(
+                  title: Text(title),
+                ),
+                body: page)),
       );
     },
         title: title,

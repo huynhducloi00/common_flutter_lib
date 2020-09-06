@@ -11,6 +11,6 @@ class ChildParam {
 
   @override
   String toString() {
-    return '${startAfter} ${endBefore}';
+    return '$startAfter $endBefore';
   }
 }
