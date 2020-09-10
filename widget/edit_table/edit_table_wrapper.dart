@@ -1,6 +1,4 @@
-import 'package:canxe/common/widget/edit_table/common_child_table.dart';
-import 'package:canxe/common/widget/edit_table/phone_child_edit_table.dart';
-import 'package:flutter/services.dart';
+import 'phone_child_edit_table.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../data/cloud_obj.dart';

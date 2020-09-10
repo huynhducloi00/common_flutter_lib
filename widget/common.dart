@@ -1,9 +1,8 @@
-import 'package:canxe/common/utils.dart';
+import '../utils.dart';
 
 import '../data/cloud_table.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import 'edit_table/edit_table_wrapper.dart';
 import 'edit_table/parent_param.dart';
@@ -45,6 +44,19 @@ Future showAlertDialog(BuildContext context,
         return AlertDialog(
           title: title == null ? null : Text(title),
           content: builder(context),
+          actions: actions,
+        );
+      });
+}
+
+Future showAlertDialogOverlay(BuildContext context,
+    {WidgetBuilder builder, String title, List<Widget> actions, percent=0.8}) {
+  return showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: title == null ? null : Text(title),
+          content: Container(child: builder(context),width: screenWidth(context)*percent,),
           actions: actions,
         );
       });

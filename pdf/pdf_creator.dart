@@ -1,4 +1,4 @@
-import 'package:canxe/common/pdf/pdf_interface.dart';
+import 'pdf_interface.dart';
 
 import '../data/cloud_table.dart';
 import 'pdf_utils.dart';

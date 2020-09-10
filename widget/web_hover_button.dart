@@ -1,5 +1,5 @@
-import 'package:canxe/common/widget/hover_button_interface.dart';
-import 'package:canxe/constants.dart';
+import '../utils.dart';
+import 'hover_button_interface.dart';
 import 'package:flutter/material.dart';
 
 import 'web_utils.dart';

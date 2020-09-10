@@ -1,4 +1,4 @@
-import 'package:canxe/common/widget/edit_table/common_child_table.dart';
+import 'common_child_table.dart';
 
 import '../../data/cloud_obj.dart';
 import '../../loadingstate/loading_stream_builder.dart';

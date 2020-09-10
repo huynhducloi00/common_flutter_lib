@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:html';
 
+import 'package:danhgiadn/common/utils.dart';
+import 'package:flutter/material.dart';
+
 import '../widget/common.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/cloud_obj.dart';
@@ -98,7 +101,7 @@ class ExcelOperation {
     deciderFields.forEach((element) {
       initValue[element.fieldName] = element.inFileDes;
     });
-    showAlertDialog(context, builder: (_) {
+    showAlertDialogOverlay(context,percent: 0.6, builder: (_) {
       return AutoForm.createAutoForm(context, inputInfoMap, initValue,
           saveClickFuture: (resultMap) {
         if (resultMap.values.length != resultMap.values.toSet().length) {
