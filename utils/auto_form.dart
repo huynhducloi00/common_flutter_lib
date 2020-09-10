@@ -39,10 +39,8 @@ class AutoForm extends StatefulWidget {
         }
         return true;
       },
-      child: Provider.value(
-          value: Provider.of<LoiButtonStyle>(context, listen: false),
-          child: AutoForm._internal(
-              context, inputInfoMap, initialValue, saveClickFuture)),
+      child: wrapLoiButtonStyle(context,  AutoForm._internal(
+              context, inputInfoMap, initialValue, saveClickFuture))
     );
   }
 
@@ -217,7 +215,7 @@ class _AutoFormState extends State<AutoForm> {
           TableRow(children: [
             TableCell(
               verticalAlignment: TableCellVerticalAlignment.middle,
-              child: Text(inputInfo.fieldDes),
+              child: Container(child: Text(inputInfo.fieldDes), margin: EdgeInsets.only(right: 5),),
             ),
             TableCell(
               verticalAlignment: TableCellVerticalAlignment.middle,
@@ -230,83 +228,78 @@ class _AutoFormState extends State<AutoForm> {
         );
       }
     });
-    return SizedBox(
-      width: 1000,
-      child: Scaffold(
-          appBar: AppBar(
-            actions: [
-              CommonButton.getButtonAsync(context, () async {
-                if (!_formKey.currentState.validate()) {
-                  return;
-                }
-                Map<String, dynamic> result = Map();
-                String otherError = '';
-                widget.inputInfoMap.forEach((fieldName, inputInfo) {
-                  if (inputInfo.calculate == null) {
-                    switch (inputInfo.dataType) {
-                      case DataType.string:
-                        result[fieldName] =
-                            _textEditingControllers[fieldName].text;
-                        break;
-                      case DataType.html:
-                        // TODO: Handle this case.
-                        break;
-                      case DataType.int:
-                        otherError = validateNonStrField(otherError,
-                            _textEditingControllers[fieldName].text, inputInfo);
-                        if (_textEditingControllers[fieldName].text.isNotEmpty)
-                          result[fieldName] = int.parse(
-                              _textEditingControllers[fieldName].text);
-                        break;
-                      case DataType.timestamp:
-                        otherError = validateNonStrField(otherError,
-                            _dateTimeControllers[fieldName].value, inputInfo);
-                        result[fieldName] =
-                            _dateTimeControllers[fieldName].value == null
-                                ? null
-                                : Timestamp.fromDate(
-                                    _dateTimeControllers[fieldName].value);
-                        break;
-                      case DataType.boolean:
-                        result[fieldName] =
-                            _checkBoxControllers[fieldName].value == null
-                                ? null
-                                : _checkBoxControllers[fieldName].value;
-                        break;
-                    }
+    return Scaffold(
+        appBar: AppBar(
+          actions: [
+            CommonButton.getButtonAsync(context, () async {
+              if (!_formKey.currentState.validate()) {
+                return;
+              }
+              Map<String, dynamic> result = Map();
+              String otherError = '';
+              widget.inputInfoMap.forEach((fieldName, inputInfo) {
+                if (inputInfo.calculate == null) {
+                  switch (inputInfo.dataType) {
+                    case DataType.string:
+                      result[fieldName] =
+                          _textEditingControllers[fieldName].text;
+                      break;
+                    case DataType.html:
+                      // TODO: Handle this case.
+                      break;
+                    case DataType.int:
+                      otherError = validateNonStrField(otherError,
+                          _textEditingControllers[fieldName].text, inputInfo);
+                      if (_textEditingControllers[fieldName].text.isNotEmpty)
+                        result[fieldName] = int.parse(
+                            _textEditingControllers[fieldName].text);
+                      break;
+                    case DataType.timestamp:
+                      otherError = validateNonStrField(otherError,
+                          _dateTimeControllers[fieldName].value, inputInfo);
+                      result[fieldName] =
+                          _dateTimeControllers[fieldName].value == null
+                              ? null
+                              : Timestamp.fromDate(
+                                  _dateTimeControllers[fieldName].value);
+                      break;
+                    case DataType.boolean:
+                      result[fieldName] =
+                          _checkBoxControllers[fieldName].value == null
+                              ? null
+                              : _checkBoxControllers[fieldName].value;
+                      break;
                   }
-                });
-                if (otherError?.isEmpty ?? false) {
-                  if (widget.saveClickFuture != null) {
-                    await widget.saveClickFuture(result);
-                  }
-                  Navigator.pop(context);
-                } else {
-                  return showInformation(context, "Lỗi", otherError);
                 }
-              },
-                  regularColor: Colors.transparent,
-                  iconData: Icons.save,
-                  title: 'Lưu')
-            ],
-          ),
-          backgroundColor: Colors.brown[100],
-          body: SingleChildScrollView(
-            child: Container(
-              width: screenWidth(context) * 0.8,
-              child: FractionallySizedBox(
-                  widthFactor: 0.9,
-                  child: Form(
-                    key: _formKey,
-                    child: Table(
-                      defaultVerticalAlignment:
-                          TableCellVerticalAlignment.middle,
-                      columnWidths: {0: IntrinsicColumnWidth()},
-                      children: editBoxes,
-                    ),
-                  )),
+              });
+              if (otherError?.isEmpty ?? false) {
+                if (widget.saveClickFuture != null) {
+                  await widget.saveClickFuture(result);
+                }
+                Navigator.pop(context);
+              } else {
+                return showInformation(context, "Lỗi", otherError);
+              }
+            },
+                regularColor: Colors.transparent,
+                iconData: Icons.save,
+                title: 'Lưu')
+          ],
+        ),
+        backgroundColor: Colors.brown[100],
+        body: SingleChildScrollView(
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 10),
+            child: Form(
+              key: _formKey,
+              child: Table(
+                defaultVerticalAlignment:
+                    TableCellVerticalAlignment.middle,
+                columnWidths: {0: IntrinsicColumnWidth()},
+                children: editBoxes,
+              ),
             ),
-          )),
-    );
+          ),
+        ));
   }
 }

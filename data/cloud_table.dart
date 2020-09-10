@@ -95,10 +95,12 @@ abstract class CloudTableSchema<T extends CloudObject> {
   Map<String, InputInfo> inputInfoMap;
   List<PrintInfo> printInfos;
   bool defaultPrintVertical;
+
   // The following is for phone view
   List<String> primaryFields;
   List<String> subtitleFields;
   List<String> trailingFields;
+
   CloudTableSchema(
       {this.tableName,
       this.tableDescription,
@@ -116,18 +118,18 @@ abstract class CloudTableSchema<T extends CloudObject> {
       printInfos = [
         PrintInfo(inputInfoMap,
             title: 'TẤT CẢ $tableDescription' ?? tableName,
-            buttonTitle: 'In mặc định',
+            buttonTitle: 'In cửa sổ',
             isDefault: true,
             printFields: defaultPrintFields,
             printVertical: defaultPrintVertical,
             parentParam: null)
       ];
     }
-    if (primaryFields==null){
-      List<String> allKeys=inputInfoMap.keys.toList();
-      primaryFields=allKeys.sublist(0,1);
-      subtitleFields=allKeys.sublist(1);
-      trailingFields=List();
+    if (primaryFields == null) {
+      List<String> allKeys = inputInfoMap.keys.toList();
+      primaryFields = allKeys.sublist(0, 1);
+      subtitleFields = allKeys.sublist(1);
+      trailingFields = List();
     }
   }
 
@@ -146,22 +148,22 @@ class SchemaAndData<T extends CloudObject> {
     data.forEach((row) {
       inputInfoMap.forEach((fieldName, inputInfo) {
         if (inputInfo.calculate != null) {
-          row.dataMap[fieldName] =
-              inputInfo.calculate(row.dataMap);
+          row.dataMap[fieldName] = inputInfo.calculate(row.dataMap);
         }
       });
     });
   }
 
-  static void fillInOptionData(data, Map<String, InputInfo> inputInfoMap) {
-    data.forEach((row) {
-      inputInfoMap.forEach((fieldName, inputInfo) {
-        if (inputInfo.optionMap != null) {
-          row.dataMap[fieldName] =
-              inputInfo.optionMap[row.dataMap[fieldName]] ??
-                  row.dataMap[fieldName];
-        }
-      });
+  static Map fillInOptionData(Map row, Map<String, InputInfo> inputInfoMap) {
+    Map result = Map();
+    inputInfoMap.forEach((fieldName, inputInfo) {
+      if (inputInfo.optionMap != null) {
+        result[fieldName] =
+            inputInfo.optionMap[row[fieldName]] ?? row[fieldName];
+      } else {
+        result[fieldName] = row[fieldName];
+      }
     });
+    return result;
   }
 }

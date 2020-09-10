@@ -25,10 +25,10 @@ class AutoFormHelper {
                       controller: controller,
                     ))
               ] +
-              inputInfo.optionMap.keys
+              inputInfo.optionMap.values
                   .where((option) => option != controller.text)
                   .map((option) => DropdownMenuItem(
-                      value: option as String, child: Text(option)))
+                      value: option, child: Text(option)))
                   .toList(),
           onChanged: (value) {
             controller.value = controller.value.copyWith(text: value);

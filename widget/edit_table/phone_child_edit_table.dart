@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../../pdf/no_op_create_pdf.dart'
     if (dart.library.html) '../../pdf/pdf_creator.dart' as create_pdf;
 import '../../data/cloud_table.dart';
-import '../../utils/auto_form.dart';
 import '../common.dart';
 import 'common_child_table.dart';
 import 'edit_table_wrapper.dart';
@@ -36,7 +35,7 @@ class _PhoneChildEditTableState
   String _concat(Map row, List<String> fieldList) {
     String result = toText(context, row[fieldList[0]]);
     fieldList.sublist(1).forEach((field) {
-      result += ', ${toText(context, row[field])}';
+      result += ', ${toText(context, row[field]) ?? ''}';
     });
     return result;
   }
@@ -45,8 +44,6 @@ class _PhoneChildEditTableState
   Widget delegateBuild(BuildContext context) {
     ParentParam parentParam = Provider.of<ParentParam>(context, listen: false);
     var schemaAndData = data;
-    SchemaAndData.fillInOptionData(
-        schemaAndData.data, schemaAndData.cloudTableSchema.inputInfoMap);
     Widget navigator = Consumer<DatabasePagerNotifier>(builder:
         (BuildContext context, DatabasePagerNotifier databasePagerNotifier,
             Widget child) {
@@ -74,8 +71,9 @@ class _PhoneChildEditTableState
               spacing: 8,
               children: schemaAndData.cloudTableSchema.printInfos
                   .map(
-                    (printInfo) => ChildTableUtils.printDefault(
-                        context, widget.databaseRef, printInfo, parentParam),
+                    (printInfo) => ChildTableUtils.printButton(
+                        context, widget.databaseRef, printInfo, parentParam,
+                        isDense: true),
                   )
                   .toList()),
           SizedBox(
@@ -93,7 +91,7 @@ class _PhoneChildEditTableState
           ),
         ]),
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             StreamProvider<bool>.value(
               value: isLoading
@@ -110,15 +108,11 @@ class _PhoneChildEditTableState
                         endBefore: schemaAndData
                             .data.first.dataMap[parentParam.sortKey]);
                   },
-                      isDense: true,
                       title: "",
                       iconData: existBefore ? Icons.navigate_before : null,
                       isEnabled: existBefore);
                 },
               ),
-            ),
-            SizedBox(
-              width: 20,
             ),
             StreamProvider<bool>.value(
               value: isLoading
@@ -139,9 +133,6 @@ class _PhoneChildEditTableState
                     isEnabled: existAfter);
               }),
             ),
-            SizedBox(
-              width: 20,
-            ),
             ChildTableUtils.newButton(
                 context, widget.databaseRef, schemaAndData)
           ],
@@ -151,11 +142,15 @@ class _PhoneChildEditTableState
     List<Widget> itemList = schemaAndData.data.asMap().entries.map((entry) {
       var index = entry.key;
       var cloudObj = entry.value;
-      var row = cloudObj.dataMap;
+      var row = SchemaAndData.fillInOptionData(
+          cloudObj.dataMap, schemaAndData.cloudTableSchema.inputInfoMap);
       var inputInfoMap = schemaAndData.cloudTableSchema.inputInfoMap;
+
       return Card(
           child: ListTile(
-        title: Text(_concat(row, schemaAndData.cloudTableSchema.primaryFields)),
+        title:
+            Text(_concat(row, schemaAndData.cloudTableSchema.primaryFields)) ??
+                '',
         subtitle: tableOfTwo(schemaAndData.cloudTableSchema.subtitleFields
             .asMap()
             .map((index, fieldName) => MapEntry(
@@ -164,13 +159,14 @@ class _PhoneChildEditTableState
         trailing: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: schemaAndData.cloudTableSchema.trailingFields
-                .map((fieldName) => Text(toText(context, row[fieldName])))
+                .map((fieldName) => Text(toText(context, row[fieldName]) ?? ''))
                 .toList()),
         onTap: () {
           showAlertDialog(context, builder: (_) {
             return columnWithGap([
               ChildTableUtils.editButton(
-                  context, widget.databaseRef, schemaAndData, index),
+                  context, widget.databaseRef, schemaAndData, index,
+                  isPhone: true),
               ChildTableUtils.deleteButton(
                   context, widget.databaseRef, schemaAndData, index)
             ], crossAxisAlignment: CrossAxisAlignment.center);

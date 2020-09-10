@@ -1,3 +1,5 @@
+import 'package:canxe/common/utils.dart';
+
 import '../data/cloud_table.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -29,9 +31,7 @@ Route createMaterialPageRoute(parentContext, WidgetBuilder builder) {
   return PageRouteBuilder(
     pageBuilder: (BuildContext context, Animation<double> animation,
         Animation<double> secondaryAnimation) {
-      return Provider.value(
-          value: Provider.of<LoiButtonStyle>(parentContext, listen: false),
-          child: builder(context));
+      return wrapLoiButtonStyle(parentContext, builder(context));
     },
     transitionDuration: Duration(seconds: 0),
   );
@@ -103,7 +103,7 @@ abstract class CommonButton {
       Color disabledColor,
       bool isDense = false}) {
     assert(title != null || iconData != null);
-    var style = Provider.of<LoiButtonStyle>(buildContext, listen: false);
+    var style = getLoiButtonStyle(buildContext);
     regularColor = regularColor ?? style.regularColor;
     hoverColor = hoverColor ?? style.hoverColor;
     textColor = textColor ?? style.textColor;
@@ -155,14 +155,14 @@ abstract class CommonButton {
       Color disabledColor,
       bool isEnabled = true,
       bool isDense = false}) {
-    var style = Provider.of<LoiButtonStyle>(buildContext, listen: false);
+    var style = getLoiButtonStyle(buildContext);
     regularColor = regularColor ?? style.regularColor;
     hoverColor = hoverColor ?? style.hoverColor;
     textColor = textColor ?? style.textColor;
     iconColor = iconColor ?? style.iconColor;
     disabledColor = disabledColor ?? style.disabledColor;
     if (isEnabled) {
-      return hover_button.createButton(onPressed,
+      return (hover_button.HoverButtonImpl()).createButton(onPressed,
           title: title,
           align: align,
           iconData: iconData,
@@ -172,7 +172,7 @@ abstract class CommonButton {
           iconColor: iconColor,
           isDense: isDense);
     }
-    return hover_button.createButton(null,
+    return (hover_button.HoverButtonImpl()).createButton(null,
         title: title,
         align: align,
         iconData: iconData,

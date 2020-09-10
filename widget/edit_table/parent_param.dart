@@ -11,6 +11,24 @@ Map<String, InputInfo> STRING_FILTER_INFO_MAP = {
   _EXACT_MATCH_STR: InputInfo(DataType.boolean,
       fieldDes: 'Chính xác', validator: InputInfo.nonEmptyStrValidator),
 };
+
+FilterDataWrapper convertFromStringFilterMap(Map val) {
+  String strStart = val[_CONTAIN_STR];
+  if (val[_EXACT_MATCH_STR]) {
+    return FilterDataWrapper(
+      exactMatchValue: strStart,
+    );
+  } else {
+    String strEnd = strStart;
+    strEnd = strEnd.substring(0, strEnd.length - 1) +
+        String.fromCharCode(strEnd.codeUnitAt(strEnd.length - 1) + 1);
+    return FilterDataWrapper(
+        filterStartValue: strStart,
+        filterEndValue: strEnd,
+        filterEndIncludeValue: false);
+  }
+}
+
 const String _START_DATE = '_START_DATE';
 const String _END_DATE = '_END_DATE';
 const String _INCLUDE_START_DATE = '_INCLUDE_START_DATE';
@@ -36,21 +54,13 @@ FilterDataWrapper convertFromTimeStampFilterMap(Map val) {
       filterEndIncludeValue: val[_INCLUDE_END_DATE]);
 }
 
-FilterDataWrapper convertFromStringFilterMap(Map val) {
-  String strStart = val[_CONTAIN_STR];
-  if (val[_EXACT_MATCH_STR]) {
-    return FilterDataWrapper(
-      exactMatchValue: strStart,
-    );
-  } else {
-    String strEnd = strStart;
-    strEnd = strEnd.substring(0, strEnd.length - 1) +
-        String.fromCharCode(strEnd.codeUnitAt(strEnd.length - 1) + 1);
-    return FilterDataWrapper(
-        filterStartValue: strStart,
-        filterEndValue: strEnd,
-        filterEndIncludeValue: false);
-  }
+const String _BOOLEAN_VALUE = '_BOOLEAN_VALUE';
+Map<String, InputInfo> BOOLEAN_FILTER_INFO_MAP = {
+  _BOOLEAN_VALUE: InputInfo(DataType.boolean, fieldDes: 'Giá trị'),
+};
+
+FilterDataWrapper convertFromBooleanFilterMap(Map val) {
+  return FilterDataWrapper(exactMatchValue: val[_BOOLEAN_VALUE]);
 }
 
 Query specificFilter(var original, String fieldName,
@@ -96,8 +106,10 @@ dynamic applyFilterToQuery(
   });
   return result ?? collectionReference;
 }
+
 // return true to include the row
-typedef PostFilterFunction=bool  Function(Map row);
+typedef PostFilterFunction = bool Function(Map row);
+
 class FilterDataWrapper {
   dynamic filterStartValue;
   bool filterStartIncludeValue;
@@ -105,14 +117,14 @@ class FilterDataWrapper {
   bool filterEndIncludeValue;
   dynamic exactMatchValue;
   PostFilterFunction postFilterFunction;
-  FilterDataWrapper({
-    this.filterEndIncludeValue = true,
-    this.filterEndValue,
-    this.filterStartIncludeValue = true,
-    this.filterStartValue,
-    this.exactMatchValue,
-    this.postFilterFunction
-  });
+
+  FilterDataWrapper(
+      {this.filterEndIncludeValue = true,
+      this.filterEndValue,
+      this.filterStartIncludeValue = true,
+      this.filterStartValue,
+      this.exactMatchValue,
+      this.postFilterFunction});
 
   @override
   String toString() {

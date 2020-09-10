@@ -1,5 +1,6 @@
 import 'package:canxe/common/widget/edit_table/common_child_table.dart';
 import 'package:canxe/common/widget/edit_table/phone_child_edit_table.dart';
+import 'package:flutter/services.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../data/cloud_obj.dart';
@@ -104,10 +105,9 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
             break;
           case DataType.timestamp:
             usedMap = TIME_STAMP_FILTER_INFO_MAP;
-            // TODO: Handle this case.
             break;
           case DataType.boolean:
-            // TODO: Handle this case.
+            usedMap = BOOLEAN_FILTER_INFO_MAP;
             break;
         }
         showAlertDialog(context, title: "Bộ loc ${inputInfo.fieldDes}",
@@ -129,7 +129,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
                 filterResult = convertFromTimeStampFilterMap(valueMap);
                 break;
               case DataType.boolean:
-                // TODO: Handle this case.
+                filterResult = convertFromBooleanFilterMap(valueMap);
                 break;
             }
 
@@ -176,10 +176,10 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
       Table(
         columnWidths: tableWidthAndSize.colWidths,
         border: TableBorder(
-            top: EDIT_TABLE_BORDER_SIDE,
-            bottom: EDIT_TABLE_BORDER_SIDE,
-            verticalInside: EDIT_TABLE_BORDER_SIDE,
-            horizontalInside: EDIT_TABLE_BORDER_SIDE),
+            top: EDIT_TABLE_HORIZONTAL_BORDER_SIDE,
+            bottom: EDIT_TABLE_HORIZONTAL_BORDER_SIDE,
+            verticalInside: EDIT_TABLE_HORIZONTAL_BORDER_SIDE,
+            horizontalInside: EDIT_TABLE_HORIZONTAL_BORDER_SIDE),
         children: [TableRow(children: tableCells)],
       ),
       tableWidthAndSize.width
@@ -281,7 +281,7 @@ class _TableWrapperState extends State<TableWrapper> {
         }
         query = query.limit(LIMIT);
         Stream<SchemaAndData<CloudObject>> newSnapshot =
-            (query as Query).snapshots().map((event) {
+        (query as Query).snapshots().map((event) {
           List<DocumentSnapshot> snapshots = List();
           snapshots.addAll(event.documents);
           if (reverse) {

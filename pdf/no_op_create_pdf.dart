@@ -1,9 +1,4 @@
-import '../data/cloud_table.dart';
-import 'package:flutter/material.dart';
+import 'package:canxe/common/pdf/pdf_interface.dart';
 
-class PdfCreator{
-  Future init() {
-  }
-
-  Future createPdfSummary(BuildContext context, DateTime timeOfPrint, PrintInfo printInfo, List data) {}
+class PdfCreator extends PdfCreatorInterface{
 }

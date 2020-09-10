@@ -64,9 +64,10 @@ class _ChildEditTableState
                     return Table(
                         columnWidths: tableWidthAndSize.colWidths,
                         border: TableBorder(
-                            top: EDIT_TABLE_BORDER_SIDE,
-                            bottom: EDIT_TABLE_BORDER_SIDE,
-                            horizontalInside: EDIT_TABLE_BORDER_SIDE),
+                            top: EDIT_TABLE_HORIZONTAL_BORDER_SIDE,
+                            bottom: EDIT_TABLE_HORIZONTAL_BORDER_SIDE,
+                            horizontalInside:
+                                EDIT_TABLE_HORIZONTAL_BORDER_SIDE),
                         children:
                             schemaAndData.data.asMap().entries.map((entry) {
                           int index = entry.key;
@@ -78,11 +79,14 @@ class _ChildEditTableState
                             InputInfo inputInfo = schemaAndData
                                 .cloudTableSchema.inputInfoMap[field];
                             return TableCell(
-                                child: InkWell(
+                                child: GestureDetector(
                               onTap: () {
                                 selectedIndexNotifier.value = index;
                               },
                               child: Container(
+                                padding: EdgeInsets.only(
+                                  right: 8,
+                                ),
                                 color: index == selectedIndexNotifier.value
                                     ? Colors.red[50]
                                     : Colors.white,
@@ -203,7 +207,7 @@ class _ChildEditTableState
               height: 20,
             ),
             Consumer<SelectedIndexChangeNotifier>(builder:
-                (BuildContext context,
+                (BuildContext buildContext,
                     SelectedIndexChangeNotifier selectedIndexChangeNotifier,
                     Widget child) {
               PrintInfo defaultPrint = schemaAndData.cloudTableSchema.printInfos
@@ -216,20 +220,29 @@ class _ChildEditTableState
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  ChildTableUtils.printDefault(
-                      context, widget.databaseRef, defaultPrint, parentParam),
+                  ChildTableUtils.printButton(
+                    context,
+                    widget.databaseRef,
+                    defaultPrint,
+                    parentParam,
+                  ),
+//                  ChildTableUtils.printCurrent(context, printInfo, dataMap),
                   otherPrints.length > 0
-                      ? DropdownButton(
-                          items: otherPrints
-                              .map((printInfo) => DropdownMenuItem(
-                                    child: ChildTableUtils.printDefault(
-                                        context,
-                                        widget.databaseRef,
-                                        printInfo,
-                                        parentParam),
-                                  ))
-                              .toList(),
-                          onChanged: (value) {},
+                      ? Container(
+                          color: getLoiButtonStyle(context).regularColor,
+                          child: DropdownButton(
+                            items: otherPrints
+                                .map((printInfo) => DropdownMenuItem(
+                                      child: ChildTableUtils.printButton(
+                                          context,
+                                          widget.databaseRef,
+                                          printInfo,
+                                          parentParam,
+                                          backgroundColor: Colors.transparent),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {},
+                          ),
                         )
                       : null,
                   ChildTableUtils.newButton(

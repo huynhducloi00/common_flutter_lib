@@ -1,3 +1,5 @@
+import 'package:provider/provider.dart';
+
 import 'widget/edit_table/parent_param.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +14,7 @@ final TABLE_OF_TWO_DIVIDER = "TABLE_OF_TWO_DIVIDER";
 final TextStyle BIG_FONT = TextStyle(fontSize: 18);
 final TextStyle MEDIUM_FONT = TextStyle(fontSize: 14);
 
-const EDIT_TABLE_BORDER_SIDE =
+const EDIT_TABLE_HORIZONTAL_BORDER_SIDE =
     BorderSide(width: 1, color: Colors.brown, style: BorderStyle.solid);
 
 class TableWidthAndSize {
@@ -98,7 +100,7 @@ Widget tableOfTwo(Map<String, String> map,
       list.add(TableRow(
           decoration: i < map.entries.length - 1 &&
                   map.entries.elementAt(i + 1).value == TABLE_OF_TWO_DIVIDER
-              ? BoxDecoration(border: Border(bottom: EDIT_TABLE_BORDER_SIDE))
+              ? BoxDecoration(border: Border(bottom: EDIT_TABLE_HORIZONTAL_BORDER_SIDE))
               : null,
           children: [
             Text(
@@ -249,4 +251,15 @@ Column columnWithGap(List<Widget> children,
     mainAxisSize: MainAxisSize.min,
     children: result,
   );
+}
+
+LoiButtonStyle getLoiButtonStyle(context){
+  return Provider.of<LoiButtonStyle>(context, listen:false);
+}
+Widget wrapLoiButtonStyle(context, child){
+  return Provider.value(value: getLoiButtonStyle(context), child: child,);
+}
+
+bool isStringEmpty(String val){
+  return val?.isEmpty ??true;
 }
