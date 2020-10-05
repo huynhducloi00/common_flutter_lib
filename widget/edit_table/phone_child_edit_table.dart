@@ -4,8 +4,6 @@ import '../../widget/edit_table/child_param.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../pdf/no_op_create_pdf.dart'
-    if (dart.library.html) '../../pdf/pdf_creator.dart' as create_pdf;
 import '../../data/cloud_table.dart';
 import '../common.dart';
 import 'common_child_table.dart';
@@ -14,8 +12,8 @@ import 'parent_param.dart';
 
 class PhoneChildEditTable<SchemaAndData> extends StatefulWidget {
   final CollectionReference databaseRef;
-
-  PhoneChildEditTable(this.databaseRef);
+  DataPickerBundle dataPickerBundle;
+  PhoneChildEditTable(this.databaseRef, this.dataPickerBundle);
 
   @override
   _PhoneChildEditTableState createState() => _PhoneChildEditTableState();
@@ -65,6 +63,7 @@ class _PhoneChildEditTableState
         schemaAndData.data.last.dataMap[parentParam.sortKey]
       ]).limit(1) as Query;
       return Column(mainAxisSize: MainAxisSize.min, children: [
+        widget.dataPickerBundle!=null ? null :
         ExpansionTile(title: Text('Thông tin thêm'), children: <Widget>[
           Wrap(
               runSpacing: 4,
@@ -73,7 +72,7 @@ class _PhoneChildEditTableState
                   .map(
                     (printInfo) => ChildTableUtils.printButton(
                         context, widget.databaseRef, printInfo, parentParam,
-                        isDense: true),
+                        isDense: true, isPhone: true),
                   )
                   .toList()),
           SizedBox(
@@ -81,7 +80,7 @@ class _PhoneChildEditTableState
             height: screenHeight(context) * 0.1,
             child: tableOfTwo({
               'Trường sắp xếp':
-                  '${schemaAndData.cloudTableSchema.inputInfoMap[parentParam.sortKey].fieldDes}-${parentParam.sortKeyDescending ? "Giảm dần" : "Tăng dần"}',
+                  '${schemaAndData.cloudTableSchema.inputInfoMap.map[parentParam.sortKey].fieldDes}-${parentParam.sortKeyDescending ? "Giảm dần" : "Tăng dần"}',
               'Hiển thị sau':
                   toText(context, databasePagerNotifier.value.startAfter),
               'Hiển thị trước':
@@ -133,46 +132,62 @@ class _PhoneChildEditTableState
                     isEnabled: existAfter);
               }),
             ),
-            ChildTableUtils.newButton(
-                context, widget.databaseRef, schemaAndData)
-          ],
+            widget.dataPickerBundle!=null ? null : ChildTableUtils.newButton(
+                context, widget.databaseRef, schemaAndData,
+                isPhone: true)
+          ].where((element) => element!=null).toList(),
         ),
-      ]);
+      ].where((element) => element!=null).toList());
     });
     List<Widget> itemList = schemaAndData.data.asMap().entries.map((entry) {
       var index = entry.key;
       var cloudObj = entry.value;
       var row = SchemaAndData.fillInOptionData(
-          cloudObj.dataMap, schemaAndData.cloudTableSchema.inputInfoMap);
+          cloudObj.dataMap, schemaAndData.cloudTableSchema.inputInfoMap.map);
       var inputInfoMap = schemaAndData.cloudTableSchema.inputInfoMap;
 
       return Card(
+          color: parentParam.postColorDecorationCondition != null
+              ? parentParam.postColorDecorationCondition(row)
+              : null,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15.0),
+          ),
           child: ListTile(
-        title:
-            Text(_concat(row, schemaAndData.cloudTableSchema.primaryFields)) ??
+            leading: schemaAndData.cloudTableSchema.showIconDataOnRow
+                ? Icon(schemaAndData.cloudTableSchema.iconData)
+                : null,
+            title: Text(_concat(
+                    row, schemaAndData.cloudTableSchema.primaryFields)) ??
                 '',
-        subtitle: tableOfTwo(schemaAndData.cloudTableSchema.subtitleFields
-            .asMap()
-            .map((index, fieldName) => MapEntry(
-                inputInfoMap[fieldName].fieldDes,
-                toText(context, row[fieldName])))),
-        trailing: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: schemaAndData.cloudTableSchema.trailingFields
-                .map((fieldName) => Text(toText(context, row[fieldName]) ?? ''))
-                .toList()),
-        onTap: () {
-          showAlertDialog(context, builder: (_) {
-            return columnWithGap([
-              ChildTableUtils.editButton(
-                  context, widget.databaseRef, schemaAndData, index,
-                  isPhone: true),
-              ChildTableUtils.deleteButton(
-                  context, widget.databaseRef, schemaAndData, index)
-            ], crossAxisAlignment: CrossAxisAlignment.center);
-          });
-        },
-      ));
+            subtitle: tableOfTwo(schemaAndData.cloudTableSchema.subtitleFields
+                .asMap()
+                .map((index, fieldName) => MapEntry(
+                    inputInfoMap.map[fieldName].fieldDes,
+                    toText(context, row[fieldName])))),
+            trailing: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: schemaAndData.cloudTableSchema.trailingFields
+                    .map((fieldName) =>
+                        Text(toText(context, row[fieldName]) ?? ''))
+                    .toList()),
+            onTap: () {
+              if (widget.dataPickerBundle!=null){
+                Navigator.pop(context, row[widget.dataPickerBundle.fieldName]);
+                return;
+              }
+              showAlertDialog(context, builder: (_) {
+                return columnWithGap([
+                  ChildTableUtils.printLineButton(context, schemaAndData.cloudTableSchema.printTicket,row, true),
+                  ChildTableUtils.editButton(
+                      context, widget.databaseRef, schemaAndData, index,
+                      isPhone: true),
+                  ChildTableUtils.deleteButton(
+                      context, widget.databaseRef, schemaAndData, index)
+                ], crossAxisAlignment: CrossAxisAlignment.center);
+              });
+            },
+          ));
     }).toList();
 
     return Column(

@@ -1,11 +1,34 @@
+import 'dart:collection';
 import 'dart:core';
+
+import 'package:flutter/cupertino.dart';
 
 import '../widget/edit_table/parent_param.dart';
 
 import '../data/cloud_obj.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-typedef UseDataCalculation = dynamic Function(Map<String, dynamic> data);
+class UseDataCalculationResult {
+  dynamic value;
+
+  UseDataCalculationResult(this.value);
+
+  @override
+  String toString() {
+    return '$value';
+  }
+}
+
+// returns null to keep the same value as before
+typedef UseDataCalculation = UseDataCalculationResult Function(
+    Map<String, dynamic> data, Map<String, DataBundle> predefined);
+
+class LinkedData {
+  String tableName;
+  String linkedFieldName;
+
+  LinkedData(this.tableName, this.linkedFieldName);
+}
 
 class InputInfo {
   String field;
@@ -14,13 +37,21 @@ class InputInfo {
   // relative to 1.0
   double flex;
   Function validator;
-  bool canUpdate;
-  DataType dataType;
+
+  // Calculate only happens when initializing data, or when its contributor variables changes.
   UseDataCalculation calculate;
+  bool canUpdate;
+
+  // needSaving can be true for some calculated variables, or for nonUpdatale variables, mainly
+  // used for server database query.
+  bool needSaving;
+  DataType dataType;
+  List<String> fieldsForCalculation;
 
   // option to option description
   Map<dynamic, String> optionMap;
   bool limitToOptions;
+  LinkedData linkedData;
 
   // good for 6 figures
   static const SMALL_INT_COLUMN = 0.4;
@@ -30,9 +61,12 @@ class InputInfo {
   InputInfo(this.dataType,
       {this.validator,
       this.fieldDes,
+      this.fieldsForCalculation,
       this.calculate,
       this.canUpdate = true,
+      this.needSaving = true,
       this.flex,
+      this.linkedData,
       this.optionMap,
       this.limitToOptions = false}) {
     if (flex == null) {
@@ -55,6 +89,152 @@ class InputInfo {
       (String value) => (value?.isEmpty ?? false) ? CANT_BE_NULL : null;
   static String Function(dynamic) nonNullValidator =
       (dynamic value) => value == null ? CANT_BE_NULL : null;
+
+  @override
+  String toString() {
+    return '$field $fieldDes';
+  }
+}
+
+class PrintTicket {
+  String title;
+  String subtitle;
+  bool printVertical;
+  List<TicketParagraph> ticketParagraphs;
+  InputInfoMap inputInfoMap;
+
+  PrintTicket(this.ticketParagraphs, this.inputInfoMap,
+      {this.printVertical = true, this.title, this.subtitle});
+}
+
+class TicketParagraph {
+  List<String> fieldNames;
+  List<String> hardCodeTexts;
+  int numColumn;
+  int numLineBreak;
+
+  TicketParagraph(
+      {this.fieldNames,
+      this.hardCodeTexts,
+      this.numColumn = 1,
+      this.numLineBreak});
+}
+
+class DataBundle {
+  String tableName;
+  List<Map> dataRows;
+
+  DataBundle(this.tableName, this.dataRows);
+
+  @override
+  String toString() {
+    // TODO: implement toString
+    return '$tableName $dataRows';
+  }
+}
+
+class RelatedTableData {
+  String tableName;
+  Query query;
+
+  RelatedTableData(this.tableName, {this.query});
+}
+
+class InputInfoMap {
+  Map<String, InputInfo> map;
+  LinkedHashSet<String> calculatingOrder;
+  Map<String, List<String>> fieldChangedFieldMap;
+  List<RelatedTableData> relatedTables;
+
+  InputInfoMap(this.map, {this.relatedTables}) {
+    _computeCalculatingOrder();
+  }
+
+  Map<String, InputInfo> filterMap(List<String> printFields) {
+    return Map.fromEntries(
+        printFields.map((e) => MapEntry(e, map[e])).toList());
+  }
+
+  void transverse(Map<String, List<String>> edges, Set<String> visited,
+      String currentNode) {
+    if (edges[currentNode] != null) {
+      edges[currentNode].forEach((element) {
+        visited.add(element);
+        transverse(edges, visited, element);
+      });
+    }
+  }
+
+  void _computeCalculatingOrder() {
+    Map<String, List<String>> edges = Map();
+    Map<String, List<String>> reversedEdges = Map();
+    map.forEach((fieldName, inputInfo) {
+      if (inputInfo.fieldsForCalculation != null) {
+        edges[fieldName] = List();
+        inputInfo.fieldsForCalculation.forEach((usedField) {
+          edges[fieldName].add(usedField);
+          if (reversedEdges[usedField] == null) {
+            reversedEdges[usedField] = List();
+          }
+          reversedEdges[usedField].add(fieldName);
+        });
+      }
+    });
+    LinkedHashSet<String> order = LinkedHashSet();
+    if (edges.isEmpty) {
+      calculatingOrder = order;
+      fieldChangedFieldMap = reversedEdges;
+    }
+    Set<String> variableFields = Set();
+    bool stopLoop;
+    while (true) {
+      stopLoop = true;
+      bool hasStartNodes = false;
+      edges.forEach((fieldName, links) {
+        if (links.isEmpty) {
+          order.add(fieldName);
+        } else {
+          stopLoop = false;
+          for (int i = links.length - 1; i >= 0; i--) {
+            var end = links[i];
+            variableFields.add(end);
+            // There exists a node which does not have incoming edges.
+            if (edges[end] == null || edges[end].isEmpty) {
+              hasStartNodes = true;
+              links.removeAt(i);
+            }
+          }
+        }
+      });
+      if (!stopLoop && !hasStartNodes) {
+        stopLoop = true;
+        throw Exception('The calculate map has cycle. STOP NOW.');
+      }
+      if (stopLoop) break;
+    }
+    bool DEBUG = false;
+    variableFields.removeWhere((element) => order.contains(element));
+    if (DEBUG && order.isNotEmpty) {
+      print('Su dung $variableFields');
+      print('Tao ra $order');
+    }
+    if (DEBUG) print(reversedEdges);
+    List calculatingOrderList = order.toList();
+    reversedEdges.forEach((startNode, value) {
+      Set<String> visited = Set();
+      transverse(reversedEdges, visited, startNode);
+      if (DEBUG) print('From $startNode $visited');
+      var list = visited.toList();
+      list.sort((a, b) {
+        return calculatingOrderList.indexOf(a) -
+            calculatingOrderList.indexOf(b);
+      });
+      reversedEdges[startNode] = list;
+    });
+    if (DEBUG) print('Reversed edge $reversedEdges');
+    calculatingOrder = order;
+    fieldChangedFieldMap = reversedEdges;
+  }
 }
 
 class PrintInfo {
@@ -64,9 +244,9 @@ class PrintInfo {
   List<String> printFields;
   ParentParam parentParam;
   bool printVertical;
-  Map<String, InputInfo> inputInfoMap;
+  InputInfoMap inputInfoMap;
 
-  PrintInfo(Map<String, InputInfo> allInputInfoMap,
+  PrintInfo(this.inputInfoMap,
       {this.title,
       this.buttonTitle,
       this.printFields,
@@ -74,45 +254,48 @@ class PrintInfo {
       this.printVertical = false,
       this.isDefault = false}) {
     if (printFields == null) {
-      printFields = allInputInfoMap.keys.toList();
+      printFields = inputInfoMap.map.keys.toList();
     }
-    inputInfoMap = _printInputInfoMap(allInputInfoMap);
-  }
-
-  Map<String, InputInfo> _printInputInfoMap(
-      Map<String, InputInfo> allInputInfoMap) {
-    Map<String, InputInfo> tmp = Map();
-    printFields.forEach((fieldName) {
-      tmp[fieldName] = allInputInfoMap[fieldName];
-    });
-    return tmp;
   }
 }
 
 abstract class CloudTableSchema<T extends CloudObject> {
   String tableName;
   String tableDescription;
-  Map<String, InputInfo> inputInfoMap;
+  InputInfoMap inputInfoMap;
+  LinkedHashSet<String> calculatingOrder;
   List<PrintInfo> printInfos;
+  List<String> defaultPrintFields;
+  PrintTicket printTicket;
   bool defaultPrintVertical;
 
-  // The following is for phone view
+  // The following is for phone view ONLY
   List<String> primaryFields;
   List<String> subtitleFields;
   List<String> trailingFields;
+  IconData iconData;
+  bool showIconDataOnRow;
 
   CloudTableSchema(
       {this.tableName,
       this.tableDescription,
       this.printInfos,
       this.inputInfoMap,
-      List<String> defaultPrintFields,
+      this.defaultPrintFields,
       this.defaultPrintVertical = true,
       this.primaryFields,
       this.subtitleFields,
-      this.trailingFields}) {
+      this.trailingFields,
+      this.iconData,
+      this.printTicket,
+      this.showIconDataOnRow = true}) {
     if (defaultPrintFields == null) {
-      defaultPrintFields = inputInfoMap.keys.toList();
+      defaultPrintFields = inputInfoMap.map.keys.toList();
+    }
+    if (printTicket == null) {
+      printTicket = PrintTicket(
+          [TicketParagraph(fieldNames: defaultPrintFields)], inputInfoMap,
+          title: tableDescription ?? tableName);
     }
     if (printInfos == null) {
       printInfos = [
@@ -126,7 +309,7 @@ abstract class CloudTableSchema<T extends CloudObject> {
       ];
     }
     if (primaryFields == null) {
-      List<String> allKeys = inputInfoMap.keys.toList();
+      List<String> allKeys = inputInfoMap.map.keys.toList();
       primaryFields = allKeys.sublist(0, 1);
       subtitleFields = allKeys.sublist(1);
       trailingFields = List();
@@ -144,18 +327,20 @@ class SchemaAndData<T extends CloudObject> {
     fillInCalculatedData(data, cloudTableSchema.inputInfoMap);
   }
 
-  static void fillInCalculatedData(data, inputInfoMap) {
+  static void fillInCalculatedData(data, InputInfoMap inputInfoMap) {
     data.forEach((row) {
-      inputInfoMap.forEach((fieldName, inputInfo) {
-        if (inputInfo.calculate != null) {
-          row.dataMap[fieldName] = inputInfo.calculate(row.dataMap);
+      inputInfoMap.calculatingOrder.forEach((fieldName) {
+        // Since this is initializing calculation, no need to calculate saved data.
+        if (!inputInfoMap.map[fieldName].needSaving) {
+          var result = inputInfoMap.map[fieldName].calculate(row.dataMap, null);
+          row.dataMap[fieldName] = result == null ? null : result.value;
         }
       });
     });
   }
 
   static Map fillInOptionData(Map row, Map<String, InputInfo> inputInfoMap) {
-    Map result = Map();
+    Map<String, dynamic> result = Map();
     inputInfoMap.forEach((fieldName, inputInfo) {
       if (inputInfo.optionMap != null) {
         result[fieldName] =

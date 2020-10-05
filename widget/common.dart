@@ -1,9 +1,12 @@
+import 'package:canxe/data/item_lookup.dart';
+
 import '../utils.dart';
 
 import '../data/cloud_table.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'edit_table/common_child_table.dart';
 import 'edit_table/edit_table_wrapper.dart';
 import 'edit_table/parent_param.dart';
 import 'mobile_hover_button.dart' if (dart.library.html) 'web_hover_button.dart'
@@ -14,6 +17,8 @@ import 'mobile_mouse_hover_ext.dart'
 abstract class TextWithUnderline extends Widget {
   factory TextWithUnderline(text, style) => getTextWithUnderline(text, style);
 }
+
+typedef DialogReturnedValue = void Function(dynamic val);
 
 class LoiButtonStyle {
   Color regularColor, hoverColor, textColor, iconColor, disabledColor;
@@ -26,58 +31,28 @@ class LoiButtonStyle {
       this.disabledColor});
 }
 
-Route createMaterialPageRoute(parentContext, WidgetBuilder builder) {
-  return PageRouteBuilder(
-    pageBuilder: (BuildContext context, Animation<double> animation,
-        Animation<double> secondaryAnimation) {
-      return wrapLoiButtonStyle(parentContext, builder(context));
-    },
-    transitionDuration: Duration(seconds: 0),
-  );
-}
-
-Future showAlertDialog(BuildContext context,
-    {WidgetBuilder builder, String title, List<Widget> actions}) {
-  return showDialog(
-      context: context,
-      builder: (_) {
-        return AlertDialog(
-          title: title == null ? null : Text(title),
-          content: builder(context),
-          actions: actions,
-        );
-      });
-}
-
-Future showAlertDialogOverlay(BuildContext context,
-    {WidgetBuilder builder, String title, List<Widget> actions, percent=0.8}) {
-  return showDialog(
-      context: context,
-      builder: (_) {
-        return AlertDialog(
-          title: title == null ? null : Text(title),
-          content: Container(child: builder(context),width: screenWidth(context)*percent,),
-          actions: actions,
-        );
-      });
-}
-
 abstract class CommonButton {
-  static Widget createOpenButton(context, CloudTableSchema table, title, icon) {
+  static Widget createOpenButton(context, CloudTableSchema table, title,
+      {IconData icon,
+      Map<String, FilterDataWrapper> filter,
+      PostColorDecorationCondition postColorDecorationCondition,
+      bool isDense = false}) {
     return CommonButton.getOpenButton(
         context,
         EditTableWrapper(
             table,
             ParentParam(
-                sortKey: table.inputInfoMap.keys.first,
+                sortKey: table.inputInfoMap.map.keys.first,
                 sortKeyDescending: true,
-                filterDataWrappers: {})),
+                postColorDecorationCondition: postColorDecorationCondition,
+                filterDataWrappers: filter)),
         title,
-        icon);
+        icon,
+        isDense: isDense);
   }
 
   static Widget getOpenButton(context, Widget page, title, iconData,
-      {regularColor, hoverColor}) {
+      {regularColor, hoverColor, bool isDense = false}) {
     return getButton(context, () {
       Navigator.push(
         context,
@@ -85,13 +60,20 @@ abstract class CommonButton {
             context,
             (_) => Scaffold(
                 appBar: AppBar(
-                  title: Text(title),
+                  title: Row(children: [
+                    Icon(iconData),
+                    SizedBox(
+                      width: 20,
+                    ),
+                    Text(title)
+                  ]),
                 ),
                 body: page)),
       );
     },
         title: title,
         iconData: iconData,
+        isDense: isDense,
         regularColor: regularColor,
         hoverColor: hoverColor);
   }
@@ -193,5 +175,46 @@ abstract class CommonButton {
         textColor: textColor,
         iconColor: iconColor,
         isDense: isDense);
+  }
+
+  static Widget createDataPickerButton(context, CloudTableSchema table,
+      String selectedField, DialogReturnedValue dialogReturnedValue,
+      {String title, IconData iconData}) {
+    return CommonButton.getButtonAsync(context, () async {
+      var result = await Navigator.push(
+          context,
+          createMaterialPageRoute(context, (context) {
+            return Scaffold(
+              appBar: AppBar(
+                title: Text(
+                    'Chọn một ${table.inputInfoMap.map[selectedField].fieldDes}'),
+              ),
+              body: EditTableWrapper(
+                table,
+                ParentParam(
+                  sortKey: table.inputInfoMap.map.keys.first,
+                  sortKeyDescending: true,
+                ),
+                dataPickerBundle: DataPickerBundle(selectedField),
+              ),
+            );
+          }));
+      dialogReturnedValue(result);
+    }, title: title, iconData: iconData);
+  }
+}
+
+class CloudTableUtils {
+  static Widget listAllCloudTable(context, List<CloudTableSchema> tables,
+      {isTwoColumns = true}) {
+    List buttons = tables
+        .map((table) => CommonButton.createOpenButton(
+            context, table, table.tableDescription,
+            icon: table.iconData, isDense: true))
+        .toList();
+    if (isTwoColumns) {
+      return splitAnyColumns(buttons, 2);
+    }
+    return columnWithGap(buttons);
   }
 }

@@ -30,18 +30,28 @@ class PdfUtils {
 
   static pw.Widget colon() => pw.Container(
       padding: pw.EdgeInsets.symmetric(horizontal: 10), child: pw.Text(":"));
+  static double a4PageWidth(){
+    return 8.5*72;
+  }
 
+  // pass width as null to shrink as much as possible.
   static pw.Widget tableOfTwo(Map<String, String> map,
       {bool boldLeft = false, bool boldRight = false, double width=200}) {
     List<pw.TableRow> list = [];
     for (int i = 0; i < map.entries.length; i++) {
       var e = map.entries.elementAt(i);
-      list.add(pw.TableRow(children: [writeLight(e.key), pw.Container(
+      list.add(pw.TableRow(children: [writeLight('${e.key}:'), pw.Container(
+        margin: pw.EdgeInsets.only(left: 10),
           alignment: pw.Alignment.centerRight,
           child:writeLight(e.value))]));
     }
-    return pw.Table(
-        columnWidths: {1: pw.FixedColumnWidth(width)},
-        children: list);
+    if (width==null) {
+      return pw.Table(
+          children: list);
+    } else {
+      return pw.Table(
+          columnWidths: {1: pw.FixedColumnWidth(width)},
+          children: list);
+    }
   }
 }

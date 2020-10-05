@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../data/cloud_obj.dart';
@@ -5,12 +7,12 @@ import '../../data/cloud_table.dart';
 
 const String _CONTAIN_STR = 'CONTAIN_STR';
 const String _EXACT_MATCH_STR = 'EXACT_MATCH_STR';
-Map<String, InputInfo> STRING_FILTER_INFO_MAP = {
+InputInfoMap STRING_FILTER_INFO_MAP = InputInfoMap({
   _CONTAIN_STR: InputInfo(DataType.string,
       fieldDes: 'Bắt đầu bằng', validator: InputInfo.nonEmptyStrValidator),
   _EXACT_MATCH_STR: InputInfo(DataType.boolean,
       fieldDes: 'Chính xác', validator: InputInfo.nonEmptyStrValidator),
-};
+});
 
 FilterDataWrapper convertFromStringFilterMap(Map val) {
   String strStart = val[_CONTAIN_STR];
@@ -29,22 +31,38 @@ FilterDataWrapper convertFromStringFilterMap(Map val) {
   }
 }
 
+const String _EXACT_MATCH_INT = '_EXACT_MATCH_INT';
+
+InputInfoMap INT_FILTER_INFO_MAP(Map<dynamic, String> originalFieldOptionMap) =>
+    InputInfoMap({
+      _EXACT_MATCH_INT: InputInfo(DataType.int,
+          optionMap: originalFieldOptionMap,
+          fieldDes: 'Bằng',
+          validator: InputInfo.nonNullValidator),
+    });
+
+FilterDataWrapper convertFromIntFilterMap(Map val) {
+  return FilterDataWrapper(
+    exactMatchValue: val[_EXACT_MATCH_INT],
+  );
+}
+
 const String _START_DATE = '_START_DATE';
 const String _END_DATE = '_END_DATE';
 const String _INCLUDE_START_DATE = '_INCLUDE_START_DATE';
 const String _INCLUDE_END_DATE = '_INCLUDE_END_DATE';
-Map<String, InputInfo> TIME_STAMP_FILTER_INFO_MAP = {
+InputInfoMap TIME_STAMP_FILTER_INFO_MAP = InputInfoMap({
   _START_DATE: InputInfo(DataType.timestamp,
-      fieldDes: 'Ngày bắt đầu', validator: InputInfo.nonEmptyStrValidator),
+      fieldDes: 'Ngày bắt đầu'),
   _INCLUDE_START_DATE: InputInfo(DataType.boolean,
       fieldDes: 'Bao gồm ngày bắt đầu',
-      validator: InputInfo.nonEmptyStrValidator),
+      validator: InputInfo.nonNullValidator),
   _END_DATE: InputInfo(DataType.timestamp,
-      fieldDes: 'Ngày kết thúc', validator: InputInfo.nonEmptyStrValidator),
+      fieldDes: 'Ngày kết thúc'),
   _INCLUDE_END_DATE: InputInfo(DataType.boolean,
       fieldDes: 'Bao gồm ngày kết thúc',
-      validator: InputInfo.nonEmptyStrValidator),
-};
+      validator: InputInfo.nonNullValidator),
+});
 
 FilterDataWrapper convertFromTimeStampFilterMap(Map val) {
   return FilterDataWrapper(
@@ -55,9 +73,9 @@ FilterDataWrapper convertFromTimeStampFilterMap(Map val) {
 }
 
 const String _BOOLEAN_VALUE = '_BOOLEAN_VALUE';
-Map<String, InputInfo> BOOLEAN_FILTER_INFO_MAP = {
+InputInfoMap BOOLEAN_FILTER_INFO_MAP = InputInfoMap({
   _BOOLEAN_VALUE: InputInfo(DataType.boolean, fieldDes: 'Giá trị'),
-};
+});
 
 FilterDataWrapper convertFromBooleanFilterMap(Map val) {
   return FilterDataWrapper(exactMatchValue: val[_BOOLEAN_VALUE]);
@@ -132,13 +150,23 @@ class FilterDataWrapper {
   }
 }
 
+typedef PostColorDecorationCondition = Color Function(Map dataMap);
+
 class ParentParam {
   String sortKey;
   bool sortKeyDescending;
   Map<String, FilterDataWrapper> filterDataWrappers;
+  PostColorDecorationCondition postColorDecorationCondition;
 
   ParentParam(
-      {this.filterDataWrappers, this.sortKey, this.sortKeyDescending = false});
+      {this.filterDataWrappers,
+      this.sortKey,
+      this.sortKeyDescending = false,
+      this.postColorDecorationCondition}) {
+    if (filterDataWrappers == null) {
+      filterDataWrappers = {};
+    }
+  }
 
   @override
   String toString() {

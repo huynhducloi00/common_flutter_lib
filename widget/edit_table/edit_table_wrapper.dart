@@ -1,3 +1,4 @@
+import 'common_child_table.dart';
 import 'phone_child_edit_table.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -18,10 +19,12 @@ import '../common.dart';
 class EditTableWrapper extends StatefulWidget {
   ParentParam parentParam;
   CloudTableSchema cloudTable;
+  DataPickerBundle dataPickerBundle;
 
-  EditTableWrapper(this.cloudTable, this.parentParam) {
+  EditTableWrapper(this.cloudTable, this.parentParam,
+      {this.dataPickerBundle}) {
     if (parentParam.sortKey == null) {
-      parentParam.sortKey = cloudTable.inputInfoMap.keys.first;
+      parentParam.sortKey = cloudTable.inputInfoMap.map.keys.first;
       parentParam.sortKeyDescending = false;
     }
   }
@@ -34,7 +37,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
   Widget getFilterButton() {
     return ExpansionTile(
       title: Text('Lọc'),
-      children: widget.cloudTable.inputInfoMap.entries
+      children: widget.cloudTable.inputInfoMap.map.entries
           .map((entry) {
             var fieldName = entry.key;
             var inputInfo = entry.value;
@@ -69,6 +72,13 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
             widget.parentParam.sortKey = fieldName;
             widget.parentParam.sortKeyDescending = false;
           }
+          if (widget.parentParam.filterDataWrappers[fieldName] != null &&
+              widget.parentParam.filterDataWrappers[fieldName]
+                      .exactMatchValue !=
+                  null) {
+            // cannot be sorted and have exact value
+            widget.parentParam.filterDataWrappers.remove(fieldName);
+          }
           setState(() {});
         },
             iconData: widget.parentParam.sortKey == fieldName
@@ -89,7 +99,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
           setState(() {});
           return;
         }
-        Map usedMap;
+        InputInfoMap usedMap;
         switch (inputInfo.dataType) {
           case DataType.string:
             usedMap = STRING_FILTER_INFO_MAP;
@@ -99,7 +109,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
             // TODO: Handle this case.
             break;
           case DataType.int:
-            // TODO: Handle this case.
+            usedMap = INT_FILTER_INFO_MAP(inputInfo.optionMap);
             break;
           case DataType.timestamp:
             usedMap = TIME_STAMP_FILTER_INFO_MAP;
@@ -121,7 +131,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
                 // TODO: Handle this case.
                 break;
               case DataType.int:
-                // TODO: Handle this case.
+                filterResult = convertFromIntFilterMap(valueMap);
                 break;
               case DataType.timestamp:
                 filterResult = convertFromTimeStampFilterMap(valueMap);
@@ -132,7 +142,12 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
             }
 
             widget.parentParam.filterDataWrappers[fieldName] = filterResult;
-
+            if (filterResult.exactMatchValue != null &&
+                widget.parentParam.sortKey == fieldName) {
+              // cannot have both exact match and sortkey
+              widget.parentParam.sortKey =
+                  widget.cloudTable.inputInfoMap.map.keys.first;
+            }
             setState(() {});
             return null;
           });
@@ -148,7 +163,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
   }
 
   List getHeaderRow() {
-    var tableCells = widget.cloudTable.inputInfoMap.entries.map((e) {
+    var tableCells = widget.cloudTable.inputInfoMap.map.entries.map((e) {
       var fieldName = e.key;
       var inputInfo = e.value;
       return SizedBox(
@@ -169,7 +184,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
       );
     }).toList();
     TableWidthAndSize tableWidthAndSize =
-        getEditTableColWidths(context, widget.cloudTable.inputInfoMap);
+        getEditTableColWidths(context, widget.cloudTable.inputInfoMap.map);
     return [
       Table(
         columnWidths: tableWidthAndSize.colWidths,
@@ -187,30 +202,36 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
   @override
   Widget build(BuildContext context) {
     var content = Provider.value(
-        value: widget.parentParam, child: TableWrapper(widget.cloudTable));
-    return ScreenTypeLayout(
-        mobile: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.max, children: [
-            getFilterButton(),
-            content,
-          ]),
+        value: widget.parentParam,
+        child: TableWrapper(widget.cloudTable, widget.dataPickerBundle));
+    var mobile = SingleChildScrollView(
+      child: Column(mainAxisSize: MainAxisSize.max, children: [
+        getFilterButton(),
+        content,
+      ]),
+    );
+    var tablet = LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+      var headerRow = getHeaderRow();
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SizedBox(
+          width: headerRow[1],
+          child: Column(
+            children: [
+              headerRow[0],
+              content,
+            ],
+          ),
         ),
-        tablet: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-          var headerRow = getHeaderRow();
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: headerRow[1],
-              child: Column(
-                children: [
-                  headerRow[0],
-                  content,
-                ],
-              ),
-            ),
-          );
-        }));
+      );
+    });
+    return widget.dataPickerBundle!=null
+        ? mobile
+        : ScreenTypeLayout(
+            // breakpoints: forDebuggingScreenBreakpoints(),
+            mobile: mobile,
+            tablet: tablet);
   }
 }
 
@@ -223,8 +244,9 @@ class TableWrapper extends StatefulWidget {
   _TableWrapperState createState() => _TableWrapperState();
 
   CloudTableSchema cloudTable;
+  DataPickerBundle dataPickerBundle;
 
-  TableWrapper(this.cloudTable);
+  TableWrapper(this.cloudTable, this.dataPickerBundle);
 }
 
 class _TableWrapperState extends State<TableWrapper> {
@@ -279,7 +301,7 @@ class _TableWrapperState extends State<TableWrapper> {
         }
         query = query.limit(LIMIT);
         Stream<SchemaAndData<CloudObject>> newSnapshot =
-        (query as Query).snapshots().map((event) {
+            (query as Query).snapshots().map((event) {
           List<DocumentSnapshot> snapshots = List();
           snapshots.addAll(event.documents);
           if (reverse) {
@@ -289,9 +311,12 @@ class _TableWrapperState extends State<TableWrapper> {
         });
         return createStreamBuilder<SchemaAndData<CloudObject>, Widget>(
             stream: newSnapshot,
-            child: ScreenTypeLayout(
-                tablet: ChildEditTable(_databaseRef),
-                mobile: PhoneChildEditTable(_databaseRef)));
+            child: widget.dataPickerBundle!=null
+                ? PhoneChildEditTable(_databaseRef,widget.dataPickerBundle)
+                : ScreenTypeLayout(
+                    // breakpoints: forDebuggingScreenBreakpoints(),
+                    tablet: ChildEditTable(_databaseRef),
+                    mobile: PhoneChildEditTable(_databaseRef, null)));
       },
     ));
   }

@@ -13,7 +13,7 @@ class HoverButtonImpl extends HoverButtonInterface {
       Color textColor = Colors.white,
       Color iconColor = Colors.black,
       bool isDense = false}) {
-    assert(title != null || iconData != null);
+    bool showEmptyPlaceHolder = isStringEmpty(title) && iconData == null;
     return FlatButton(
       disabledColor: regularColor,
       color: regularColor,
@@ -24,10 +24,17 @@ class HoverButtonImpl extends HoverButtonInterface {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(
-              iconData,
-              color: iconColor,
-            ),
+            iconData != null || showEmptyPlaceHolder
+                ? Icon(
+                    iconData,
+                    color: iconColor,
+                  )
+                : null,
+            (iconData != null && !isStringEmpty(title))
+                ? SizedBox(
+                    width: 20,
+                  )
+                : null,
             isStringEmpty(title)
                 ? null
                 : Text(title,

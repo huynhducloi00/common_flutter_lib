@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
 // firebase_auth: 0.16.0
 //  cloud_firestore: ^0.13.5
 //#web dep:
@@ -68,20 +69,24 @@ class AuthService<T> {
 
   Future<void> signInWithGoogleAccount() async {
     GoogleSignInAccount currentUser = googleSignIn.currentUser;
-    if (currentUser!=null){
+    if (currentUser != null) {
       await googleSignIn.signOut();
       await auth.signOut();
       print('Signed out complete.');
     }
-    final GoogleSignInAccount googleSignInAccount = await googleSignIn.signIn();
-    if (googleSignInAccount == null) return Future.error('Từ chối đăng nhập');
+    // Nullify all errors
+    Future signIn = googleSignIn.signIn().catchError((_) => null);
+    final GoogleSignInAccount googleSignInAccount = await signIn;
+    if (googleSignInAccount == null) {
+      return Future.value(null);
+    }
     T inDatabaseUser = await _getUserWithEmail(googleSignInAccount.email);
     if (inDatabaseUser == null) {
       return Future.error(
           'Người dùng ${googleSignInAccount.email} chưa được phép vào dữ liệu. Xin liên hệ Lợi');
     }
     final GoogleSignInAuthentication googleSignInAuthentication =
-    await googleSignInAccount.authentication;
+        await googleSignInAccount.authentication;
     final AuthCredential credential = GoogleAuthProvider.getCredential(
       accessToken: googleSignInAuthentication.accessToken,
       idToken: googleSignInAuthentication.idToken,

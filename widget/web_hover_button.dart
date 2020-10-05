@@ -51,6 +51,7 @@ class _HoverButtonState extends State<HoverButton> {
 
   @override
   Widget build(BuildContext context) {
+    bool showEmptyPlaceHolder = isStringEmpty(widget.title) && widget.iconData == null;
     return GestureDetector(
       onTap: widget.onPressed,
       child: MouseRegion(
@@ -63,13 +64,13 @@ class _HoverButtonState extends State<HoverButton> {
           child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                    Icon(
+                showEmptyPlaceHolder || widget.iconData!=null ? Icon(
                       widget.iconData,
                       color: widget.iconColor,
-                    ),
+                    ):null,
                 (widget.iconData != null && !isStringEmpty(widget.title))
                     ? SizedBox(
-                        width: 20,
+                        width: widget.isDense ? 8: 15,
                       )
                     : null,
                 isStringEmpty(widget.title)

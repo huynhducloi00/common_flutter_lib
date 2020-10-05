@@ -2,10 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:html';
 
-import 'package:danhgiadn/common/utils.dart';
-import 'package:flutter/material.dart';
+import 'package:canxe/common/html_utils.dart';
 
-import '../widget/common.dart';
+import '../utils.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/cloud_obj.dart';
 import '../data/cloud_table.dart';
@@ -101,8 +100,9 @@ class ExcelOperation {
     deciderFields.forEach((element) {
       initValue[element.fieldName] = element.inFileDes;
     });
-    showAlertDialogOverlay(context,percent: 0.6, builder: (_) {
-      return AutoForm.createAutoForm(context, inputInfoMap, initValue,
+    showAlertDialogOverlay(context, percent: 0.6, builder: (_) {
+      return AutoForm.createAutoForm(
+          context, InputInfoMap(inputInfoMap), initValue,
           saveClickFuture: (resultMap) {
         if (resultMap.values.length != resultMap.values.toSet().length) {
           // list contains duplicate
@@ -188,21 +188,7 @@ class ExcelOperation {
   static Future downloadWeb(Excel excel, fileName) async {
     Completer<String> completer = Completer();
     excel.encode().then((bytes) {
-      var downloadName = '$fileName.xlsx';
-      // Encode our file in base64
-      final _base64 = base64Encode(bytes);
-      // Create the link with the file
-      final anchor =
-          AnchorElement(href: 'data:application/octet-stream;base64,$_base64')
-            ..target = 'blank';
-      // add the name
-      if (downloadName != null) {
-        anchor.download = downloadName;
-      }
-      // trigger download
-      document.body.append(anchor);
-      anchor.click();
-      anchor.remove();
+      HtmlUtils.downloadWeb(bytes, '$fileName.xlsx');
       completer.complete(null);
     });
     await completer.future;

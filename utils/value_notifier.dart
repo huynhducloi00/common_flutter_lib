@@ -10,7 +10,7 @@ Widget valueNotifierCheckBox<V extends ValueNotifier<bool>>(V valueNotifier,
       value: valueNotifier,
       child: Consumer<V>(builder: (_, __, ___) {
         Widget checkbox = Checkbox(
-          tristate: true,
+          tristate: false,
           onChanged: (bool value) {
             valueNotifier.value = value;
           },

@@ -7,10 +7,8 @@ import '../../widget/edit_table/child_param.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../pdf/no_op_create_pdf.dart'
-    if (dart.library.html) '../../pdf/pdf_creator.dart' as create_pdf;
+import '../../pdf/pdf_creator.dart' as create_pdf;
 import '../../data/cloud_table.dart';
-import '../../utils/auto_form.dart';
 import '../common.dart';
 import 'edit_table_wrapper.dart';
 import 'parent_param.dart';
@@ -33,14 +31,15 @@ class _ChildEditTableState
   SelectedIndexChangeNotifier _selectedIndexChangeNotifier =
       SelectedIndexChangeNotifier(null);
 
-  String inducedField(val, InputInfo inputInfo) {
-    var calculated;
-    if (val != null) {
-      calculated =
-          inputInfo.optionMap == null ? null : inputInfo.optionMap[val];
-    }
-    return calculated == null ? '${toText(context, val ?? '')}' : '$calculated';
-  }
+  //
+  // String inducedField(val, InputInfo inputInfo) {
+  //   var calculated;
+  //   if (val != null) {
+  //     calculated =
+  //         inputInfo.optionMap == null ? null : inputInfo.optionMap[val];
+  //   }
+  //   return calculated == null ? '${toText(context, val ?? '')}' : '$calculated';
+  // }
 
   @override
   Widget delegateBuild(BuildContext context) {
@@ -48,7 +47,7 @@ class _ChildEditTableState
     ParentParam parentParam = Provider.of<ParentParam>(context, listen: false);
     var schemaAndData = data;
     TableWidthAndSize tableWidthAndSize = getEditTableColWidths(
-        context, schemaAndData.cloudTableSchema.inputInfoMap);
+        context, schemaAndData.cloudTableSchema.inputInfoMap.map);
     return Material(
       child: ChangeNotifierProvider(
           create: (BuildContext context) {
@@ -72,12 +71,16 @@ class _ChildEditTableState
                             schemaAndData.data.asMap().entries.map((entry) {
                           int index = entry.key;
                           CloudObject eachRowMap = entry.value;
+                          Map inducedRow = SchemaAndData.fillInOptionData(
+                              eachRowMap.dataMap,
+                              schemaAndData.cloudTableSchema.inputInfoMap.map);
+
                           var dataRow = TableRow(
                               children: schemaAndData
-                                  .cloudTableSchema.inputInfoMap.keys
+                                  .cloudTableSchema.inputInfoMap.map.keys
                                   .map((field) {
                             InputInfo inputInfo = schemaAndData
-                                .cloudTableSchema.inputInfoMap[field];
+                                .cloudTableSchema.inputInfoMap.map[field];
                             return TableCell(
                                 child: GestureDetector(
                               onTap: () {
@@ -91,13 +94,12 @@ class _ChildEditTableState
                                     ? Colors.red[50]
                                     : Colors.white,
                                 alignment: schemaAndData.cloudTableSchema
-                                            .inputInfoMap[field].dataType ==
+                                            .inputInfoMap.map[field].dataType ==
                                         DataType.int
                                     ? Alignment.centerRight
                                     : Alignment.centerLeft,
                                 child: Text(
-                                  inducedField(
-                                      eachRowMap.dataMap[field], inputInfo),
+                                  toText(context, inducedRow[field] ?? ''),
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(fontSize: 20),
                                 ),
@@ -142,7 +144,7 @@ class _ChildEditTableState
                     height: screenHeight(context) * 0.1,
                     child: tableOfTwo({
                       'Trường sắp xếp':
-                          '${schemaAndData.cloudTableSchema.inputInfoMap[parentParam.sortKey].fieldDes}-${parentParam.sortKeyDescending ? "Giảm dần" : "Tăng dần"}',
+                          '${schemaAndData.cloudTableSchema.inputInfoMap.map[parentParam.sortKey].fieldDes}-${parentParam.sortKeyDescending ? "Giảm dần" : "Tăng dần"}',
                       'Hiển thị sau': toText(
                           context, databasePagerNotifier.value.startAfter),
                       'Hiển thị trước': toText(
@@ -210,23 +212,35 @@ class _ChildEditTableState
                 (BuildContext buildContext,
                     SelectedIndexChangeNotifier selectedIndexChangeNotifier,
                     Widget child) {
-              PrintInfo defaultPrint = schemaAndData.cloudTableSchema.printInfos
+              PrintInfo defaultWindowPrint = schemaAndData
+                  .cloudTableSchema.printInfos
                   .where((element) => element.isDefault)
                   .toList()[0];
               List<PrintInfo> otherPrints = schemaAndData
                   .cloudTableSchema.printInfos
                   .where((element) => !element.isDefault)
                   .toList();
+              Map inducedRow = selectedIndexChangeNotifier.value != null
+                  ? SchemaAndData.fillInOptionData(
+                      schemaAndData
+                          .data[selectedIndexChangeNotifier.value].dataMap,
+                      schemaAndData.cloudTableSchema.inputInfoMap.map)
+                  : null;
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   ChildTableUtils.printButton(
                     context,
                     widget.databaseRef,
-                    defaultPrint,
+                    defaultWindowPrint,
                     parentParam,
                   ),
-//                  ChildTableUtils.printCurrent(context, printInfo, dataMap),
+                  ChildTableUtils.printLineButton(
+                    context,
+                    schemaAndData.cloudTableSchema.printTicket,
+                    inducedRow,
+                    selectedIndexChangeNotifier.value != null,
+                  ),
                   otherPrints.length > 0
                       ? Container(
                           color: getLoiButtonStyle(context).regularColor,

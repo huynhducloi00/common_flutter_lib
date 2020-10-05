@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:provider/provider.dart';
+import 'package:responsive_builder/responsive_builder.dart' as res_builder;
 
 import 'widget/edit_table/parent_param.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -17,6 +20,14 @@ final TextStyle MEDIUM_FONT = TextStyle(fontSize: 14);
 const EDIT_TABLE_HORIZONTAL_BORDER_SIDE =
     BorderSide(width: 1, color: Colors.brown, style: BorderStyle.solid);
 
+class LoiAllCloudTables{
+  static List<CloudTableSchema> cloudTables;
+  static Map<String, CloudTableSchema> maps;
+  static void init(List<CloudTableSchema> list){
+    cloudTables=list;
+    maps=list.asMap().map((_, value) => MapEntry(value.tableName, value));
+  }
+}
 class TableWidthAndSize {
   double width;
   Map<int, TableColumnWidth> colWidths;
@@ -79,6 +90,9 @@ String toText(context, dynamic val) {
     return formatNumber(val);
   } else if (val is Timestamp) {
     return formatTimestamp(context, val);
+  } else if (val is bool) {
+    return val ? '\u2713' : '';
+    // throw Exception('Not allowed to have boolean in here, please use Image to show it');
   }
   return null;
 }
@@ -100,7 +114,8 @@ Widget tableOfTwo(Map<String, String> map,
       list.add(TableRow(
           decoration: i < map.entries.length - 1 &&
                   map.entries.elementAt(i + 1).value == TABLE_OF_TWO_DIVIDER
-              ? BoxDecoration(border: Border(bottom: EDIT_TABLE_HORIZONTAL_BORDER_SIDE))
+              ? BoxDecoration(
+                  border: Border(bottom: EDIT_TABLE_HORIZONTAL_BORDER_SIDE))
               : null,
           children: [
             Text(
@@ -165,12 +180,27 @@ List<Map<V, D>> partitionMap<V, D>(Map<V, D> map, int size) {
   return maps;
 }
 
-List<List<T>> partitionList<T>(List<T> list, int size) {
+List<List<T>> partitionList<T>(List<T> list, int partitionSize) {
   var len = list.length;
   List<List<T>> chunks = [];
-  for (var i = 0; i < len; i += size) {
-    var end = (i + size < len) ? i + size : len;
+  for (var i = 0; i < len; i += partitionSize) {
+    var end = (i + partitionSize < len) ? i + partitionSize : len;
     chunks.add(list.sublist(i, end));
+  }
+  return chunks;
+}
+
+const int DOT_PER_INCH = 72;
+const int DOT_PER_CM = 72 ~/ 2.54;
+
+List<List<T>> partitionListToBin<T>(List<T> list, int binNum) {
+  List<List<T>> chunks = [];
+  int start = 0;
+  int size = (list.length + 1) ~/ binNum;
+  for (int i = 0; i < binNum; i++) {
+    int end = min(start + size, list.length);
+    chunks.add(list.sublist(start, end));
+    start = start + size;
   }
   return chunks;
 }
@@ -245,7 +275,7 @@ Column columnWithGap(List<Widget> children,
       height: gap,
     ));
   });
-  result.removeLast();
+  if (result.isNotEmpty) result.removeLast();
   return Column(
     crossAxisAlignment: crossAxisAlignment,
     mainAxisSize: MainAxisSize.min,
@@ -253,13 +283,88 @@ Column columnWithGap(List<Widget> children,
   );
 }
 
-LoiButtonStyle getLoiButtonStyle(context){
-  return Provider.of<LoiButtonStyle>(context, listen:false);
-}
-Widget wrapLoiButtonStyle(context, child){
-  return Provider.value(value: getLoiButtonStyle(context), child: child,);
+Widget splitAnyColumns(List<Widget> widgets, int numBin, {double gap = 10}) {
+  List<List<Widget>> lists = partitionListToBin(widgets, numBin);
+  List<Widget> widgetList = lists
+      .map((list) => Expanded(
+            child: columnWithGap(list,
+                crossAxisAlignment: CrossAxisAlignment.stretch),
+          ) as Widget)
+      .toList();
+  for (int i = widgetList.length - 1; i >= 1; i--) {
+    widgetList.insert(
+        i,
+        SizedBox(
+          width: gap,
+        ));
+  }
+  // a b c d e
+  // 0 1 2 3 4
+  return Row(mainAxisSize: MainAxisSize.max, children: widgetList);
 }
 
-bool isStringEmpty(String val){
-  return val?.isEmpty ??true;
+LoiButtonStyle getLoiButtonStyle(context) {
+  return Provider.of<LoiButtonStyle>(context, listen: false);
+}
+
+Widget wrapLoiButtonStyle(context, child) {
+  return Provider.value(
+    value: getLoiButtonStyle(context),
+    child: child,
+  );
+}
+
+bool isStringEmpty(String val) {
+  return val?.isEmpty ?? true;
+}
+
+void popWindow(context) {
+  Navigator.of(context).pop();
+}
+
+Route createMaterialPageRoute(parentContext, WidgetBuilder builder) {
+  return PageRouteBuilder(
+    pageBuilder: (BuildContext context, Animation<double> animation,
+        Animation<double> secondaryAnimation) {
+      return wrapLoiButtonStyle(parentContext, builder(context));
+    },
+    transitionDuration: Duration(seconds: 0),
+  );
+}
+
+Future showAlertDialog(BuildContext context,
+    {WidgetBuilder builder, String title, List<Widget> actions}) {
+  return showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: title == null ? null : Text(title),
+          content: builder(context),
+          contentPadding: EdgeInsets.zero,
+          actions: actions,
+        );
+      });
+}
+
+Future showAlertDialogOverlay(BuildContext context,
+    {WidgetBuilder builder,
+    String title,
+    List<Widget> actions,
+    percent = 0.8}) {
+  return showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: title == null ? null : Text(title),
+          content: Container(
+            child: builder(context),
+            width: screenWidth(context) * percent,
+          ),
+          actions: actions,
+        );
+      });
+}
+
+res_builder.ScreenBreakpoints forDebuggingScreenBreakpoints() {
+  return res_builder.ScreenBreakpoints(tablet: 400, desktop: 800, watch: 200);
 }

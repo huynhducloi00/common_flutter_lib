@@ -1,3 +1,8 @@
+import 'dart:collection';
+
+import 'package:canxe/common/loadingstate/loading_state.dart';
+import 'package:provider/provider.dart';
+
 import '../utils/auto_form_helper.dart';
 
 import '../utils.dart';
@@ -6,8 +11,7 @@ import '../widget/common.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-
+import 'package:async/async.dart';
 import '../data/cloud_obj.dart';
 import '../data/cloud_table.dart';
 
@@ -24,24 +28,54 @@ typedef OnPop = void Function();
 
 class AutoForm extends StatefulWidget {
   static final Color disabledColor = Colors.grey[400];
-  Map<String, InputInfo> inputInfoMap;
+  InputInfoMap inputInfoMap;
   Map<String, dynamic> initialValue;
   SaveClickFuture saveClickFuture;
   OnPop onPop;
 
-  static createAutoForm(context, Map<String, InputInfo> inputInfoMap,
-      Map<String, dynamic> initialValue,
-      {SaveClickFuture saveClickFuture, OnPop onPop}) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (onPop != null) {
-          onPop();
+  static createAutoForm(
+      context, InputInfoMap inputInfoMap, Map<String, dynamic> initialValue,
+      {SaveClickFuture saveClickFuture,
+      OnPop onPop,
+      LinkedHashSet<String> calculatingOrder}) {
+    var child = AutoForm._internal(
+        context, inputInfoMap, initialValue, saveClickFuture);
+    Stream<List<DataBundle>> bundleStream;
+    if (inputInfoMap.relatedTables != null) {
+      List<Stream<DataBundle>> streams =
+          inputInfoMap.relatedTables.map((table) {
+        Stream<QuerySnapshot> streams;
+        if (table.query == null) {
+          streams = Firestore.instance.collection(table.tableName).snapshots();
+        } else {
+          streams = table.query.snapshots();
         }
-        return true;
-      },
-      child: wrapLoiButtonStyle(context,  AutoForm._internal(
-              context, inputInfoMap, initialValue, saveClickFuture))
-    );
+        return streams.map((event) {
+          List<Map> a = event.documents.map((e) => e.data).toList();
+          return DataBundle(table.tableName, a);
+        });
+      }).toList();
+      bundleStream = StreamZip(streams).map((list) => list);
+    } else {
+      bundleStream = Stream<List<DataBundle>>.value(<DataBundle>[]);
+    }
+    return WillPopScope(
+        onWillPop: () async {
+          if (onPop != null) {
+            onPop();
+          }
+          return true;
+        },
+        child: wrapLoiButtonStyle(
+            context,
+            bundleStream == null
+                ? child
+                : StreamProvider<List<DataBundle>>(
+                    create: (BuildContext context) {
+                      return bundleStream;
+                    },
+                    child: child,
+                  )));
   }
 
   AutoForm._internal(
@@ -59,49 +93,98 @@ class DateTimeController extends ValueNotifier<DateTime> {
   DateTimeController(DateTime value) : super(value);
 }
 
-class _AutoFormState extends State<AutoForm> {
+typedef FieldValueChangeCallback = void Function(
+    ValueNotifier notifier, String changedFieldName, dynamic val);
+
+class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
+  _AutoFormState() : super(isRequireData: true);
+
   // Map from field name to TEXT/INT controller
-  Map<String, TextEditingController> _textEditingControllers = Map();
-
-  // Map for checkboxes
-  Map<String, CheckBoxController> _checkBoxControllers = Map();
-  Map<String, DateTimeController> _dateTimeControllers = Map();
+  // Type of controller:
+  // 1.TextEditingController
+  // 2. CheckBoxController
+  // 3. DateTimeController.
+  Map<String, ValueNotifier> _allNotifiers = Map();
   final _formKey = GlobalKey<FormState>();
-
+  Map<String, DataBundle> bundleMap=Map();
   final SizedBox divider = SizedBox(
     width: 20,
   );
 
   @override
   void dispose() {
-    _textEditingControllers.forEach((key, value) {
+    _allNotifiers.forEach((key, value) {
       value.dispose();
     });
     super.dispose();
   }
 
+  bool changeCallbackActive = false;
+
   @override
   void initState() {
-    widget.inputInfoMap.forEach((fieldName, inputInfo) {
+    widget.inputInfoMap.map.forEach((fieldName, inputInfo) {
+      ValueNotifier notifier;
       if (inputInfo.dataType == DataType.string ||
           inputInfo.dataType == DataType.int) {
-        _textEditingControllers[fieldName] = TextEditingController(
+        notifier = TextEditingController(
             text: widget.initialValue[fieldName]?.toString());
       } else if (inputInfo.dataType == DataType.boolean) {
-        _checkBoxControllers[fieldName] =
-            CheckBoxController(widget.initialValue[fieldName] ?? false);
+        notifier = CheckBoxController(widget.initialValue[fieldName] ?? false);
       } else if (inputInfo.dataType == DataType.timestamp) {
-        _dateTimeControllers[fieldName] = DateTimeController(
+        notifier = DateTimeController(
             (widget.initialValue[fieldName] as Timestamp)?.toDate());
       }
+      _allNotifiers[fieldName] = notifier;
     });
+    final FieldValueChangeCallback fieldValueChangeCallback =
+        (ValueNotifier notifier1, changedFieldName, val) {
+      if (changeCallbackActive) {
+        // only allow one callback to run at a time
+        return;
+      }
+      changeCallbackActive = true;
+      const bool DEBUG = false;
+      if (DEBUG) print('gia tri thay doi: $changedFieldName $val');
+      var resultBundle = getCurrentReturnedMap(filterSavingFields: false)[0];
+      if (DEBUG) print('before $resultBundle');
+      if (widget.inputInfoMap.fieldChangedFieldMap[changedFieldName] != null) {
+        if (DEBUG)
+          print(
+              'affecting field: ${widget.inputInfoMap.fieldChangedFieldMap[changedFieldName]}');
+        widget.inputInfoMap.fieldChangedFieldMap[changedFieldName]
+            .forEach((fieldName) {
+          var result =
+              widget.inputInfoMap.map[fieldName].calculate(resultBundle, bundleMap);
+          if (DEBUG) print('$fieldName $result');
+          var notifier = _allNotifiers[fieldName];
+          if (result!=null && notifier is TextEditingController) {
+            notifier.value =
+                notifier.value.copyWith(text: result.value?.toString() ?? '');
+          }
+        });
+      }
+      if (DEBUG)
+        print('after ${getCurrentReturnedMap(filterSavingFields: false)[0]}');
+      changeCallbackActive = false;
+    };
+    for (MapEntry<String, ValueNotifier> entry in _allNotifiers.entries) {
+      if (entry.value is TextEditingController) {
+        entry.value.addListener(() {
+          fieldValueChangeCallback(entry.value, entry.key,
+              (entry.value as TextEditingController).text);
+        });
+      }
+    }
     super.initState();
   }
 
   Widget _getWidgetFromDataType(String fieldName) {
     var resultWidget;
-    var inputInfo = widget.inputInfoMap[fieldName];
-    if (inputInfo.calculate != null) return null;
+    var inputInfo = widget.inputInfoMap.map[fieldName];
+    bool isEnabled = inputInfo.canUpdate;
+    InputDecoration inputDecoration = EDIT_TEXT_INPUT_DECORATION.copyWith(
+        fillColor: isEnabled ? Colors.white : AutoForm.disabledColor);
     switch (inputInfo.dataType) {
       case DataType.html:
         return null;
@@ -109,19 +192,33 @@ class _AutoFormState extends State<AutoForm> {
       case DataType.string:
         if (inputInfo.optionMap == null) {
           resultWidget = TextFormField(
-            controller: _textEditingControllers[fieldName],
-            enabled: inputInfo.canUpdate,
-            decoration: EDIT_TEXT_INPUT_DECORATION.copyWith(
-                fillColor: inputInfo.canUpdate
-                    ? Colors.white
-                    : AutoForm.disabledColor),
+            controller: _allNotifiers[fieldName],
+            enabled: isEnabled,
+            decoration: inputDecoration,
             validator: (val) =>
                 inputInfo.validator == null ? null : inputInfo.validator(val),
             obscureText: false,
           );
+          if (inputInfo.linkedData != null && isEnabled) {
+            resultWidget = Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Expanded(child: resultWidget),
+                CommonButton.createDataPickerButton(
+                    context,
+                    LoiAllCloudTables.maps[inputInfo.linkedData.tableName],
+                    inputInfo.linkedData.linkedFieldName, (val) {
+                  if (val != null) {
+                    (_allNotifiers[fieldName] as TextEditingController).text =
+                        val;
+                  }
+                }, iconData: Icons.add_link)
+              ],
+            );
+          }
         } else {
-          resultWidget = AutoFormHelper.dropDownText(
-              _textEditingControllers[fieldName], inputInfo);
+          resultWidget =
+              AutoFormHelper.dropDownText(_allNotifiers[fieldName], inputInfo);
         }
         break;
 //      case DataType.html:
@@ -170,9 +267,9 @@ class _AutoFormState extends State<AutoForm> {
       case DataType.int:
         if (inputInfo.optionMap == null) {
           resultWidget = TextFormField(
-              enabled: inputInfo.canUpdate,
-              controller: _textEditingControllers[fieldName],
-              decoration: EDIT_TEXT_INPUT_DECORATION,
+              enabled: isEnabled,
+              controller: _allNotifiers[fieldName],
+              decoration: inputDecoration,
               validator: (val) =>
                   inputInfo.validator == null ? null : inputInfo.validator(val),
               obscureText: false,
@@ -181,41 +278,49 @@ class _AutoFormState extends State<AutoForm> {
                 WhitelistingTextInputFormatter.digitsOnly
               ]);
         } else {
-          resultWidget = AutoFormHelper.dropDownInt(
-              _textEditingControllers[fieldName], inputInfo);
+          resultWidget =
+              AutoFormHelper.dropDownInt(_allNotifiers[fieldName], inputInfo);
         }
         break;
       case DataType.timestamp:
-        resultWidget =
-            valueNotifierDateTime(context, _dateTimeControllers[fieldName]);
+        resultWidget = valueNotifierDateTime(
+            context, _allNotifiers[fieldName] as ValueNotifier<DateTime>);
         break;
       case DataType.boolean:
-        resultWidget = valueNotifierCheckBox(_checkBoxControllers[fieldName]);
+        resultWidget = valueNotifierCheckBox(
+            _allNotifiers[fieldName] as ValueNotifier<bool>);
         break;
     }
     return resultWidget;
   }
 
-  String validateNonStrField(String originalErrorStr, dynamic val, inputInfo) {
+  String validateNonStrField(
+      String originalErrorStr, dynamic val, InputInfo inputInfo) {
+    if (inputInfo.validator == null) {
+      return originalErrorStr;
+    }
     var hasError = inputInfo.validator(val);
-    if (inputInfo.validator != null && hasError != null) {
+    if (hasError != null) {
       // violation
       originalErrorStr += '$hasError:${inputInfo.fieldDes}\n';
     }
     return originalErrorStr;
   }
-
   @override
-  Widget build(BuildContext context) {
+  Widget delegateBuild(BuildContext context) {
+    bundleMap = data.asMap().map((key, value) => MapEntry(value.tableName, value));
     List<TableRow> editBoxes = new List();
-    widget.inputInfoMap.forEach((fieldName, inputInfo) {
+    widget.inputInfoMap.map.forEach((fieldName, inputInfo) {
       Widget resultWidget = _getWidgetFromDataType(fieldName);
       if (resultWidget != null) {
         editBoxes.add(
           TableRow(children: [
             TableCell(
               verticalAlignment: TableCellVerticalAlignment.middle,
-              child: Container(child: Text(inputInfo.fieldDes), margin: EdgeInsets.only(right: 5),),
+              child: Container(
+                child: Text(inputInfo.fieldDes),
+                margin: EdgeInsets.only(right: 5),
+              ),
             ),
             TableCell(
               verticalAlignment: TableCellVerticalAlignment.middle,
@@ -235,43 +340,11 @@ class _AutoFormState extends State<AutoForm> {
               if (!_formKey.currentState.validate()) {
                 return;
               }
-              Map<String, dynamic> result = Map();
-              String otherError = '';
-              widget.inputInfoMap.forEach((fieldName, inputInfo) {
-                if (inputInfo.calculate == null) {
-                  switch (inputInfo.dataType) {
-                    case DataType.string:
-                      result[fieldName] =
-                          _textEditingControllers[fieldName].text;
-                      break;
-                    case DataType.html:
-                      // TODO: Handle this case.
-                      break;
-                    case DataType.int:
-                      otherError = validateNonStrField(otherError,
-                          _textEditingControllers[fieldName].text, inputInfo);
-                      if (_textEditingControllers[fieldName].text.isNotEmpty)
-                        result[fieldName] = int.parse(
-                            _textEditingControllers[fieldName].text);
-                      break;
-                    case DataType.timestamp:
-                      otherError = validateNonStrField(otherError,
-                          _dateTimeControllers[fieldName].value, inputInfo);
-                      result[fieldName] =
-                          _dateTimeControllers[fieldName].value == null
-                              ? null
-                              : Timestamp.fromDate(
-                                  _dateTimeControllers[fieldName].value);
-                      break;
-                    case DataType.boolean:
-                      result[fieldName] =
-                          _checkBoxControllers[fieldName].value == null
-                              ? null
-                              : _checkBoxControllers[fieldName].value;
-                      break;
-                  }
-                }
-              });
+              var resultBundle =
+                  getCurrentReturnedMap(filterSavingFields: true);
+              Map<String, dynamic> result = resultBundle[0];
+              String otherError = resultBundle[1];
+
               if (otherError?.isEmpty ?? false) {
                 if (widget.saveClickFuture != null) {
                   await widget.saveClickFuture(result);
@@ -293,13 +366,51 @@ class _AutoFormState extends State<AutoForm> {
             child: Form(
               key: _formKey,
               child: Table(
-                defaultVerticalAlignment:
-                    TableCellVerticalAlignment.middle,
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                 columnWidths: {0: IntrinsicColumnWidth()},
                 children: editBoxes,
               ),
             ),
           ),
         ));
+  }
+
+  // 1st store the map, 2nd stores the error string
+  // if forSavingData then only return what is needed.
+  List getCurrentReturnedMap({bool filterSavingFields = false}) {
+    Map<String, dynamic> result = Map();
+    String otherError = '';
+    widget.inputInfoMap.map.forEach((fieldName, inputInfo) {
+      if (!filterSavingFields || inputInfo.needSaving) {
+        switch (inputInfo.dataType) {
+          case DataType.string:
+            result[fieldName] = _allNotifiers[fieldName].value.text;
+            break;
+          case DataType.html:
+            // TODO: Handle this case.
+            break;
+          case DataType.int:
+            otherError = validateNonStrField(
+                otherError, _allNotifiers[fieldName].value.text, inputInfo);
+            result[fieldName] = _allNotifiers[fieldName].value.text.isEmpty
+                ? null
+                : int.parse(_allNotifiers[fieldName].value.text);
+            break;
+          case DataType.timestamp:
+            otherError = validateNonStrField(
+                otherError, _allNotifiers[fieldName].value, inputInfo);
+            result[fieldName] = _allNotifiers[fieldName].value == null
+                ? null
+                : Timestamp.fromDate(_allNotifiers[fieldName].value);
+            break;
+          case DataType.boolean:
+            result[fieldName] = _allNotifiers[fieldName].value == null
+                ? null
+                : _allNotifiers[fieldName].value;
+            break;
+        }
+      }
+    });
+    return [result, otherError];
   }
 }
