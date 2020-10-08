@@ -14,6 +14,9 @@ This requires the following libraries:
   google_sign_in: ^4.4.6
   charts_flutter: ^0.9.0
   responsive_builder: ^0.1.2
+  excel: ^1.1.4
+  async: ^2.4.2
+  platform_detect: ^1.4.0
 #  IF ever need to use notification on Android, on iOS needs to pay a fee.
 #  firebase_messaging: ^6.0.16
   #web dep:

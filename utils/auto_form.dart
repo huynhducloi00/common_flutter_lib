@@ -1,6 +1,6 @@
 import 'dart:collection';
 
-import 'package:canxe/common/loadingstate/loading_state.dart';
+import '../loadingstate/loading_state.dart';
 import 'package:provider/provider.dart';
 
 import '../utils/auto_form_helper.dart';

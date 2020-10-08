@@ -1,5 +1,3 @@
-import 'package:canxe/data/item_lookup.dart';
-
 import '../utils.dart';
 
 import '../data/cloud_table.dart';

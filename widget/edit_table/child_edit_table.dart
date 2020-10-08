@@ -7,7 +7,6 @@ import '../../widget/edit_table/child_param.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../pdf/pdf_creator.dart' as create_pdf;
 import '../../data/cloud_table.dart';
 import '../common.dart';
 import 'edit_table_wrapper.dart';

@@ -1,4 +1,4 @@
-import 'package:canxe/common/utils.dart';
+import '../../utils.dart';
 
 import '../../data/cloud_obj.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

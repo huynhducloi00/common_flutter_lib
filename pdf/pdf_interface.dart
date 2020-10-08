@@ -1,5 +1,4 @@
-
-import 'package:canxe/common/data/cloud_obj.dart';
+import '../data/cloud_obj.dart';
 
 import '../data/cloud_table.dart';
 import 'package:flutter/material.dart';
