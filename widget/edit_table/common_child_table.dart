@@ -15,7 +15,7 @@ import 'parent_param.dart';
 class ChildTableUtils {
   static Widget printButton(context, databaseRef, PrintInfo printInfo,
       ParentParam fallBackParentParam,
-      {isDense = false, Color backgroundColor, isPhone=false}) {
+      {isDense = false, Color backgroundColor}) {
     return CommonButton.getButtonAsync(context, () async {
       var parentParam = printInfo.parentParam ?? fallBackParentParam;
       var allQuery = applyFilterToQuery(databaseRef, parentParam).orderBy(
@@ -40,7 +40,7 @@ class ChildTableUtils {
               row.dataMap, printInfo.inputInfoMap.map);
         });
         await creator.createPdfSummary(
-            context, DateTime.now(), printInfo, data, isPhone );
+            context, DateTime.now(), printInfo, data );
       });
     },
         title: printInfo.buttonTitle,
@@ -65,7 +65,7 @@ class ChildTableUtils {
             context, schemaAndData.cloudTableSchema.inputInfoMap, {},
             saveClickFuture: (resultMap) {
           return databaseRef.document().setData(resultMap);
-        });
+        }, isNew: true);
         if (isPhone) {
           Navigator.push(
               context,

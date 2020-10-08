@@ -31,15 +31,16 @@ class AutoForm extends StatefulWidget {
   InputInfoMap inputInfoMap;
   Map<String, dynamic> initialValue;
   SaveClickFuture saveClickFuture;
+  bool isNew;
   OnPop onPop;
 
   static createAutoForm(
       context, InputInfoMap inputInfoMap, Map<String, dynamic> initialValue,
       {SaveClickFuture saveClickFuture,
       OnPop onPop,
-      LinkedHashSet<String> calculatingOrder}) {
+      LinkedHashSet<String> calculatingOrder, bool isNew=false}) {
     var child = AutoForm._internal(
-        context, inputInfoMap, initialValue, saveClickFuture);
+        context, inputInfoMap, initialValue, saveClickFuture, isNew);
     Stream<List<DataBundle>> bundleStream;
     if (inputInfoMap.relatedTables != null) {
       List<Stream<DataBundle>> streams =
@@ -79,7 +80,7 @@ class AutoForm extends StatefulWidget {
   }
 
   AutoForm._internal(
-      context, this.inputInfoMap, this.initialValue, this.saveClickFuture);
+      context, this.inputInfoMap, this.initialValue, this.saveClickFuture, this.isNew);
 
   @override
   _AutoFormState createState() => _AutoFormState();
@@ -158,9 +159,12 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
               widget.inputInfoMap.map[fieldName].calculate(resultBundle, bundleMap);
           if (DEBUG) print('$fieldName $result');
           var notifier = _allNotifiers[fieldName];
-          if (result!=null && notifier is TextEditingController) {
-            notifier.value =
-                notifier.value.copyWith(text: result.value?.toString() ?? '');
+          if (result!=null) { // not the same as before check
+            if (notifier is TextEditingController) {
+              notifier.text = result.value?.toString() ?? '';
+            } else if (notifier is DateTimeController){
+              notifier.value = result.value?.toDate();
+            }
           }
         });
       }
@@ -309,6 +313,16 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
   @override
   Widget delegateBuild(BuildContext context) {
     bundleMap = data.asMap().map((key, value) => MapEntry(value.tableName, value));
+    if (widget.isNew){
+      widget.inputInfoMap.map.forEach((fieldName, inputInfo) {
+        if (inputInfo.initializeFunc!=null && _allNotifiers[fieldName] is TextEditingController){
+          var controller=_allNotifiers[fieldName] as TextEditingController;
+          if (controller.text.isEmpty ){
+            controller.text=inputInfo.initializeFunc(bundleMap).value?.toString();
+          }
+        }
+      });
+    }
     List<TableRow> editBoxes = new List();
     widget.inputInfoMap.map.forEach((fieldName, inputInfo) {
       Widget resultWidget = _getWidgetFromDataType(fieldName);

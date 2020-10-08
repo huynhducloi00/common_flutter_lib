@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:html';
 
-import 'package:canxe/common/html_utils.dart';
+import 'package:canxe/common/utils/html/html_utils.dart';
 
 import '../utils.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -188,7 +188,7 @@ class ExcelOperation {
   static Future downloadWeb(Excel excel, fileName) async {
     Completer<String> completer = Completer();
     excel.encode().then((bytes) {
-      HtmlUtils.downloadWeb(bytes, '$fileName.xlsx');
+      (HtmlUtils()).downloadWeb(bytes, '$fileName.xlsx');
       completer.complete(null);
     });
     await completer.future;

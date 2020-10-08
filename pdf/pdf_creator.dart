@@ -1,4 +1,5 @@
-import 'package:canxe/common/html_utils.dart';
+import '../utils/html/html_no_op.dart'
+    if (dart.library.html) '../utils/html/html_utils.dart' as html_utils;
 import 'package:flutter/foundation.dart';
 
 import 'pdf_interface.dart';
@@ -14,6 +15,23 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/widgets.dart';
 import 'package:printing/printing.dart';
 
+class GroupByKey {
+  List<dynamic> values;
+
+  GroupByKey(this.values);
+
+  @override
+  int get hashCode => hashList(values);
+
+  @override
+  bool operator ==(other) =>
+      other is GroupByKey && (listEquals(other.values, values));
+  @override
+  String toString() {
+    return values.toString();
+  }
+}
+
 class PdfCreator extends PdfCreatorInterface {
   static final _columnGap = pw.SizedBox(height: 15);
   static const HORIZONTAL_FIRST_PAGE_LIMIT = 32;
@@ -25,14 +43,18 @@ class PdfCreator extends PdfCreatorInterface {
   Future init() {
     return PdfUtils.init();
   }
-  List<int> _generatingPdfSummary(BuildContext buildContext, DateTime timeOfPrint,
-      PrintInfo printInfo, List data){
+
+  List<int> _generatingPdfSummary(
+      BuildContext buildContext,
+      DateTime timeOfPrint,
+      PrintInfo printInfo,
+      List<Map<String, dynamic>> data) {
     final Document pdf = pw.Document();
     Map<int, pw.TableColumnWidth> colWidths = Map();
     double sumFraction = 0;
 
-    Map<String, InputInfo> usedInputInfoMap =
-    printInfo.inputInfoMap.filterMap(printInfo.printFields);
+    Map<String, InputInfo> usedInputInfoMap = printInfo.inputInfoMap
+        .filterMap((printInfo.groupByFields ?? []) + printInfo.printFields);
     usedInputInfoMap.entries.forEach((e) {
       InputInfo inputInfo = e.value;
       sumFraction += inputInfo.flex;
@@ -57,23 +79,50 @@ class PdfCreator extends PdfCreatorInterface {
     List<pw.TableRow> tableRows = List();
     List<pw.Table> tables = List();
     Map<String, int> aggregationStatInt = Map();
+    if (printInfo.groupByFields != null) {
+      Map<GroupByKey, Map<String, int>> grouped = Map();
+      data.forEach((row) {
+        GroupByKey groupByKey =
+            GroupByKey(printInfo.groupByFields.map((e) => row[e]).toList());
+        var map = grouped[groupByKey];
+        if (map == null) {
+          map = Map();
+          grouped[groupByKey] = map;
+        }
+        printInfo.printFields.forEach((fieldName) {
+          if (!printInfo.groupByFields.contains(fieldName)) {
+            if (map[fieldName] == null) {
+              map[fieldName] = row[fieldName] ?? 0;
+            } else {
+              map[fieldName] += row[fieldName] ?? 0;
+            }
+          }
+        });
+      });
+      data.clear();
+      grouped.entries.forEach((e) {
+        Map<String, dynamic> newMap = Map.from(e.value);
+        printInfo.groupByFields.asMap().forEach((index, groupedField) {
+          newMap[groupedField] = e.key.values[index];
+        });
+        data.add(newMap);
+      });
+    }
     data.forEach((row) {
+      printInfo.aggregateFields.forEach((fieldName) {
+        if (aggregationStatInt.containsKey(fieldName)) {
+          aggregationStatInt[fieldName] =
+              sum([aggregationStatInt[fieldName], row[fieldName]]);
+        } else {
+          aggregationStatInt[fieldName] = row[fieldName] ?? 0;
+        }
+      });
       count++;
       tableRows.add(pw.TableRow(
           children: usedInputInfoMap.keys.map((fieldName) {
-            if (usedInputInfoMap[fieldName].dataType == DataType.int &&
-                usedInputInfoMap[fieldName].optionMap == null) {
-              if (aggregationStatInt.containsKey(fieldName)) {
-                aggregationStatInt[fieldName] =
-                    sum([aggregationStatInt[fieldName], row.dataMap[fieldName]]);
-              } else {
-                aggregationStatInt[fieldName] = row.dataMap[fieldName] ?? 0;
-              }
-            }
-            return PdfUtils.writeLight(
-                toText(buildContext, row.dataMap[fieldName]) ?? "",
-                maxLine: 1);
-          }).toList()));
+        return PdfUtils.writeLight(toText(buildContext, row[fieldName]) ?? "",
+            maxLine: 1);
+      }).toList()));
       if ((tables.length == 0 && count == limitFirstPage) ||
           (tables.length > 0 && count == limitOtherPage)) {
         tables.add(pw.Table(columnWidths: colWidths, children: tableRows));
@@ -131,12 +180,11 @@ class PdfCreator extends PdfCreatorInterface {
                   printInfo.inputInfoMap.map[fieldName].fieldDes,
                   toText(buildContext, value))),
               LAST_PAGE_COLUMN_NUM);
-          List<pw.Widget> mapWidgets = maps
-              .map((map) => PdfUtils.tableOfTwo(map, width: 100))
-              .toList();
+          List<pw.Widget> mapWidgets =
+              maps.map((map) => PdfUtils.tableOfTwo(map, width: 100)).toList();
           children.add(pw.Container(
               decoration:
-              pw.BoxDecoration(border: pw.BoxBorder(bottom: true))));
+                  pw.BoxDecoration(border: pw.BoxBorder(bottom: true))));
           children.add(pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               mainAxisSize: pw.MainAxisSize.max,
@@ -145,21 +193,15 @@ class PdfCreator extends PdfCreatorInterface {
         }));
     return pdf.save();
   }
+
   @override
   Future createPdfSummary(BuildContext buildContext, DateTime timeOfPrint,
-      PrintInfo printInfo, List data, bool isPhone) {
-    List<int> bytes=_generatingPdfSummary(buildContext, timeOfPrint, printInfo, data);
-    if (kIsWeb){
-      if (isPhone){
-        // Mobile web
-        HtmlUtils.downloadWeb(bytes, 'report.pdf');
-        return null;
-      } else {
-        // Chrome
-        return Printing.layoutPdf(onLayout: (PdfPageFormat format) async {
-          return bytes;
-        });
-      }
+      PrintInfo printInfo, List<CloudObject> data) {
+    List<int> bytes = _generatingPdfSummary(buildContext, timeOfPrint,
+        printInfo, data.map((e) => e.dataMap).toList());
+    if (kIsWeb) {
+      (html_utils.HtmlUtils()).viewBytes(bytes);
+      return null;
     } else {
       // android
       return Printing.layoutPdf(onLayout: (PdfPageFormat format) async {
@@ -167,6 +209,7 @@ class PdfCreator extends PdfCreatorInterface {
       });
     }
   }
+
   @override
   Future createPdfTicket(BuildContext buildContext, DateTime timeOfPrint,
       PrintTicket printTicket, Map dataMap) {

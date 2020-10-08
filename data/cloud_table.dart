@@ -22,6 +22,8 @@ class UseDataCalculationResult {
 // returns null to keep the same value as before
 typedef UseDataCalculation = UseDataCalculationResult Function(
     Map<String, dynamic> data, Map<String, DataBundle> predefined);
+typedef InitialDataCalculation = UseDataCalculationResult Function(
+    Map<String, DataBundle> predefined);
 
 class LinkedData {
   String tableName;
@@ -40,6 +42,7 @@ class InputInfo {
 
   // Calculate only happens when initializing data, or when its contributor variables changes.
   UseDataCalculation calculate;
+  InitialDataCalculation initializeFunc;
   bool canUpdate;
 
   // needSaving can be true for some calculated variables, or for nonUpdatale variables, mainly
@@ -65,6 +68,7 @@ class InputInfo {
       this.calculate,
       this.canUpdate = true,
       this.needSaving = true,
+      this.initializeFunc,
       this.flex,
       this.linkedData,
       this.optionMap,
@@ -245,16 +249,27 @@ class PrintInfo {
   ParentParam parentParam;
   bool printVertical;
   InputInfoMap inputInfoMap;
-
+  List<String> aggregateFields;
+  List<String> groupByFields;
   PrintInfo(this.inputInfoMap,
       {this.title,
       this.buttonTitle,
       this.printFields,
       this.parentParam,
       this.printVertical = false,
-      this.isDefault = false}) {
+      this.isDefault = false,
+      this.aggregateFields,
+      this.groupByFields}) {
     if (printFields == null) {
       printFields = inputInfoMap.map.keys.toList();
+    }
+    if (aggregateFields == null) {
+      aggregateFields = inputInfoMap.map.entries
+          .where((element) =>
+              element.value.dataType == DataType.int &&
+              element.value.optionMap == null)
+          .map((e) => e.key)
+          .toList();
     }
   }
 }

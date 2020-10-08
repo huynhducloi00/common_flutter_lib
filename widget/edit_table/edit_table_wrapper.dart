@@ -41,7 +41,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
           .map((entry) {
             var fieldName = entry.key;
             var inputInfo = entry.value;
-            if (inputInfo.calculate == null) {
+            if (inputInfo.needSaving) {
               return ListTile(
                   title: Text(inputInfo.fieldDes),
                   subtitle: Row(

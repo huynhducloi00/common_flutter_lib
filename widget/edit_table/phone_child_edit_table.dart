@@ -31,7 +31,7 @@ class _PhoneChildEditTableState
   }
 
   String _concat(Map row, List<String> fieldList) {
-    String result = toText(context, row[fieldList[0]]);
+    String result = toText(context, row[fieldList[0]]) ??'';
     fieldList.sublist(1).forEach((field) {
       result += ', ${toText(context, row[field]) ?? ''}';
     });
@@ -72,7 +72,7 @@ class _PhoneChildEditTableState
                   .map(
                     (printInfo) => ChildTableUtils.printButton(
                         context, widget.databaseRef, printInfo, parentParam,
-                        isDense: true, isPhone: true),
+                        isDense: true),
                   )
                   .toList()),
           SizedBox(
