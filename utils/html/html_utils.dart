@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:html';
-
 import 'package:canxe/common/utils/html/html_interface.dart';
 
 class HtmlUtils extends HtmlUtilsInterface {
@@ -22,6 +21,7 @@ class HtmlUtils extends HtmlUtilsInterface {
     anchor.remove();
   }
 
+  // Only works on Android web, not iOS
   @override
   void viewBytes(List<int> bytes) {
     final blob = Blob([bytes], 'application/pdf');

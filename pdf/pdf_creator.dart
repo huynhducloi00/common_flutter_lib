@@ -1,7 +1,7 @@
 import '../utils/html/html_no_op.dart'
     if (dart.library.html) '../utils/html/html_utils.dart' as html_utils;
 import 'package:flutter/foundation.dart';
-
+import 'package:platform_detect/platform_detect.dart';
 import 'pdf_interface.dart';
 
 import '../data/cloud_table.dart';
@@ -26,6 +26,7 @@ class GroupByKey {
   @override
   bool operator ==(other) =>
       other is GroupByKey && (listEquals(other.values, values));
+
   @override
   String toString() {
     return values.toString();
@@ -200,7 +201,11 @@ class PdfCreator extends PdfCreatorInterface {
     List<int> bytes = _generatingPdfSummary(buildContext, timeOfPrint,
         printInfo, data.map((e) => e.dataMap).toList());
     if (kIsWeb) {
-      (html_utils.HtmlUtils()).viewBytes(bytes);
+      if (browser.isSafari) {
+        (html_utils.HtmlUtils()).downloadWeb(bytes, printInfo.title);
+      } else {
+        (html_utils.HtmlUtils()).viewBytes(bytes);
+      }
       return null;
     } else {
       // android
