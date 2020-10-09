@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:html';
 import 'package:canxe/common/utils/html/html_interface.dart';
+import 'package:platform_detect/platform_detect.dart';
 
 class HtmlUtils extends HtmlUtilsInterface {
   @override
@@ -28,5 +29,9 @@ class HtmlUtils extends HtmlUtilsInterface {
     final url = Url.createObjectUrlFromBlob(blob);
     window.open(url, "_blank");
     Url.revokeObjectUrl(url);
+  }
+  @override
+  bool isSafari() {
+    return browser.isSafari;
   }
 }

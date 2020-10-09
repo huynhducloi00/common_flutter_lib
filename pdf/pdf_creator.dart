@@ -1,7 +1,6 @@
 import '../utils/html/html_no_op.dart'
     if (dart.library.html) '../utils/html/html_utils.dart' as html_utils;
 import 'package:flutter/foundation.dart';
-import 'package:platform_detect/platform_detect.dart';
 import 'pdf_interface.dart';
 
 import '../data/cloud_table.dart';
@@ -201,8 +200,8 @@ class PdfCreator extends PdfCreatorInterface {
     List<int> bytes = _generatingPdfSummary(buildContext, timeOfPrint,
         printInfo, data.map((e) => e.dataMap).toList());
     if (kIsWeb) {
-      if (browser.isSafari) {
-        (html_utils.HtmlUtils()).downloadWeb(bytes, printInfo.title);
+      if (html_utils.HtmlUtils().isSafari()) {
+        (html_utils.HtmlUtils()).downloadWeb(bytes, 'report.pdf');
       } else {
         (html_utils.HtmlUtils()).viewBytes(bytes);
       }

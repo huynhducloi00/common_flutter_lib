@@ -6,11 +6,12 @@ import 'package:google_sign_in/google_sign_in.dart';
 //  cloud_firestore: ^0.13.5
 //#web dep:
 //firebase: ^7.3.0
+typedef ConvertToUserFunc= dynamic Function(Map<String, dynamic>);
 class AuthService<T> {
   final FirebaseAuth auth = FirebaseAuth.instance;
   CollectionReference _ref = Firestore.instance.collection('users');
   final GoogleSignIn googleSignIn = GoogleSignIn();
-  T Function(Map<String, dynamic>) convertToUser;
+  ConvertToUserFunc convertToUser;
 
   AuthService(this.convertToUser);
 
