@@ -30,10 +30,38 @@ class LinkedData {
   String linkedFieldName;
 
   LinkedData(this.tableName, this.linkedFieldName);
+
+  static UseDataCalculation getLinkedUseDataCalculation(
+      String tableName, String fieldContainsDocumentId,  String getField) {
+    return (row, predefined) {
+      if (predefined == null) return null;
+      DataBundle bundle = predefined[tableName];
+      for (var otherTableRow in bundle.dataRows) {
+        if (otherTableRow[CloudTableSchema.DOCUMENT_ID_FIELD] ==
+            row[fieldContainsDocumentId]) {
+          return UseDataCalculationResult(otherTableRow[getField]);
+        }
+      }
+      return null;
+    };
+  }
+  static UseDataCalculation getLinkedUseDataCalculationUsingFunction(
+      String tableName, String fieldContainsDocumentId,  dynamic Function(Map<String,dynamic>) getFieldFunc) {
+    return (row, predefined) {
+      if (predefined == null) return null;
+      DataBundle bundle = predefined[tableName];
+      for (var otherTableRow in bundle.dataRows) {
+        if (otherTableRow[CloudTableSchema.DOCUMENT_ID_FIELD] ==
+            row[fieldContainsDocumentId]) {
+          return UseDataCalculationResult(getFieldFunc(otherTableRow));
+        }
+      }
+      return null;
+    };
+  }
 }
 
 class InputInfo {
-  String field;
   String fieldDes;
 
   // relative to 1.0
@@ -96,7 +124,7 @@ class InputInfo {
 
   @override
   String toString() {
-    return '$field $fieldDes';
+    return '$fieldDes';
   }
 }
 
@@ -137,11 +165,15 @@ class DataBundle {
   }
 }
 
+typedef DocumentSnapshotConversion = Map Function(DocumentSnapshot);
+
 class RelatedTableData {
   String tableName;
   Query query;
+  DocumentSnapshotConversion documentSnapshotConversion;
 
-  RelatedTableData(this.tableName, {this.query});
+  RelatedTableData(this.tableName,
+      {this.query, this.documentSnapshotConversion});
 }
 
 class InputInfoMap {
@@ -152,6 +184,17 @@ class InputInfoMap {
 
   InputInfoMap(this.map, {this.relatedTables}) {
     _computeCalculatingOrder();
+  }
+
+  InputInfoMap._();
+
+  InputInfoMap cloneInputInfoMap(Map<String, InputInfo> map) {
+    var result = InputInfoMap._();
+    result.map = map;
+    result.calculatingOrder = calculatingOrder;
+    result.fieldChangedFieldMap = fieldChangedFieldMap;
+    result.relatedTables = relatedTables;
+    return result;
   }
 
   Map<String, InputInfo> filterMap(List<String> printFields) {
@@ -251,6 +294,7 @@ class PrintInfo {
   InputInfoMap inputInfoMap;
   List<String> aggregateFields;
   List<String> groupByFields;
+
   PrintInfo(this.inputInfoMap,
       {this.title,
       this.buttonTitle,
@@ -275,6 +319,7 @@ class PrintInfo {
 }
 
 abstract class CloudTableSchema<T extends CloudObject> {
+  static final DOCUMENT_ID_FIELD = 'documentId';
   String tableName;
   String tableDescription;
   InputInfoMap inputInfoMap;
@@ -283,6 +328,7 @@ abstract class CloudTableSchema<T extends CloudObject> {
   List<String> defaultPrintFields;
   PrintTicket printTicket;
   bool defaultPrintVertical;
+  bool showDocumentId;
 
   // The following is for phone view ONLY
   List<String> primaryFields;
@@ -297,6 +343,7 @@ abstract class CloudTableSchema<T extends CloudObject> {
       this.printInfos,
       this.inputInfoMap,
       this.defaultPrintFields,
+      this.showDocumentId = false,
       this.defaultPrintVertical = true,
       this.primaryFields,
       this.subtitleFields,
@@ -323,10 +370,14 @@ abstract class CloudTableSchema<T extends CloudObject> {
             parentParam: null)
       ];
     }
+    List<String> allKeys = inputInfoMap.map.keys.toList();
     if (primaryFields == null) {
-      List<String> allKeys = inputInfoMap.map.keys.toList();
       primaryFields = allKeys.sublist(0, 1);
+    }
+    if (subtitleFields == null) {
       subtitleFields = allKeys.sublist(1);
+    }
+    if (trailingFields == null) {
       trailingFields = List();
     }
   }
@@ -356,8 +407,9 @@ class SchemaAndData<T extends CloudObject> {
 
   static Map fillInOptionData(Map row, Map<String, InputInfo> inputInfoMap) {
     Map<String, dynamic> result = Map();
-    inputInfoMap.forEach((fieldName, inputInfo) {
-      if (inputInfo.optionMap != null) {
+    row.keys.forEach((fieldName) {
+      var inputInfo = inputInfoMap[fieldName];
+      if (inputInfo != null && inputInfo.optionMap != null) {
         result[fieldName] =
             inputInfo.optionMap[row[fieldName]] ?? row[fieldName];
       } else {

@@ -52,7 +52,12 @@ class AutoForm extends StatefulWidget {
           streams = table.query.snapshots();
         }
         return streams.map((event) {
-          List<Map> a = event.documents.map((e) => e.data).toList();
+          List<Map> a = event.documents.map((doc) {
+            if  (table.documentSnapshotConversion!=null){
+              return table.documentSnapshotConversion(doc);
+            }
+            return doc.data;
+          }).toList();
           return DataBundle(table.tableName, a);
         });
       }).toList();

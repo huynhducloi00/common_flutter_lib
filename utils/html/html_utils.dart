@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:html';
-import 'package:canxe/common/utils/html/html_interface.dart';
+import 'html_interface.dart';
 import 'package:platform_detect/platform_detect.dart';
 
 class HtmlUtils extends HtmlUtilsInterface {

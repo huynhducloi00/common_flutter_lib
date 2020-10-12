@@ -76,7 +76,10 @@ class AuthService<T> {
       print('Signed out complete.');
     }
     // Nullify all errors
-    Future signIn = googleSignIn.signIn().catchError((_) => null);
+    Future signIn = googleSignIn.signIn().catchError((error) {
+      print(error);
+      return null;
+    });
     final GoogleSignInAccount googleSignInAccount = await signIn;
     if (googleSignInAccount == null) {
       return Future.value(null);

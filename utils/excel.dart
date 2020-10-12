@@ -100,7 +100,7 @@ class ExcelOperation {
     deciderFields.forEach((element) {
       initValue[element.fieldName] = element.inFileDes;
     });
-    showAlertDialogOverlay(context, percent: 0.6, builder: (_) {
+    showAlertDialog(context, percentageWidth: 0.6, builder: (_) {
       return AutoForm.createAutoForm(
           context, InputInfoMap(inputInfoMap), initValue,
           saveClickFuture: (resultMap) {

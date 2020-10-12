@@ -10,7 +10,9 @@ class CloudObject<T> {
   String documentId;
   Map<String, dynamic> dataMap;
 
-  CloudObject(this.documentId, this.dataMap);
+  CloudObject(this.documentId, this.dataMap){
+      dataMap['documentId']=documentId;
+  }
 // Copy the following static
 //  static ItemLookup _convertToItemLookUp(docId, dynamic data) {
 //    return ItemLookup(docId, data);

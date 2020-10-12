@@ -185,7 +185,7 @@ abstract class CommonButton {
             return Scaffold(
               appBar: AppBar(
                 title: Text(
-                    'Chọn một ${table.inputInfoMap.map[selectedField].fieldDes}'),
+                    'Chọn một ${table.inputInfoMap.map[selectedField]?.fieldDes ?? ''}'),
               ),
               body: EditTableWrapper(
                 table,
@@ -204,15 +204,15 @@ abstract class CommonButton {
 
 class CloudTableUtils {
   static Widget listAllCloudTable(context, List<CloudTableSchema> tables,
-      {isTwoColumns = true}) {
+      {isTwoColumns = true, isDense=true, CrossAxisAlignment crossAxisAlignment=CrossAxisAlignment.start}) {
     List buttons = tables
         .map((table) => CommonButton.createOpenButton(
             context, table, table.tableDescription,
-            icon: table.iconData, isDense: true))
+            icon: table.iconData, isDense: isDense))
         .toList();
     if (isTwoColumns) {
       return splitAnyColumns(buttons, 2);
     }
-    return columnWithGap(buttons);
+    return columnWithGap(buttons,crossAxisAlignment: crossAxisAlignment);
   }
 }

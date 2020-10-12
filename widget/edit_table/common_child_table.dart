@@ -73,9 +73,9 @@ class ChildTableUtils {
                 return autoForm;
               }));
         } else {
-          showAlertDialogOverlay(context, builder: (_) {
+          showAlertDialog(context, builder: (_) {
             return autoForm;
-          });
+          }, percentageWidth: 0.8);
         }
       }, title: 'Mới', iconData: Icons.wallpaper);
 
@@ -83,10 +83,20 @@ class ChildTableUtils {
       context, databaseRef, SchemaAndData schemaAndData, int rowIndex,
       {bool isPhone = false}) {
     return CommonButton.getButton(context, () {
-      popWindow(context);
+      if (isPhone) popWindow(context);
+      var map=schemaAndData.cloudTableSchema.inputInfoMap.map;
+      if (schemaAndData.cloudTableSchema.showDocumentId){
+        map = Map.fromEntries([
+            MapEntry(
+                CloudTableSchema.DOCUMENT_ID_FIELD,
+                InputInfo(DataType.string,
+                    fieldDes: 'Mã', canUpdate: false, needSaving: false))
+          ] +
+            map.entries.toList());
+      }
       var autoForm = AutoForm.createAutoForm(
         context,
-        schemaAndData.cloudTableSchema.inputInfoMap,
+        schemaAndData.cloudTableSchema.inputInfoMap.cloneInputInfoMap(map),
         schemaAndData.data[rowIndex].dataMap,
         saveClickFuture: (resultMap) async {
           await databaseRef
@@ -104,7 +114,7 @@ class ChildTableUtils {
       } else {
         showAlertDialog(context, builder: (_) {
           return autoForm;
-        });
+        }, percentageWidth: 0.8);
       }
     }, title: "Chỉnh sửa", iconData: Icons.edit, isEnabled: rowIndex != null);
   }

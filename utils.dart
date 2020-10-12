@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart' as res_builder;
 
+import 'auth/auth_service.dart';
 import 'widget/edit_table/parent_param.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -20,14 +21,16 @@ final TextStyle MEDIUM_FONT = TextStyle(fontSize: 14);
 const EDIT_TABLE_HORIZONTAL_BORDER_SIDE =
     BorderSide(width: 1, color: Colors.brown, style: BorderStyle.solid);
 
-class LoiAllCloudTables{
+class LoiAllCloudTables {
   static List<CloudTableSchema> cloudTables;
   static Map<String, CloudTableSchema> maps;
-  static void init(List<CloudTableSchema> list){
-    cloudTables=list;
-    maps=list.asMap().map((_, value) => MapEntry(value.tableName, value));
+
+  static void init(List<CloudTableSchema> list) {
+    cloudTables = list;
+    maps = list.asMap().map((_, value) => MapEntry(value.tableName, value));
   }
 }
+
 class TableWidthAndSize {
   double width;
   Map<int, TableColumnWidth> colWidths;
@@ -125,13 +128,15 @@ Widget tableOfTwo(Map<String, String> map,
             Text(
               e.value,
               textAlign: TextAlign.end,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   fontWeight: boldRight ? FontWeight.bold : FontWeight.normal),
             )
           ]));
     }
   }
-  return Table(columnWidths: {1: IntrinsicColumnWidth()}, children: list);
+  return Table(columnWidths: {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()}, children: list);
 }
 
 Widget tableOfInfinite(Map<String, List<String>> map) {
@@ -267,7 +272,7 @@ Future showInformation(context, String title, String content) {
 }
 
 Column columnWithGap(List<Widget> children,
-    {crossAxisAlignment = CrossAxisAlignment.start, double gap = 8}) {
+    {CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start, double gap = 8}) {
   List<Widget> result = List();
   children.forEach((element) {
     result.add(element);
@@ -333,36 +338,39 @@ Route createMaterialPageRoute(parentContext, WidgetBuilder builder) {
 }
 
 Future showAlertDialog(BuildContext context,
-    {WidgetBuilder builder, String title, List<Widget> actions}) {
+    {WidgetBuilder builder,
+    String title,
+    List<Widget> actions,
+    double percentageWidth}) {
   return showDialog(
       context: context,
       builder: (_) {
         return AlertDialog(
           title: title == null ? null : Text(title),
-          content: builder(context),
+          content: percentageWidth == null
+              ? builder(context)
+              : Container(
+                  width: screenWidth(context) * percentageWidth,
+                  child: builder(context)),
           contentPadding: EdgeInsets.zero,
           actions: actions,
         );
       });
 }
 
-Future showAlertDialogOverlay(BuildContext context,
-    {WidgetBuilder builder,
-    String title,
-    List<Widget> actions,
-    percent = 0.8}) {
-  return showDialog(
-      context: context,
-      builder: (_) {
-        return AlertDialog(
-          title: title == null ? null : Text(title),
-          content: Container(
-            child: builder(context),
-            width: screenWidth(context) * percent,
-          ),
-          actions: actions,
-        );
-      });
+createSignOutButton<USER>(context, showErrorFunc) {
+  var onPressSignOut = () {
+    Provider.of<AuthService<USER>>(context, listen: false)
+        .signOut()
+        .catchError((error) {
+      showErrorFunc(context, error);
+    });
+  };
+  return res_builder.ScreenTypeLayout(
+      mobile: CommonButton.getButton(context, onPressSignOut,
+          iconData: Icons.exit_to_app),
+      tablet:
+          CommonButton.getButton(context, onPressSignOut, title: 'Đăng xuất'));
 }
 
 res_builder.ScreenBreakpoints forDebuggingScreenBreakpoints() {

@@ -31,7 +31,9 @@ class SignInWrapper<USER extends User, TYPE> extends StatelessWidget {
                 value: AuthService<USER>(convertToUserFunc),
                 child: Builder(builder: (BuildContext context) {
                   return StreamProvider.value(
-                      catchError: (context, error) {},
+                      catchError: (context, error) {
+                        print(error);
+                      },
                       value: Provider.of<AuthService<USER>>(context)
                           .getUserStream(),
                       child: Builder(
