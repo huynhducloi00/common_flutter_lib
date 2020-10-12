@@ -9,9 +9,9 @@ class PdfUtils {
 
   static Future init() async {
     lightTextStyle = pw.TextStyle(
-        font: pw.Font.ttf(await rootBundle.load('assets/Roboto-Light.ttf')));
+        font: pw.Font.ttf(await rootBundle.load('lib/common/assets/Roboto-Light.ttf')));
     regularTextStyle = pw.TextStyle(
-        font: pw.Font.ttf(await rootBundle.load('assets/Roboto-Regular.ttf')));
+        font: pw.Font.ttf(await rootBundle.load('lib/common/assets/Roboto-Regular.ttf')));
   }
 
   static pw.Text writeLight(String text,
