@@ -376,3 +376,24 @@ createSignOutButton<USER>(context, showErrorFunc) {
 res_builder.ScreenBreakpoints forDebuggingScreenBreakpoints() {
   return res_builder.ScreenBreakpoints(tablet: 400, desktop: 800, watch: 200);
 }
+
+DateTime stripTime(DateTime dateTime) {
+  return DateTime(dateTime.year, dateTime.month, dateTime.day);
+}
+
+
+
+int multiply(int val1, int val2) {
+  if (val1 == null || val2 == null) return null;
+  return val1 * val2;
+}
+
+int minus(int val1, int val2) {
+  if (val1 == null || val2 == null) return null;
+  return val1 - val2;
+}
+
+int absMinus(int val1, int val2) {
+  int minusRes = minus(val1, val2);
+  return minusRes == null ? null : minusRes.abs();
+}

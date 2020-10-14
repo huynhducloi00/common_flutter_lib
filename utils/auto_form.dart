@@ -38,27 +38,29 @@ class AutoForm extends StatefulWidget {
       context, InputInfoMap inputInfoMap, Map<String, dynamic> initialValue,
       {SaveClickFuture saveClickFuture,
       OnPop onPop,
-      LinkedHashSet<String> calculatingOrder, bool isNew=false}) {
+      LinkedHashSet<String> calculatingOrder,
+      bool isNew = false}) {
     var child = AutoForm._internal(
         context, inputInfoMap, initialValue, saveClickFuture, isNew);
     Stream<List<DataBundle>> bundleStream;
     if (inputInfoMap.relatedTables != null) {
       List<Stream<DataBundle>> streams =
-          inputInfoMap.relatedTables.map((table) {
+          inputInfoMap.relatedTables.map((relatedTable) {
         Stream<QuerySnapshot> streams;
-        if (table.query == null) {
-          streams = Firestore.instance.collection(table.tableName).snapshots();
+        if (relatedTable.query == null) {
+          streams =
+              Firestore.instance.collection(relatedTable.tableName).snapshots();
         } else {
-          streams = table.query.snapshots();
+          streams = relatedTable.query.snapshots();
         }
         return streams.map((event) {
           List<Map> a = event.documents.map((doc) {
-            if  (table.documentSnapshotConversion!=null){
-              return table.documentSnapshotConversion(doc);
+            if (relatedTable.documentSnapshotConversion != null) {
+              return relatedTable.documentSnapshotConversion(doc);
             }
             return doc.data;
           }).toList();
-          return DataBundle(table.tableName, a);
+          return DataBundle(relatedTable.tableName, a);
         });
       }).toList();
       bundleStream = StreamZip(streams).map((list) => list);
@@ -84,8 +86,8 @@ class AutoForm extends StatefulWidget {
                   )));
   }
 
-  AutoForm._internal(
-      context, this.inputInfoMap, this.initialValue, this.saveClickFuture, this.isNew);
+  AutoForm._internal(context, this.inputInfoMap, this.initialValue,
+      this.saveClickFuture, this.isNew);
 
   @override
   _AutoFormState createState() => _AutoFormState();
@@ -112,7 +114,7 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
   // 3. DateTimeController.
   Map<String, ValueNotifier> _allNotifiers = Map();
   final _formKey = GlobalKey<FormState>();
-  Map<String, DataBundle> bundleMap=Map();
+  Map<String, DataBundle> bundleMap = Map();
   final SizedBox divider = SizedBox(
     width: 20,
   );
@@ -160,14 +162,16 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
               'affecting field: ${widget.inputInfoMap.fieldChangedFieldMap[changedFieldName]}');
         widget.inputInfoMap.fieldChangedFieldMap[changedFieldName]
             .forEach((fieldName) {
-          var result =
-              widget.inputInfoMap.map[fieldName].calculate(resultBundle, bundleMap);
+          var result = widget.inputInfoMap.map[fieldName]
+              .calculate(resultBundle, bundleMap);
           if (DEBUG) print('$fieldName $result');
           var notifier = _allNotifiers[fieldName];
-          if (result!=null) { // not the same as before check
+          if (result != null) {
+            // not the same as before check
+            resultBundle[fieldName] = result.value;
             if (notifier is TextEditingController) {
               notifier.text = result.value?.toString() ?? '';
-            } else if (notifier is DateTimeController){
+            } else if (notifier is DateTimeController) {
               notifier.value = result.value?.toDate();
             }
           }
@@ -216,7 +220,7 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
                 CommonButton.createDataPickerButton(
                     context,
                     LoiAllCloudTables.maps[inputInfo.linkedData.tableName],
-                    inputInfo.linkedData.linkedFieldName, (val) {
+                    inputInfo.linkedData.linkedFieldName, (val, _) {
                   if (val != null) {
                     (_allNotifiers[fieldName] as TextEditingController).text =
                         val;
@@ -315,15 +319,19 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
     }
     return originalErrorStr;
   }
+
   @override
   Widget delegateBuild(BuildContext context) {
-    bundleMap = data.asMap().map((key, value) => MapEntry(value.tableName, value));
-    if (widget.isNew){
+    bundleMap =
+        data.asMap().map((key, value) => MapEntry(value.tableName, value));
+    if (widget.isNew) {
       widget.inputInfoMap.map.forEach((fieldName, inputInfo) {
-        if (inputInfo.initializeFunc!=null && _allNotifiers[fieldName] is TextEditingController){
-          var controller=_allNotifiers[fieldName] as TextEditingController;
-          if (controller.text.isEmpty ){
-            controller.text=inputInfo.initializeFunc(bundleMap).value?.toString();
+        if (inputInfo.initializeFunc != null &&
+            _allNotifiers[fieldName] is TextEditingController) {
+          var controller = _allNotifiers[fieldName] as TextEditingController;
+          if (controller.text.isEmpty) {
+            controller.text =
+                inputInfo.initializeFunc(bundleMap).value?.toString();
           }
         }
       });

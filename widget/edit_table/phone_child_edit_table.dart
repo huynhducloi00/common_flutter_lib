@@ -13,8 +13,10 @@ import 'parent_param.dart';
 class PhoneChildEditTable<SchemaAndData> extends StatefulWidget {
   final CollectionReference databaseRef;
   DataPickerBundle dataPickerBundle;
+  bool showAllData;
 
-  PhoneChildEditTable(this.databaseRef, this.dataPickerBundle);
+  PhoneChildEditTable(this.databaseRef,
+      {this.dataPickerBundle, this.showAllData = false});
 
   @override
   _PhoneChildEditTableState createState() => _PhoneChildEditTableState();
@@ -43,114 +45,122 @@ class _PhoneChildEditTableState
   Widget delegateBuild(BuildContext context) {
     ParentParam parentParam = Provider.of<ParentParam>(context, listen: false);
     var schemaAndData = data;
-    Widget navigator = Consumer<DatabasePagerNotifier>(builder:
-        (BuildContext context, DatabasePagerNotifier databasePagerNotifier,
-            Widget child) {
-      var newButton=widget.dataPickerBundle == null
-          ? ChildTableUtils.newButton(
-          context, widget.databaseRef, schemaAndData,
-          isPhone: true)
-          : null;
-      if (schemaAndData.data.length == 0) {
-        return Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children:[ CommonButton.getButton(context, () {
-          databasePagerNotifier.value = ChildParam();
-        }, title: 'Về trang đầu'), newButton]);
-      }
-      var beforeQuery = applyFilterToQuery(widget.databaseRef, parentParam)
-          .orderBy(parentParam.sortKey,
-              descending: parentParam.sortKeyDescending)
-          .endBefore([
-        schemaAndData.data.first.dataMap[parentParam.sortKey]
-      ]).limit(1) as Query;
-      var afterQuery = applyFilterToQuery(widget.databaseRef, parentParam)
-          .orderBy(parentParam.sortKey,
-              descending: parentParam.sortKeyDescending)
-          .startAfter([
-        schemaAndData.data.last.dataMap[parentParam.sortKey]
-      ]).limit(1) as Query;
-      return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            widget.dataPickerBundle != null
-                ? null
-                : ExpansionTile(
-                    title: Text('Thông tin thêm'),
-                    children: <Widget>[
-                        Wrap(
-                            runSpacing: 4,
-                            spacing: 8,
-                            children: schemaAndData.cloudTableSchema.printInfos
-                                .map(
-                                  (printInfo) => ChildTableUtils.printButton(
-                                      context,
-                                      widget.databaseRef,
-                                      printInfo,
-                                      parentParam,
-                                      isDense: true),
-                                )
-                                .toList()),
-                        SizedBox(
-                          width: screenWidth(context),
-                          height: screenHeight(context) * 0.1,
-                          child: tableOfTwo({
-                            'Trường sắp xếp':
-                                '${schemaAndData.cloudTableSchema.inputInfoMap.map[parentParam.sortKey].fieldDes}-${parentParam.sortKeyDescending ? "Giảm dần" : "Tăng dần"}',
-                            'Hiển thị sau': toText(context,
-                                databasePagerNotifier.value.startAfter),
-                            'Hiển thị trước': toText(
-                                context, databasePagerNotifier.value.endBefore),
-                            'Số lượng hiển thị': '${schemaAndData.data.length}',
-                          }, boldRight: true),
-                        ),
-                      ]),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    Widget navigator;
+    if (!widget.showAllData) {
+      navigator = Consumer<DatabasePagerNotifier>(builder:
+          (BuildContext context, DatabasePagerNotifier databasePagerNotifier,
+              Widget child) {
+        var newButton = widget.dataPickerBundle == null
+            ? ChildTableUtils.newButton(
+                context, widget.databaseRef, schemaAndData.cloudTableSchema.inputInfoMap,
+                isPhone: true)
+            : null;
+        if (schemaAndData.data.length == 0) {
+          return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                StreamProvider<bool>.value(
-                  value: isLoading
-                      ? Stream<bool>.value(false)
-                      : beforeQuery.snapshots().map((event) {
-                          return event.documents.length > 0;
-                        }),
-                  child: Builder(
-                    builder: (BuildContext context) {
-                      bool existBefore = Provider.of<bool>(context) ?? false;
+                CommonButton.getButton(context, () {
+                  databasePagerNotifier.value = ChildParam();
+                }, title: 'Về trang đầu'),
+                newButton
+              ]);
+        }
+        var beforeQuery = applyFilterToQuery(widget.databaseRef, parentParam)
+            .orderBy(parentParam.sortKey,
+                descending: parentParam.sortKeyDescending)
+            .endBefore([
+          schemaAndData.data.first.dataMap[parentParam.sortKey]
+        ]).limit(1) as Query;
+        var afterQuery = applyFilterToQuery(widget.databaseRef, parentParam)
+            .orderBy(parentParam.sortKey,
+                descending: parentParam.sortKeyDescending)
+            .startAfter([
+          schemaAndData.data.last.dataMap[parentParam.sortKey]
+        ]).limit(1) as Query;
+        return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              widget.dataPickerBundle != null
+                  ? null
+                  : ExpansionTile(title: Text('Thông tin thêm'), children: <
+                      Widget>[
+                      Wrap(
+                          runSpacing: 4,
+                          spacing: 8,
+                          children: schemaAndData.cloudTableSchema.printInfos
+                              .map(
+                                (printInfo) => ChildTableUtils.printButton(
+                                    context,
+                                    widget.databaseRef,
+                                    printInfo,
+                                    parentParam,
+                                    isDense: true),
+                              )
+                              .toList()),
+                      SizedBox(
+                        width: screenWidth(context),
+                        height: screenHeight(context) * 0.1,
+                        child: tableOfTwo({
+                          'Trường sắp xếp':
+                              '${schemaAndData.cloudTableSchema.inputInfoMap.map[parentParam.sortKey].fieldDes}-${parentParam.sortKeyDescending ? "Giảm dần" : "Tăng dần"}',
+                          'Hiển thị sau': toText(
+                              context, databasePagerNotifier.value.startAfter),
+                          'Hiển thị trước': toText(
+                              context, databasePagerNotifier.value.endBefore),
+                          'Số lượng hiển thị': '${schemaAndData.data.length}',
+                        }, boldRight: true),
+                      ),
+                    ]),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  StreamProvider<bool>.value(
+                    value: isLoading
+                        ? Stream<bool>.value(false)
+                        : beforeQuery.snapshots().map((event) {
+                            return event.documents.length > 0;
+                          }),
+                    child: Builder(
+                      builder: (BuildContext context) {
+                        bool existBefore = Provider.of<bool>(context) ?? false;
+                        return CommonButton.getButton(context, () {
+                          // go back
+                          databasePagerNotifier.value = ChildParam(
+                              endBefore: schemaAndData
+                                  .data.first.dataMap[parentParam.sortKey]);
+                        },
+                            title: "",
+                            iconData:
+                                existBefore ? Icons.navigate_before : null,
+                            isEnabled: existBefore);
+                      },
+                    ),
+                  ),
+                  StreamProvider<bool>.value(
+                    value: isLoading
+                        ? Stream<bool>.value(false)
+                        : afterQuery
+                            .snapshots()
+                            .map((event) => event.documents.length > 0),
+                    child: Builder(builder: (BuildContext context) {
+                      bool existAfter = Provider.of<bool>(context) ?? false;
                       return CommonButton.getButton(context, () {
-                        // go back
+                        // go forward
                         databasePagerNotifier.value = ChildParam(
-                            endBefore: schemaAndData
-                                .data.first.dataMap[parentParam.sortKey]);
+                            startAfter: schemaAndData
+                                .data.last.dataMap[parentParam.sortKey]);
                       },
                           title: "",
-                          iconData: existBefore ? Icons.navigate_before : null,
-                          isEnabled: existBefore);
-                    },
+                          iconData: existAfter ? Icons.navigate_next : null,
+                          isEnabled: existAfter);
+                    }),
                   ),
-                ),
-                StreamProvider<bool>.value(
-                  value: isLoading
-                      ? Stream<bool>.value(false)
-                      : afterQuery
-                          .snapshots()
-                          .map((event) => event.documents.length > 0),
-                  child: Builder(builder: (BuildContext context) {
-                    bool existAfter = Provider.of<bool>(context) ?? false;
-                    return CommonButton.getButton(context, () {
-                      // go forward
-                      databasePagerNotifier.value = ChildParam(
-                          startAfter: schemaAndData
-                              .data.last.dataMap[parentParam.sortKey]);
-                    },
-                        title: "",
-                        iconData: existAfter ? Icons.navigate_next : null,
-                        isEnabled: existAfter);
-                  }),
-                ),
-                newButton
-              ].where((element) => element != null).toList(),
-            ),
-          ].where((element) => element != null).toList());
-    });
+                  newButton
+                ].where((element) => element != null).toList(),
+              ),
+            ].where((element) => element != null).toList());
+      });
+    }
     List<Widget> itemList = schemaAndData.data.asMap().entries.map((entry) {
       var index = entry.key;
       var cloudObj = entry.value;
@@ -185,8 +195,7 @@ class _PhoneChildEditTableState
                     .toList()),
             onTap: () {
               if (widget.dataPickerBundle != null) {
-                print(row);
-                Navigator.pop(context, row[widget.dataPickerBundle.fieldName]);
+                Navigator.pop(context, [row[widget.dataPickerBundle.fieldName], row]);
                 return;
               }
               showAlertDialog(context, builder: (_) {
@@ -206,7 +215,7 @@ class _PhoneChildEditTableState
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: [navigator] + itemList,
+      children: navigator == null ? itemList : [navigator] + itemList,
     );
   }
 }

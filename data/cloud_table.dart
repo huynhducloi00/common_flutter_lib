@@ -84,9 +84,11 @@ class InputInfo {
   bool limitToOptions;
   LinkedData linkedData;
 
-  // good for 6 figures
   static const SMALL_INT_COLUMN = 0.4;
+  // good for 6 figures
   static const BIG_INT_COLUMN = 0.6;
+  // good for 8 figures
+  static const SUPER_BIG_INT_COLUMN = 0.7;
   static const String CANT_BE_NULL = "Không thể bỏ trống";
 
   InputInfo(this.dataType,
@@ -329,14 +331,17 @@ abstract class CloudTableSchema<T extends CloudObject> {
   PrintTicket printTicket;
   bool defaultPrintVertical;
   bool showDocumentId;
-
+  // This is for web view only
+  List<String> visibleFields;
   // The following is for phone view ONLY
   List<String> primaryFields;
   List<String> subtitleFields;
   List<String> trailingFields;
   IconData iconData;
   bool showIconDataOnRow;
-
+  CollectionReference getCollectionRef(){
+    return Firestore.instance.collection(tableName);
+  }
   CloudTableSchema(
       {this.tableName,
       this.tableDescription,
@@ -345,6 +350,7 @@ abstract class CloudTableSchema<T extends CloudObject> {
       this.defaultPrintFields,
       this.showDocumentId = false,
       this.defaultPrintVertical = true,
+        this.visibleFields,
       this.primaryFields,
       this.subtitleFields,
       this.trailingFields,
@@ -380,6 +386,9 @@ abstract class CloudTableSchema<T extends CloudObject> {
     if (trailingFields == null) {
       trailingFields = List();
     }
+    if (visibleFields==null){
+      visibleFields=allKeys;
+    }
   }
 
   SchemaAndData<T> convertSnapshotToDataList(List<DocumentSnapshot> event);
@@ -394,12 +403,12 @@ class SchemaAndData<T extends CloudObject> {
   }
 
   static void fillInCalculatedData(data, InputInfoMap inputInfoMap) {
-    data.forEach((row) {
+    data.forEach((cloudObj) {
       inputInfoMap.calculatingOrder.forEach((fieldName) {
         // Since this is initializing calculation, no need to calculate saved data.
         if (!inputInfoMap.map[fieldName].needSaving) {
-          var result = inputInfoMap.map[fieldName].calculate(row.dataMap, null);
-          row.dataMap[fieldName] = result == null ? null : result.value;
+          var result = inputInfoMap.map[fieldName].calculate(cloudObj.dataMap,/* predefined= */ null);
+          cloudObj.dataMap[fieldName] = result == null ? null : result.value;
         }
       });
     });

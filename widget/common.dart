@@ -16,7 +16,8 @@ abstract class TextWithUnderline extends Widget {
   factory TextWithUnderline(text, style) => getTextWithUnderline(text, style);
 }
 
-typedef DialogReturnedValue = void Function(dynamic val);
+typedef DialogReturnedValue = void Function(
+    dynamic val, Map<String, dynamic> allData);
 
 class LoiButtonStyle {
   Color regularColor, hoverColor, textColor, iconColor, disabledColor;
@@ -30,6 +31,20 @@ class LoiButtonStyle {
 }
 
 abstract class CommonButton {
+  static Widget createDataListWidget(
+      context,
+      CloudTableSchema table,
+      Map<String, FilterDataWrapper> filter,
+      PostColorDecorationCondition postColorDecorationCondition) {
+    return EditTableWrapper(
+        table,
+        ParentParam(
+            sortKey: table.inputInfoMap.map.keys.first,
+            sortKeyDescending: true,
+            postColorDecorationCondition: postColorDecorationCondition,
+            filterDataWrappers: filter));
+  }
+
   static Widget createOpenButton(context, CloudTableSchema table, title,
       {IconData icon,
       Map<String, FilterDataWrapper> filter,
@@ -37,13 +52,8 @@ abstract class CommonButton {
       bool isDense = false}) {
     return CommonButton.getOpenButton(
         context,
-        EditTableWrapper(
-            table,
-            ParentParam(
-                sortKey: table.inputInfoMap.map.keys.first,
-                sortKeyDescending: true,
-                postColorDecorationCondition: postColorDecorationCondition,
-                filterDataWrappers: filter)),
+        createDataListWidget(
+            context, table, filter, postColorDecorationCondition),
         title,
         icon,
         isDense: isDense);
@@ -177,9 +187,9 @@ abstract class CommonButton {
 
   static Widget createDataPickerButton(context, CloudTableSchema table,
       String selectedField, DialogReturnedValue dialogReturnedValue,
-      {String title, IconData iconData}) {
+      {String title, IconData iconData, bool isDense=false}) {
     return CommonButton.getButtonAsync(context, () async {
-      var result = await Navigator.push(
+      var results = await Navigator.push(
           context,
           createMaterialPageRoute(context, (context) {
             return Scaffold(
@@ -197,14 +207,17 @@ abstract class CommonButton {
               ),
             );
           }));
-      dialogReturnedValue(result);
-    }, title: title, iconData: iconData);
+      if (results != null)
+        dialogReturnedValue(results[0], /* full list= */ results[1]);
+    }, title: title, iconData: iconData, isDense: isDense);
   }
 }
 
 class CloudTableUtils {
   static Widget listAllCloudTable(context, List<CloudTableSchema> tables,
-      {isTwoColumns = true, isDense=true, CrossAxisAlignment crossAxisAlignment=CrossAxisAlignment.start}) {
+      {isTwoColumns = true,
+      isDense = true,
+      CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start}) {
     List buttons = tables
         .map((table) => CommonButton.createOpenButton(
             context, table, table.tableDescription,
@@ -213,6 +226,6 @@ class CloudTableUtils {
     if (isTwoColumns) {
       return splitAnyColumns(buttons, 2);
     }
-    return columnWithGap(buttons,crossAxisAlignment: crossAxisAlignment);
+    return columnWithGap(buttons, crossAxisAlignment: crossAxisAlignment);
   }
 }

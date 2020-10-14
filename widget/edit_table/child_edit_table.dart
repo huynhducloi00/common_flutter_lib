@@ -18,8 +18,9 @@ class SelectedIndexChangeNotifier extends ValueNotifier<int> {
 
 class ChildEditTable<SchemaAndData> extends StatefulWidget {
   CollectionReference databaseRef;
+  bool showAllData;
 
-  ChildEditTable(this.databaseRef);
+  ChildEditTable(this.databaseRef, {this.showAllData = false});
 
   @override
   _ChildEditTableState createState() => _ChildEditTableState();
@@ -45,8 +46,11 @@ class _ChildEditTableState
     _selectedIndexChangeNotifier.value = null;
     ParentParam parentParam = Provider.of<ParentParam>(context, listen: false);
     var schemaAndData = data;
-    TableWidthAndSize tableWidthAndSize = getEditTableColWidths(
-        context, schemaAndData.cloudTableSchema.inputInfoMap.map);
+    Map<String, InputInfo> filterVisibleFieldMap = schemaAndData
+        .cloudTableSchema.inputInfoMap
+        .filterMap(schemaAndData.cloudTableSchema.visibleFields);
+    TableWidthAndSize tableWidthAndSize =
+        getEditTableColWidths(context, filterVisibleFieldMap);
     return Material(
       child: ChangeNotifierProvider(
           create: (BuildContext context) {
@@ -75,11 +79,7 @@ class _ChildEditTableState
                               schemaAndData.cloudTableSchema.inputInfoMap.map);
 
                           var dataRow = TableRow(
-                              children: schemaAndData
-                                  .cloudTableSchema.inputInfoMap.map.keys
-                                  .map((field) {
-                            InputInfo inputInfo = schemaAndData
-                                .cloudTableSchema.inputInfoMap.map[field];
+                              children: filterVisibleFieldMap.keys.map((field) {
                             return TableCell(
                                 child: GestureDetector(
                               onTap: () {
@@ -137,7 +137,8 @@ class _ChildEditTableState
                         .startAfter([
                   schemaAndData.data.last.dataMap[parentParam.sortKey]
                 ]).limit(1) as Query;
-                return Column(children: [
+                return Column(
+                    children: [
                   SizedBox(
                     width: screenWidth(context) * 0.3,
                     height: screenHeight(context) * 0.1,
@@ -151,57 +152,61 @@ class _ChildEditTableState
                       'Số lượng hiển thị': '${schemaAndData.data.length}',
                     }, boldRight: true),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      StreamProvider<bool>.value(
-                        value: isLoading
-                            ? Stream<bool>.value(false)
-                            : beforeQuery.snapshots().map((event) {
-                                return event.documents.length > 0;
+                  widget.showAllData
+                      ? null
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            StreamProvider<bool>.value(
+                              value: isLoading
+                                  ? Stream<bool>.value(false)
+                                  : beforeQuery.snapshots().map((event) {
+                                      return event.documents.length > 0;
+                                    }),
+                              child: Builder(
+                                builder: (BuildContext context) {
+                                  bool existBefore =
+                                      Provider.of<bool>(context) ?? false;
+                                  return CommonButton.getButton(context, () {
+                                    // go back
+                                    databasePagerNotifier.value = ChildParam(
+                                        endBefore: schemaAndData.data.first
+                                            .dataMap[parentParam.sortKey]);
+                                  },
+                                      title: "",
+                                      iconData: existBefore
+                                          ? Icons.navigate_before
+                                          : null,
+                                      isEnabled: existBefore);
+                                },
+                              ),
+                            ),
+                            SizedBox(
+                              width: 20,
+                            ),
+                            StreamProvider<bool>.value(
+                              value: isLoading
+                                  ? Stream<bool>.value(false)
+                                  : afterQuery.snapshots().map(
+                                      (event) => event.documents.length > 0),
+                              child: Builder(builder: (BuildContext context) {
+                                bool existAfter =
+                                    Provider.of<bool>(context) ?? false;
+                                return CommonButton.getButton(context, () {
+                                  // go forward
+                                  databasePagerNotifier.value = ChildParam(
+                                      startAfter: schemaAndData.data.last
+                                          .dataMap[parentParam.sortKey]);
+                                },
+                                    title: "",
+                                    iconData:
+                                        existAfter ? Icons.navigate_next : null,
+                                    isEnabled: existAfter);
                               }),
-                        child: Builder(
-                          builder: (BuildContext context) {
-                            bool existBefore =
-                                Provider.of<bool>(context) ?? false;
-                            return CommonButton.getButton(context, () {
-                              // go back
-                              databasePagerNotifier.value = ChildParam(
-                                  endBefore: schemaAndData
-                                      .data.first.dataMap[parentParam.sortKey]);
-                            },
-                                title: "",
-                                iconData:
-                                    existBefore ? Icons.navigate_before : null,
-                                isEnabled: existBefore);
-                          },
+                            ),
+                          ],
                         ),
-                      ),
-                      SizedBox(
-                        width: 20,
-                      ),
-                      StreamProvider<bool>.value(
-                        value: isLoading
-                            ? Stream<bool>.value(false)
-                            : afterQuery
-                                .snapshots()
-                                .map((event) => event.documents.length > 0),
-                        child: Builder(builder: (BuildContext context) {
-                          bool existAfter = Provider.of<bool>(context) ?? false;
-                          return CommonButton.getButton(context, () {
-                            // go forward
-                            databasePagerNotifier.value = ChildParam(
-                                startAfter: schemaAndData
-                                    .data.last.dataMap[parentParam.sortKey]);
-                          },
-                              title: "",
-                              iconData: existAfter ? Icons.navigate_next : null,
-                              isEnabled: existAfter);
-                        }),
-                      ),
-                    ],
-                  ),
-                ]);
+                ].where((element) => element != null).toList());
               });
             }),
             SizedBox(
@@ -258,8 +263,8 @@ class _ChildEditTableState
                           ),
                         )
                       : null,
-                  ChildTableUtils.newButton(
-                      context, widget.databaseRef, schemaAndData),
+                  ChildTableUtils.newButton(context, widget.databaseRef,
+                      schemaAndData.cloudTableSchema.inputInfoMap),
                   ChildTableUtils.editButton(context, widget.databaseRef,
                       schemaAndData, selectedIndexChangeNotifier.value),
                   ChildTableUtils.deleteButton(context, widget.databaseRef,

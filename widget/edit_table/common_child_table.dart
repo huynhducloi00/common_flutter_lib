@@ -13,7 +13,7 @@ import '../common.dart';
 import 'parent_param.dart';
 
 class ChildTableUtils {
-  static Widget printButton(context, databaseRef, PrintInfo printInfo,
+  static Widget printButton(context,CollectionReference databaseRef, PrintInfo printInfo,
       ParentParam fallBackParentParam,
       {isDense = false, Color backgroundColor}) {
     return CommonButton.getButtonAsync(context, () async {
@@ -40,7 +40,7 @@ class ChildTableUtils {
               row.dataMap, printInfo.inputInfoMap.map);
         });
         await creator.createPdfSummary(
-            context, DateTime.now(), printInfo, data );
+            context, DateTime.now(), printInfo, data);
       });
     },
         title: printInfo.buttonTitle,
@@ -58,25 +58,33 @@ class ChildTableUtils {
         regularColor: backgroundColor);
   }
 
-  static Widget newButton(context, databaseRef, SchemaAndData schemaAndData,
-          {bool isPhone = false}) =>
-      CommonButton.getButton(context, () {
-        var autoForm = AutoForm.createAutoForm(
-            context, schemaAndData.cloudTableSchema.inputInfoMap, {},
+  static void initiateNew(
+      context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
+      {bool isPhone = false, Map<String, dynamic> initialValues}) {
+    var autoForm =
+        AutoForm.createAutoForm(context, inputInfoMap, initialValues ?? {},
             saveClickFuture: (resultMap) {
-          return databaseRef.document().setData(resultMap);
-        }, isNew: true);
-        if (isPhone) {
-          Navigator.push(
-              context,
-              createMaterialPageRoute(context, (_) {
-                return autoForm;
-              }));
-        } else {
-          showAlertDialog(context, builder: (_) {
+      return databaseRef.document().setData(resultMap);
+    }, isNew: true);
+    if (isPhone) {
+      Navigator.push(
+          context,
+          createMaterialPageRoute(context, (_) {
             return autoForm;
-          }, percentageWidth: 0.8);
-        }
+          }));
+    } else {
+      showAlertDialog(context, builder: (_) {
+        return autoForm;
+      }, percentageWidth: 0.8);
+    }
+  }
+
+  static Widget newButton(
+          context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
+          {bool isPhone = false, Map<String, dynamic> initialValues}) =>
+      CommonButton.getButton(context, () {
+        initiateNew(context, databaseRef, inputInfoMap,
+            isPhone: isPhone, initialValues: initialValues);
       }, title: 'Mới', iconData: Icons.wallpaper);
 
   static Widget editButton(
@@ -84,14 +92,14 @@ class ChildTableUtils {
       {bool isPhone = false}) {
     return CommonButton.getButton(context, () {
       if (isPhone) popWindow(context);
-      var map=schemaAndData.cloudTableSchema.inputInfoMap.map;
-      if (schemaAndData.cloudTableSchema.showDocumentId){
+      var map = schemaAndData.cloudTableSchema.inputInfoMap.map;
+      if (schemaAndData.cloudTableSchema.showDocumentId) {
         map = Map.fromEntries([
-            MapEntry(
-                CloudTableSchema.DOCUMENT_ID_FIELD,
-                InputInfo(DataType.string,
-                    fieldDes: 'Mã', canUpdate: false, needSaving: false))
-          ] +
+              MapEntry(
+                  CloudTableSchema.DOCUMENT_ID_FIELD,
+                  InputInfo(DataType.string,
+                      fieldDes: 'Mã', canUpdate: false, needSaving: false))
+            ] +
             map.entries.toList());
       }
       var autoForm = AutoForm.createAutoForm(

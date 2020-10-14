@@ -20,9 +20,13 @@ class EditTableWrapper extends StatefulWidget {
   ParentParam parentParam;
   CloudTableSchema cloudTable;
   DataPickerBundle dataPickerBundle;
+  bool showAllData;
+  bool showFilterBar;
 
   EditTableWrapper(this.cloudTable, this.parentParam,
-      {this.dataPickerBundle}) {
+      {this.dataPickerBundle,
+      this.showAllData = false,
+      this.showFilterBar = true}) {
     if (parentParam.sortKey == null) {
       parentParam.sortKey = cloudTable.inputInfoMap.map.keys.first;
       parentParam.sortKeyDescending = false;
@@ -163,7 +167,8 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
   }
 
   List getHeaderRow() {
-    var tableCells = widget.cloudTable.inputInfoMap.map.entries.map((e) {
+    var filteredMap=widget.cloudTable.inputInfoMap.filterMap(widget.cloudTable.visibleFields);
+    var tableCells = filteredMap.entries.map((e) {
       var fieldName = e.key;
       var inputInfo = e.value;
       return SizedBox(
@@ -178,13 +183,13 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
                 style: BIG_FONT,
                 maxLines: 2,
               )),
-              toggleSort(fieldName),
-              toggleFilter(inputInfo, fieldName)
-            ]),
+              widget.showFilterBar ? toggleSort(fieldName) : null,
+              widget.showFilterBar ? toggleFilter(inputInfo, fieldName) : null
+            ].where((element) => element != null).toList()),
       );
     }).toList();
     TableWidthAndSize tableWidthAndSize =
-        getEditTableColWidths(context, widget.cloudTable.inputInfoMap.map);
+        getEditTableColWidths(context, filteredMap);
     return [
       Table(
         columnWidths: tableWidthAndSize.colWidths,
@@ -203,30 +208,36 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
   Widget build(BuildContext context) {
     var content = Provider.value(
         value: widget.parentParam,
-        child: TableWrapper(widget.cloudTable, widget.dataPickerBundle));
+        child: TableWrapper(
+          widget.cloudTable,
+          widget.dataPickerBundle,
+          showAllData: widget.showAllData,
+        ));
     var mobile = SingleChildScrollView(
-      child: Column(mainAxisSize: MainAxisSize.max, children: [
-        getFilterButton(),
-        content,
-      ]),
+      child: Column(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            widget.showFilterBar ? getFilterButton() : null,
+            content,
+          ].where((element) => element != null).toList()),
     );
     var tablet = LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-      var headerRow = getHeaderRow();
+      var headerRowBundle = getHeaderRow();
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: SizedBox(
-          width: headerRow[1],
+          width: headerRowBundle[1],
           child: Column(
             children: [
-              headerRow[0],
+              headerRowBundle[0],
               content,
             ],
           ),
         ),
       );
     });
-    return widget.dataPickerBundle!=null
+    return widget.dataPickerBundle != null
         ? mobile
         : ScreenTypeLayout(
             // breakpoints: forDebuggingScreenBreakpoints(),
@@ -245,8 +256,10 @@ class TableWrapper extends StatefulWidget {
 
   CloudTableSchema cloudTable;
   DataPickerBundle dataPickerBundle;
+  bool showAllData;
 
-  TableWrapper(this.cloudTable, this.dataPickerBundle);
+  TableWrapper(this.cloudTable, this.dataPickerBundle,
+      {this.showAllData = false});
 }
 
 class _TableWrapperState extends State<TableWrapper> {
@@ -264,42 +277,44 @@ class _TableWrapperState extends State<TableWrapper> {
       builder: (BuildContext context, DatabasePagerNotifier _, Widget child) {
         ParentParam parentParam =
             Provider.of<ParentParam>(context, listen: false);
-        CollectionReference _databaseRef =
-            Firestore.instance.collection(widget.cloudTable.tableName);
+        CollectionReference _databaseRef =widget.cloudTable.getCollectionRef();
+        // Apply both parent and child params.
         var query = applyFilterToQuery(_databaseRef, parentParam);
         // startAfter ... table ... endBefore, which affected by sort direction
         bool reverse = false;
-        if (parentParam.sortKeyDescending) {
-          if (databasePagerNotifier.value.endBefore != null) {
-            // reverse of endBefore is start after
-            query = query
-                .orderBy(parentParam.sortKey, descending: false)
-                .startAfter([databasePagerNotifier.value.endBefore]);
-            reverse = true;
+        if (!widget.showAllData) {
+          if (parentParam.sortKeyDescending) {
+            if (databasePagerNotifier.value.endBefore != null) {
+              // reverse of endBefore is start after
+              query = query
+                  .orderBy(parentParam.sortKey, descending: false)
+                  .startAfter([databasePagerNotifier.value.endBefore]);
+              reverse = true;
+            } else {
+              query = query.orderBy(parentParam.sortKey, descending: true);
+              if (databasePagerNotifier.value.startAfter != null) {
+                query =
+                    query.startAfter([databasePagerNotifier.value.startAfter]);
+              }
+            }
           } else {
-            query = query.orderBy(parentParam.sortKey, descending: true);
-            if (databasePagerNotifier.value.startAfter != null) {
-              query =
-                  query.startAfter([databasePagerNotifier.value.startAfter]);
+            // ascending
+            if (databasePagerNotifier.value.endBefore != null) {
+              // reverse of endBefore is start after
+              query = query
+                  .orderBy(parentParam.sortKey, descending: true)
+                  .startAfter([databasePagerNotifier.value.endBefore]);
+              reverse = true;
+            } else {
+              query = query.orderBy(parentParam.sortKey, descending: false);
+              if (databasePagerNotifier.value.startAfter != null) {
+                query =
+                    query.startAfter([databasePagerNotifier.value.startAfter]);
+              }
             }
           }
-        } else {
-          // ascending
-          if (databasePagerNotifier.value.endBefore != null) {
-            // reverse of endBefore is start after
-            query = query
-                .orderBy(parentParam.sortKey, descending: true)
-                .startAfter([databasePagerNotifier.value.endBefore]);
-            reverse = true;
-          } else {
-            query = query.orderBy(parentParam.sortKey, descending: false);
-            if (databasePagerNotifier.value.startAfter != null) {
-              query =
-                  query.startAfter([databasePagerNotifier.value.startAfter]);
-            }
-          }
+          query = query.limit(LIMIT);
         }
-        query = query.limit(LIMIT);
         Stream<SchemaAndData<CloudObject>> newSnapshot =
             (query as Query).snapshots().map((event) {
           List<DocumentSnapshot> snapshots = List();
@@ -311,12 +326,23 @@ class _TableWrapperState extends State<TableWrapper> {
         });
         return createStreamBuilder<SchemaAndData<CloudObject>, Widget>(
             stream: newSnapshot,
-            child: widget.dataPickerBundle!=null
-                ? PhoneChildEditTable(_databaseRef,widget.dataPickerBundle)
-                : ScreenTypeLayout(
+            child: widget.dataPickerBundle == null
+                ? ScreenTypeLayout(
                     // breakpoints: forDebuggingScreenBreakpoints(),
-                    tablet: ChildEditTable(_databaseRef),
-                    mobile: PhoneChildEditTable(_databaseRef, null)));
+                    tablet: ChildEditTable(
+                      _databaseRef,
+                      showAllData: widget.showAllData,
+                    ),
+                    mobile: PhoneChildEditTable(
+                      _databaseRef,
+                      showAllData: widget.showAllData,
+                    ))
+                // always use phone pick styles when there is a need to pick
+                : PhoneChildEditTable(
+                    _databaseRef,
+                    dataPickerBundle: widget.dataPickerBundle,
+                    showAllData: widget.showAllData,
+                  ));
       },
     ));
   }
