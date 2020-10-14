@@ -57,10 +57,10 @@ class PdfCreator extends PdfCreatorInterface {
         .filterMap((printInfo.groupByFields ?? []) + printInfo.printFields);
     usedInputInfoMap.entries.forEach((e) {
       InputInfo inputInfo = e.value;
-      sumFraction += inputInfo.flex;
+      sumFraction += inputInfo.printFlex;
     });
     usedInputInfoMap.entries.toList().asMap().forEach((key, value) {
-      colWidths[key] = pw.FractionColumnWidth(value.value.flex / sumFraction);
+      colWidths[key] = pw.FractionColumnWidth(value.value.printFlex / sumFraction);
     });
     int count = 0;
     // for landscape

@@ -65,7 +65,8 @@ class InputInfo {
   String fieldDes;
 
   // relative to 1.0
-  double flex;
+  double displayFlex;
+  double printFlex;
   Function validator;
 
   // Calculate only happens when initializing data, or when its contributor variables changes.
@@ -83,11 +84,11 @@ class InputInfo {
   Map<dynamic, String> optionMap;
   bool limitToOptions;
   LinkedData linkedData;
-
+  // 4 or less
   static const SMALL_INT_COLUMN = 0.4;
   // good for 6 figures
-  static const BIG_INT_COLUMN = 0.6;
-  // good for 8 figures
+  static const BIG_INT_COLUMN = 0.5;
+  // good for >=7 figures
   static const SUPER_BIG_INT_COLUMN = 0.7;
   static const String CANT_BE_NULL = "Không thể bỏ trống";
 
@@ -99,18 +100,24 @@ class InputInfo {
       this.canUpdate = true,
       this.needSaving = true,
       this.initializeFunc,
-      this.flex,
+      this.displayFlex,
+        this.printFlex,
       this.linkedData,
       this.optionMap,
       this.limitToOptions = false}) {
-    if (flex == null) {
+    if (displayFlex == null) {
       if (dataType == DataType.int)
-        flex = SMALL_INT_COLUMN;
+        displayFlex = SMALL_INT_COLUMN;
       else
-        flex = 1.0;
+        displayFlex = 1.0;
+    }
+    if (printFlex==null){
+      if (dataType == DataType.int)
+        printFlex = SMALL_INT_COLUMN;
+      else
+        printFlex = displayFlex;
     }
   }
-
   static Map<dynamic, String> createSameKeyValueMap(List<dynamic> vals) {
     Map<dynamic, String> tmp = Map();
     for (var val in vals) {

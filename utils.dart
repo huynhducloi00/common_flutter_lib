@@ -46,7 +46,7 @@ TableWidthAndSize getEditTableColWidths(
   int index = 0;
   double sumWidth = 0;
   inputInfoMap.forEach((fieldName, inputInfo) {
-    double width = inputInfo.flex * standardColWidth;
+    double width = inputInfo.displayFlex * standardColWidth;
     sumWidth += width;
     colWidths[index] = FixedColumnWidth(width);
     index++;
