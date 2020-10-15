@@ -8,8 +8,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 //firebase: ^7.3.0
 typedef ConvertToUserFunc= dynamic Function(Map<String, dynamic>);
 class AuthService<T> {
+  static final String USER_TABLE_NAME='users';
   final FirebaseAuth auth = FirebaseAuth.instance;
-  CollectionReference _ref = Firestore.instance.collection('users');
+  CollectionReference _ref = Firestore.instance.collection(USER_TABLE_NAME);
   final GoogleSignIn googleSignIn = GoogleSignIn();
   ConvertToUserFunc convertToUser;
 
