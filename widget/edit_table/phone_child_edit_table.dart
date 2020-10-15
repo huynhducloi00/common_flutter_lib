@@ -46,15 +46,43 @@ class _PhoneChildEditTableState
     ParentParam parentParam = Provider.of<ParentParam>(context, listen: false);
     var schemaAndData = data;
     Widget navigator;
-    if (!widget.showAllData) {
-      navigator = Consumer<DatabasePagerNotifier>(builder:
-          (BuildContext context, DatabasePagerNotifier databasePagerNotifier,
-              Widget child) {
-        var newButton = widget.dataPickerBundle == null
-            ? ChildTableUtils.newButton(
-                context, widget.databaseRef, schemaAndData.cloudTableSchema.inputInfoMap,
-                isPhone: true)
-            : null;
+    navigator = Consumer<DatabasePagerNotifier>(builder: (BuildContext context,
+        DatabasePagerNotifier databasePagerNotifier, Widget child) {
+      var moreInfoWidget =
+          ExpansionTile(title: Text('Thông tin thêm'), children: <Widget>[
+        Wrap(
+            runSpacing: 4,
+            spacing: 8,
+            children: schemaAndData.cloudTableSchema.printInfos
+                .map(
+                  (printInfo) => ChildTableUtils.printButton(
+                      context, widget.databaseRef, printInfo, parentParam,
+                      isDense: true),
+                )
+                .toList()),
+        SizedBox(
+          width: screenWidth(context),
+          height: screenHeight(context) * 0.1,
+          child: tableOfTwo({
+            'Trường sắp xếp':
+                '${schemaAndData.cloudTableSchema.inputInfoMap.map[parentParam.sortKey].fieldDes}-${parentParam.sortKeyDescending ? "Giảm dần" : "Tăng dần"}',
+            'Hiển thị sau':
+                toText(context, databasePagerNotifier.value.startAfter),
+            'Hiển thị trước':
+                toText(context, databasePagerNotifier.value.endBefore),
+            'Số lượng hiển thị': '${schemaAndData.data.length}',
+          }, boldRight: true),
+        ),
+      ]);
+      var newButton = widget.dataPickerBundle == null
+          ? ChildTableUtils.newButton(context, widget.databaseRef,
+              schemaAndData.cloudTableSchema.inputInfoMap,
+              isPhone: true)
+          : null;
+
+      if (widget.showAllData) {
+        return moreInfoWidget;
+      } else {
         if (schemaAndData.data.length == 0) {
           return Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -80,37 +108,7 @@ class _PhoneChildEditTableState
         return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              widget.dataPickerBundle != null
-                  ? null
-                  : ExpansionTile(title: Text('Thông tin thêm'), children: <
-                      Widget>[
-                      Wrap(
-                          runSpacing: 4,
-                          spacing: 8,
-                          children: schemaAndData.cloudTableSchema.printInfos
-                              .map(
-                                (printInfo) => ChildTableUtils.printButton(
-                                    context,
-                                    widget.databaseRef,
-                                    printInfo,
-                                    parentParam,
-                                    isDense: true),
-                              )
-                              .toList()),
-                      SizedBox(
-                        width: screenWidth(context),
-                        height: screenHeight(context) * 0.1,
-                        child: tableOfTwo({
-                          'Trường sắp xếp':
-                              '${schemaAndData.cloudTableSchema.inputInfoMap.map[parentParam.sortKey].fieldDes}-${parentParam.sortKeyDescending ? "Giảm dần" : "Tăng dần"}',
-                          'Hiển thị sau': toText(
-                              context, databasePagerNotifier.value.startAfter),
-                          'Hiển thị trước': toText(
-                              context, databasePagerNotifier.value.endBefore),
-                          'Số lượng hiển thị': '${schemaAndData.data.length}',
-                        }, boldRight: true),
-                      ),
-                    ]),
+              widget.dataPickerBundle != null ? null : moreInfoWidget,
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -159,8 +157,8 @@ class _PhoneChildEditTableState
                 ].where((element) => element != null).toList(),
               ),
             ].where((element) => element != null).toList());
-      });
-    }
+      }
+    });
     List<Widget> itemList = schemaAndData.data.asMap().entries.map((entry) {
       var index = entry.key;
       var cloudObj = entry.value;
@@ -195,7 +193,8 @@ class _PhoneChildEditTableState
                     .toList()),
             onTap: () {
               if (widget.dataPickerBundle != null) {
-                Navigator.pop(context, [row[widget.dataPickerBundle.fieldName], row]);
+                Navigator.pop(
+                    context, [row[widget.dataPickerBundle.fieldName], row]);
                 return;
               }
               showAlertDialog(context, builder: (_) {
