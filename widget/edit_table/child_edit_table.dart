@@ -56,7 +56,7 @@ class _ChildEditTableState
           create: (BuildContext context) {
             return _selectedIndexChangeNotifier;
           },
-          child: Column(children: [
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Container(
                 width: tableWidthAndSize.width,
                 child: Consumer<SelectedIndexChangeNotifier>(
@@ -230,8 +230,8 @@ class _ChildEditTableState
                           .data[selectedIndexChangeNotifier.value].dataMap,
                       schemaAndData.cloudTableSchema.inputInfoMap.map)
                   : null;
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+              return Wrap(runSpacing: 30,
+                alignment: WrapAlignment.spaceAround,
                 children: [
                   ChildTableUtils.printButton(
                     context,
