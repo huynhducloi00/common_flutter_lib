@@ -161,7 +161,7 @@ class ParentParam {
   ParentParam(
       {this.filterDataWrappers,
       this.sortKey,
-      this.sortKeyDescending = false,
+      this.sortKeyDescending=false,
       this.postColorDecorationCondition}) {
     if (filterDataWrappers == null) {
       filterDataWrappers = {};
@@ -170,6 +170,6 @@ class ParentParam {
 
   @override
   String toString() {
-    return 'SortKey:$sortKey $filterDataWrappers';
+    return 'SortKey:$sortKey Descending: $sortKeyDescending-$filterDataWrappers';
   }
 }

@@ -136,7 +136,9 @@ Widget tableOfTwo(Map<String, String> map,
           ]));
     }
   }
-  return Table(columnWidths: {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()}, children: list);
+  return Table(
+      columnWidths: {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
+      children: list);
 }
 
 Widget tableOfInfinite(Map<String, List<String>> map) {
@@ -272,7 +274,8 @@ Future showInformation(context, String title, String content) {
 }
 
 Column columnWithGap(List<Widget> children,
-    {CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start, double gap = 8}) {
+    {CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start,
+    double gap = 8}) {
   List<Widget> result = List();
   children.forEach((element) {
     result.add(element);
@@ -381,8 +384,6 @@ DateTime stripTime(DateTime dateTime) {
   return DateTime(dateTime.year, dateTime.month, dateTime.day);
 }
 
-
-
 int multiply(int val1, int val2) {
   if (val1 == null || val2 == null) return null;
   return val1 * val2;
@@ -397,3 +398,53 @@ int absMinus(int val1, int val2) {
   int minusRes = minus(val1, val2);
   return minusRes == null ? null : minusRes.abs();
 }
+//
+// Query cloneQuery(CollectionReference ref, InputInfoMap inputInfoMap, Query q) {
+//   Map<String, dynamic> map = q.buildArguments();
+//   List<List> where = map['where'];
+//   List<List> orderBy = map['orderBy'];
+//   dynamic query = ref;
+//   Map<String, bool> orderByMap = Map.fromEntries(
+//       orderBy.map((list) => MapEntry<String, bool>(list[0], list[1])));
+//   inputInfoMap.map.keys.forEach((field) {
+//     if (orderByMap.containsKey(field))
+//       query = query.orderBy(field, descending: orderByMap[field]);
+//   });
+//   where.forEach((list) {
+//     var greater, greaterOrEqual, smaller, smallerOrEqual, equal;
+//     switch (list[1]) {
+//       case '>':
+//         greater = list[2];
+//         break;
+//       case '>=':
+//         greaterOrEqual = list[2];
+//         break;
+//       case '<':
+//         smaller = list[2];
+//         break;
+//       case '<=':
+//         smallerOrEqual = list[2];
+//         break;
+//       case '=':
+//         equal = list[2];
+//         break;
+//       default:
+//     }
+//     // query = query.where(list[0],
+//     //     isEqualTo: equal,
+//     //     isLessThanOrEqualTo: smallerOrEqual,
+//     //     isLessThan: smaller,
+//     //     isGreaterThanOrEqualTo: greaterOrEqual,
+//     //     isGreaterThan: greater);
+//   });
+//
+//   query = query.limit(map['limit']);
+//   query=query.startAfter([null,null]);
+//   query=query.startAt([null,'anh']);
+//   query=query.endBefore([null,'ani']);
+//   if (map['startAfter'] != null) query = query.startAfter(map['startAfter']);
+//   if (map['endBefore'] != null) {
+//     query = query.endBefore(map['endBefore']);
+//   }
+//   return query;
+// }

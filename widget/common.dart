@@ -38,9 +38,8 @@ abstract class CommonButton {
       PostColorDecorationCondition postColorDecorationCondition) {
     return EditTableWrapper(
         table,
-        ParentParam(
-            sortKey: table.inputInfoMap.map.keys.first,
-            sortKeyDescending: true,
+        ParentParam(sortKey: table.sortKey,
+            sortKeyDescending: table.sortDescending,
             postColorDecorationCondition: postColorDecorationCondition,
             filterDataWrappers: filter));
   }

@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:core';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import '../widget/edit_table/parent_param.dart';
 
@@ -331,6 +332,8 @@ abstract class CloudTableSchema<T extends CloudObject> {
   static final DOCUMENT_ID_FIELD = 'documentId';
   String tableName;
   String tableDescription;
+  String sortKey;
+  bool sortDescending;
   InputInfoMap inputInfoMap;
   LinkedHashSet<String> calculatingOrder;
   List<PrintInfo> printInfos;
@@ -358,6 +361,8 @@ abstract class CloudTableSchema<T extends CloudObject> {
       this.showDocumentId = false,
       this.defaultPrintVertical = true,
         this.visibleFields,
+        this.sortKey,
+        this.sortDescending,
       this.primaryFields,
       this.subtitleFields,
       this.trailingFields,
@@ -395,6 +400,12 @@ abstract class CloudTableSchema<T extends CloudObject> {
     }
     if (visibleFields==null){
       visibleFields=allKeys;
+    }
+    if (sortKey==null){
+      sortKey=allKeys.first;
+    }
+    if (sortDescending==null){
+      sortDescending=false;
     }
   }
 

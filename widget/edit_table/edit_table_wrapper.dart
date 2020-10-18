@@ -26,12 +26,7 @@ class EditTableWrapper extends StatefulWidget {
   EditTableWrapper(this.cloudTable, this.parentParam,
       {this.dataPickerBundle,
       this.showAllData = false,
-      this.showFilterBar = true}) {
-    if (parentParam.sortKey == null) {
-      parentParam.sortKey = cloudTable.inputInfoMap.map.keys.first;
-      parentParam.sortKeyDescending = false;
-    }
-  }
+      this.showFilterBar = true});
 
   @override
   _EditTableWrapperState createState() => _EditTableWrapperState();
@@ -146,11 +141,23 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
             }
 
             widget.parentParam.filterDataWrappers[fieldName] = filterResult;
-            if (filterResult.exactMatchValue != null &&
-                widget.parentParam.sortKey == fieldName) {
-              // cannot have both exact match and sortkey
-              widget.parentParam.sortKey =
-                  widget.cloudTable.inputInfoMap.map.keys.first;
+            if (filterResult.exactMatchValue != null) {
+              if (widget.parentParam.sortKey == fieldName) {
+                // cannot have both exact match and sortkey
+                widget.parentParam.sortKey = widget.cloudTable.sortKey;
+                widget.parentParam.sortKeyDescending =
+                    widget.cloudTable.sortDescending;
+              }
+            } else {
+              // filter range, all other keys must not have filter range.
+              List<String> removeField = List();
+              widget.parentParam.filterDataWrappers.forEach((field, value) {
+                if (value.exactMatchValue == null && field != fieldName) {
+                  removeField.add(field);
+                }
+              });
+              widget.parentParam.filterDataWrappers
+                  .removeWhere((key, value) => removeField.contains(key));
             }
             setState(() {});
             return null;
@@ -167,7 +174,8 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
   }
 
   List getHeaderRow() {
-    var filteredMap=widget.cloudTable.inputInfoMap.filterMap(widget.cloudTable.visibleFields);
+    var filteredMap = widget.cloudTable.inputInfoMap
+        .filterMap(widget.cloudTable.visibleFields);
     var tableCells = filteredMap.entries.map((e) {
       var fieldName = e.key;
       var inputInfo = e.value;
@@ -277,7 +285,7 @@ class _TableWrapperState extends State<TableWrapper> {
       builder: (BuildContext context, DatabasePagerNotifier _, Widget child) {
         ParentParam parentParam =
             Provider.of<ParentParam>(context, listen: false);
-        CollectionReference _databaseRef =widget.cloudTable.getCollectionRef();
+        CollectionReference _databaseRef = widget.cloudTable.getCollectionRef();
         // Apply both parent and child params.
         var query = applyFilterToQuery(_databaseRef, parentParam);
         // startAfter ... table ... endBefore, which affected by sort direction
