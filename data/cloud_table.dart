@@ -33,7 +33,7 @@ class LinkedData {
   LinkedData(this.tableName, this.linkedFieldName);
 
   static UseDataCalculation getLinkedUseDataCalculation(
-      String tableName, String fieldContainsDocumentId,  String getField) {
+      String tableName, String fieldContainsDocumentId, String getField) {
     return (row, predefined) {
       if (predefined == null) return null;
       DataBundle bundle = predefined[tableName];
@@ -46,8 +46,11 @@ class LinkedData {
       return null;
     };
   }
+
   static UseDataCalculation getLinkedUseDataCalculationUsingFunction(
-      String tableName, String fieldContainsDocumentId,  dynamic Function(Map<String,dynamic>) getFieldFunc) {
+      String tableName,
+      String fieldContainsDocumentId,
+      dynamic Function(Map<String, dynamic>) getFieldFunc) {
     return (row, predefined) {
       if (predefined == null) return null;
       DataBundle bundle = predefined[tableName];
@@ -78,6 +81,9 @@ class InputInfo {
   // needSaving can be true for some calculated variables, or for nonUpdatale variables, mainly
   // used for server database query.
   bool needSaving;
+
+  // in sypnosis view only.
+  bool isVisible;
   DataType dataType;
   List<String> fieldsForCalculation;
 
@@ -85,10 +91,13 @@ class InputInfo {
   Map<dynamic, String> optionMap;
   bool limitToOptions;
   LinkedData linkedData;
+
   // 4 or less
   static const SMALL_INT_COLUMN = 0.4;
+
   // good for 6 figures
   static const BIG_INT_COLUMN = 0.5;
+
   // good for >=7 figures
   static const SUPER_BIG_INT_COLUMN = 0.7;
   static const String CANT_BE_NULL = "Không thể bỏ trống";
@@ -100,9 +109,10 @@ class InputInfo {
       this.calculate,
       this.canUpdate = true,
       this.needSaving = true,
+      this.isVisible = true,
       this.initializeFunc,
       this.displayFlex,
-        this.printFlex,
+      this.printFlex,
       this.linkedData,
       this.optionMap,
       this.limitToOptions = false}) {
@@ -112,13 +122,14 @@ class InputInfo {
       else
         displayFlex = 1.0;
     }
-    if (printFlex==null){
+    if (printFlex == null) {
       if (dataType == DataType.int)
         printFlex = SMALL_INT_COLUMN;
       else
         printFlex = displayFlex;
     }
   }
+
   static Map<dynamic, String> createSameKeyValueMap(List<dynamic> vals) {
     Map<dynamic, String> tmp = Map();
     for (var val in vals) {
@@ -210,6 +221,11 @@ class InputInfoMap {
   Map<String, InputInfo> filterMap(List<String> printFields) {
     return Map.fromEntries(
         printFields.map((e) => MapEntry(e, map[e])).toList());
+  }
+
+  Map<String, InputInfo> filterVisibleFields() {
+    return Map.fromEntries(
+        map.entries.where((element) => element.value.isVisible));
   }
 
   void transverse(Map<String, List<String>> edges, Set<String> visited,
@@ -341,17 +357,18 @@ abstract class CloudTableSchema<T extends CloudObject> {
   PrintTicket printTicket;
   bool defaultPrintVertical;
   bool showDocumentId;
-  // This is for web view only
-  List<String> visibleFields;
+
   // The following is for phone view ONLY
   List<String> primaryFields;
   List<String> subtitleFields;
   List<String> trailingFields;
   IconData iconData;
   bool showIconDataOnRow;
-  CollectionReference getCollectionRef(){
+
+  CollectionReference getCollectionRef() {
     return Firestore.instance.collection(tableName);
   }
+
   CloudTableSchema(
       {this.tableName,
       this.tableDescription,
@@ -360,17 +377,17 @@ abstract class CloudTableSchema<T extends CloudObject> {
       this.defaultPrintFields,
       this.showDocumentId = false,
       this.defaultPrintVertical = true,
-        this.visibleFields,
-        this.sortKey,
-        this.sortDescending,
+      this.sortKey,
+      this.sortDescending,
       this.primaryFields,
       this.subtitleFields,
       this.trailingFields,
       this.iconData,
       this.printTicket,
       this.showIconDataOnRow = true}) {
+    List<String> allVisibleKeys = inputInfoMap.filterVisibleFields().keys.toList();
     if (defaultPrintFields == null) {
-      defaultPrintFields = inputInfoMap.map.keys.toList();
+      defaultPrintFields = allVisibleKeys;
     }
     if (printTicket == null) {
       printTicket = PrintTicket(
@@ -388,24 +405,20 @@ abstract class CloudTableSchema<T extends CloudObject> {
             parentParam: null)
       ];
     }
-    List<String> allKeys = inputInfoMap.map.keys.toList();
     if (primaryFields == null) {
-      primaryFields = allKeys.sublist(0, 1);
+      primaryFields = allVisibleKeys.sublist(0, 1);
     }
     if (subtitleFields == null) {
-      subtitleFields = allKeys.sublist(1);
+      subtitleFields = allVisibleKeys.sublist(1);
     }
     if (trailingFields == null) {
       trailingFields = List();
     }
-    if (visibleFields==null){
-      visibleFields=allKeys;
+    if (sortKey == null) {
+      sortKey = allVisibleKeys.first;
     }
-    if (sortKey==null){
-      sortKey=allKeys.first;
-    }
-    if (sortDescending==null){
-      sortDescending=false;
+    if (sortDescending == null) {
+      sortDescending = false;
     }
   }
 
@@ -425,7 +438,8 @@ class SchemaAndData<T extends CloudObject> {
       inputInfoMap.calculatingOrder.forEach((fieldName) {
         // Since this is initializing calculation, no need to calculate saved data.
         if (!inputInfoMap.map[fieldName].needSaving) {
-          var result = inputInfoMap.map[fieldName].calculate(cloudObj.dataMap,/* predefined= */ null);
+          var result = inputInfoMap.map[fieldName]
+              .calculate(cloudObj.dataMap, /* predefined= */ null);
           cloudObj.dataMap[fieldName] = result == null ? null : result.value;
         }
       });

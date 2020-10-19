@@ -22,11 +22,12 @@ class EditTableWrapper extends StatefulWidget {
   DataPickerBundle dataPickerBundle;
   bool showAllData;
   bool showFilterBar;
+  bool showNewButton;
 
   EditTableWrapper(this.cloudTable, this.parentParam,
       {this.dataPickerBundle,
       this.showAllData = false,
-      this.showFilterBar = true});
+      this.showFilterBar = true, this.showNewButton=true});
 
   @override
   _EditTableWrapperState createState() => _EditTableWrapperState();
@@ -174,8 +175,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
   }
 
   List getHeaderRow() {
-    var filteredMap = widget.cloudTable.inputInfoMap
-        .filterMap(widget.cloudTable.visibleFields);
+    var filteredMap = widget.cloudTable.inputInfoMap.filterVisibleFields();
     var tableCells = filteredMap.entries.map((e) {
       var fieldName = e.key;
       var inputInfo = e.value;
@@ -219,6 +219,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
         child: TableWrapper(
           widget.cloudTable,
           widget.dataPickerBundle,
+          showNewButton: widget.showNewButton,
           showAllData: widget.showAllData,
         ));
     var mobile = SingleChildScrollView(
@@ -265,9 +266,9 @@ class TableWrapper extends StatefulWidget {
   CloudTableSchema cloudTable;
   DataPickerBundle dataPickerBundle;
   bool showAllData;
-
+  bool showNewButton;
   TableWrapper(this.cloudTable, this.dataPickerBundle,
-      {this.showAllData = false});
+      {this.showAllData = false, this.showNewButton=true});
 }
 
 class _TableWrapperState extends State<TableWrapper> {
@@ -340,10 +341,12 @@ class _TableWrapperState extends State<TableWrapper> {
                     tablet: ChildEditTable(
                       _databaseRef,
                       showAllData: widget.showAllData,
+                      showNewButton: widget.showNewButton,
                     ),
                     mobile: PhoneChildEditTable(
                       _databaseRef,
                       showAllData: widget.showAllData,
+                      showNewButton: widget.showNewButton,
                     ))
                 // always use phone pick styles when there is a need to pick
                 : PhoneChildEditTable(

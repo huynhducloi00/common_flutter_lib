@@ -398,6 +398,10 @@ int absMinus(int val1, int val2) {
   int minusRes = minus(val1, val2);
   return minusRes == null ? null : minusRes.abs();
 }
+
+String showDateOnly(DateTime dateTime) {
+  return '${dateTime.year}-${dateTime.month}-${dateTime.day}';
+}
 //
 // Query cloneQuery(CollectionReference ref, InputInfoMap inputInfoMap, Query q) {
 //   Map<String, dynamic> map = q.buildArguments();

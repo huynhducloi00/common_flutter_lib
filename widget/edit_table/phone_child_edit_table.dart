@@ -14,9 +14,9 @@ class PhoneChildEditTable<SchemaAndData> extends StatefulWidget {
   final CollectionReference databaseRef;
   DataPickerBundle dataPickerBundle;
   bool showAllData;
-
+  bool showNewButton;
   PhoneChildEditTable(this.databaseRef,
-      {this.dataPickerBundle, this.showAllData = false});
+      {this.dataPickerBundle, this.showAllData = false, this.showNewButton=true});
 
   @override
   _PhoneChildEditTableState createState() => _PhoneChildEditTableState();
@@ -74,7 +74,7 @@ class _PhoneChildEditTableState
           }, boldRight: true),
         ),
       ]);
-      var newButton = widget.dataPickerBundle == null
+      var newButton = widget.dataPickerBundle == null && widget.showNewButton
           ? ChildTableUtils.newButton(context, widget.databaseRef,
               schemaAndData.cloudTableSchema.inputInfoMap,
               isPhone: true)
@@ -91,7 +91,7 @@ class _PhoneChildEditTableState
                   databasePagerNotifier.value = ChildParam();
                 }, title: 'Về trang đầu'),
                 newButton
-              ]);
+              ].where((element) => element != null).toList());
         }
         var beforeQuery = applyFilterToQuery(widget.databaseRef, parentParam)
             .orderBy(parentParam.sortKey,
@@ -168,7 +168,7 @@ class _PhoneChildEditTableState
 
       return Card(
           color: parentParam.postColorDecorationCondition != null
-              ? parentParam.postColorDecorationCondition(row)
+              ? parentParam.postColorDecorationCondition(cloudObj.dataMap)
               : null,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15.0),

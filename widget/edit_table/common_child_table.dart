@@ -81,11 +81,11 @@ class ChildTableUtils {
 
   static Widget newButton(
           context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
-          {bool isPhone = false, Map<String, dynamic> initialValues}) =>
+          {bool isPhone = false, Map<String, dynamic> initialValues, title='Mới'}) =>
       CommonButton.getButton(context, () {
         initiateNew(context, databaseRef, inputInfoMap,
             isPhone: isPhone, initialValues: initialValues);
-      }, title: 'Mới', iconData: Icons.wallpaper);
+      }, title: title, iconData: Icons.wallpaper);
 
   static Widget editButton(
       context, databaseRef, SchemaAndData schemaAndData, int rowIndex,

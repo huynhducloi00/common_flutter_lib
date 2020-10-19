@@ -7,6 +7,7 @@ import '../common.dart';
 
 class MonthYear {
   int month, year;
+
   MonthYear(this.month, this.year);
 
   MonthYear deltaMonth(int monthDelta) {
@@ -22,8 +23,9 @@ class MonthYear {
 
     return MonthYear(newMonth, newYear);
   }
-  static getMonthYearNow(){
-    var currentDate = stripTime(Timestamp.now().toDate());
+
+  static getMonthYearNow() {
+    var currentDate = stripTime(DateTime.now());
     return MonthYear(currentDate.month, currentDate.year);
   }
 }
@@ -35,7 +37,9 @@ class CurrentMonthYearNotifier extends ValueNotifier<MonthYear> {
 class MonthYearSelector extends StatelessWidget {
   CurrentMonthYearNotifier currentMonthYearNotifier;
   double gap;
-  MonthYearSelector({this.gap=100});
+
+  MonthYearSelector({this.gap = 100});
+
   @override
   Widget build(BuildContext context) {
     return Consumer<CurrentMonthYearNotifier>(
@@ -49,23 +53,29 @@ class MonthYearSelector extends StatelessWidget {
             Row(children: [
               CommonButton.getButton(context, () {
                 if (currentMonthYearNotifier.value == null) {
-                  currentMonthYearNotifier.value=MonthYear.getMonthYearNow();
+                  currentMonthYearNotifier.value = MonthYear.getMonthYearNow();
                 } else
                   currentMonthYearNotifier.value =
                       currentMonthYearNotifier.value.deltaMonth(-1);
               }, iconData: Icons.arrow_left),
-              SizedBox(width: gap,),
+              SizedBox(
+                width: gap,
+              ),
               Text(currentMonthYearNotifier.value == null
-                      ? ""
-                      : "${currentMonthYearNotifier.value.month}-${currentMonthYearNotifier.value.year}"),
-              SizedBox(width: gap,),
+                  ? ""
+                  : "${currentMonthYearNotifier.value.month}-${currentMonthYearNotifier.value.year}"),
+              SizedBox(
+                width: gap,
+              ),
               CommonButton.getButton(
                 context,
                 () {
                   if (currentMonthYearNotifier.value == null) {
-                    currentMonthYearNotifier.value=MonthYear.getMonthYearNow();
+                    currentMonthYearNotifier.value =
+                        MonthYear.getMonthYearNow();
                   } else
-                    currentMonthYearNotifier.value=currentMonthYearNotifier.value.deltaMonth(1);
+                    currentMonthYearNotifier.value =
+                        currentMonthYearNotifier.value.deltaMonth(1);
                 },
                 iconData: Icons.arrow_right,
               ),

@@ -150,7 +150,7 @@ class FilterDataWrapper {
   }
 }
 
-typedef PostColorDecorationCondition = Color Function(Map dataMap);
+typedef PostColorDecorationCondition = Color Function(Map<String, dynamic> dataMap);
 
 class ParentParam {
   String sortKey;

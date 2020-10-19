@@ -19,8 +19,8 @@ class SelectedIndexChangeNotifier extends ValueNotifier<int> {
 class ChildEditTable<SchemaAndData> extends StatefulWidget {
   CollectionReference databaseRef;
   bool showAllData;
-
-  ChildEditTable(this.databaseRef, {this.showAllData = false});
+  bool showNewButton;
+  ChildEditTable(this.databaseRef, {this.showAllData = false, this.showNewButton=true});
 
   @override
   _ChildEditTableState createState() => _ChildEditTableState();
@@ -48,7 +48,7 @@ class _ChildEditTableState
     var schemaAndData = data;
     Map<String, InputInfo> filterVisibleFieldMap = schemaAndData
         .cloudTableSchema.inputInfoMap
-        .filterMap(schemaAndData.cloudTableSchema.visibleFields);
+        .filterVisibleFields();
     TableWidthAndSize tableWidthAndSize =
         getEditTableColWidths(context, filterVisibleFieldMap);
     return Material(
@@ -263,8 +263,8 @@ class _ChildEditTableState
                           ),
                         )
                       : null,
-                  ChildTableUtils.newButton(context, widget.databaseRef,
-                      schemaAndData.cloudTableSchema.inputInfoMap),
+                  widget.showNewButton ? ChildTableUtils.newButton(context, widget.databaseRef,
+                      schemaAndData.cloudTableSchema.inputInfoMap) :null,
                   ChildTableUtils.editButton(context, widget.databaseRef,
                       schemaAndData, selectedIndexChangeNotifier.value),
                   ChildTableUtils.deleteButton(context, widget.databaseRef,
