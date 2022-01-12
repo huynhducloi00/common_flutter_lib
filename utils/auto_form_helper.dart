@@ -5,18 +5,18 @@ import 'auto_form.dart';
 
 class AutoFormHelper {
   static Widget dropDownText(
-      TextEditingController controller, InputInfo inputInfo) {
+      TextEditingController? controller, InputInfo inputInfo) {
     return StatefulBuilder(builder: (BuildContext context, setState) {
       List<DropdownMenuItem> items;
       if (inputInfo.limitToOptions) {
-        items = inputInfo.optionMap.entries
+        items = inputInfo.optionMap!.entries
             .map((pair) => DropdownMenuItem<String>(
-                value: pair.key, child: Text(pair.value)))
+                value: pair.key, child: Text(pair.value!)))
             .toList();
       } else {
         items = [
               DropdownMenuItem<String>(
-                  value: controller.text,
+                  value: controller!.text,
                   child: TextField(
                     decoration: EDIT_TEXT_INPUT_DECORATION.copyWith(
                         fillColor: inputInfo.canUpdate
@@ -25,7 +25,7 @@ class AutoFormHelper {
                     controller: controller,
                   ))
             ] +
-            inputInfo.optionMap.keys
+            inputInfo.optionMap!.keys
                 .where((val) => val != controller.text)
                 .map((val) =>
                     DropdownMenuItem<String>(value: val, child: Text(val)))
@@ -33,13 +33,13 @@ class AutoFormHelper {
       }
       return DropdownButtonHideUnderline(
         child: DropdownButtonFormField(
-          validator: (val) =>
-              inputInfo.validator == null ? null : inputInfo.validator(val),
+          validator: (dynamic val) =>
+              inputInfo.validator == null ? null : inputInfo.validator!(val),
           isExpanded: true,
           focusColor: Colors.white,
-          value: controller.text.isEmpty ? null: controller.text,
+          value: controller!.text.isEmpty ? null: controller.text,
           items: items,
-          onChanged: (value) {
+          onChanged: (dynamic value) {
             controller.value = controller.value.copyWith(text: value);
             setState(() {});
           },
@@ -49,20 +49,20 @@ class AutoFormHelper {
   }
 
   static Widget dropDownInt(
-      TextEditingController controller, InputInfo inputInfo) {
+      TextEditingController? controller, InputInfo inputInfo) {
     return StatefulBuilder(builder: (BuildContext context, setState) {
       return DropdownButtonHideUnderline(
         child: DropdownButtonFormField(
-          validator: (val) =>
-              inputInfo.validator == null ? null : inputInfo.validator(val),
+          validator: (dynamic val) =>
+              inputInfo.validator == null ? null : inputInfo.validator!(val),
           isExpanded: true,
           focusColor: Colors.white,
-          value: controller.text.isEmpty ? null : controller.text,
-          items: inputInfo.optionMap.entries
+          value: controller!.text.isEmpty ? null : controller.text,
+          items: inputInfo.optionMap!.entries
               .map((pair) => DropdownMenuItem(
-                  value: pair.key.toString(), child: Text(pair.value)))
+                  value: pair.key.toString(), child: Text(pair.value!)))
               .toList(),
-          onChanged: (value) {
+          onChanged: (dynamic value) {
             controller.value = controller.value.copyWith(text: value);
           },
         ),

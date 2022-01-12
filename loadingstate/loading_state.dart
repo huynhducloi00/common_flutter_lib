@@ -9,7 +9,7 @@ abstract class LoadingState<T extends StatefulWidget, L> extends State<T>
   bool isRequireData = false;
   Loading loadingScreen = Loading();
   bool keepAlive;
-  L data;
+  L? data;
   LoadingState({this.isRequireData = false, this.tag="", this.keepAlive = false}):super();
 
   void markLoading() {

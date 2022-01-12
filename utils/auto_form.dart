@@ -23,43 +23,43 @@ const InputDecoration EDIT_TEXT_INPUT_DECORATION = InputDecoration(
     focusedBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.pink, width: 2.0)));
 
-typedef SaveClickFuture = Future Function(Map<String, dynamic>);
+typedef SaveClickFuture = Future? Function(Map<String, dynamic>);
 typedef OnPop = void Function();
 
 class AutoForm extends StatefulWidget {
-  static final Color disabledColor = Colors.grey[400];
+  static final Color? disabledColor = Colors.grey[400];
   InputInfoMap inputInfoMap;
   Map<String, dynamic> initialValue;
-  SaveClickFuture saveClickFuture;
+  SaveClickFuture? saveClickFuture;
   bool isNew;
-  OnPop onPop;
+  OnPop? onPop;
 
   static createAutoForm(
       context, InputInfoMap inputInfoMap, Map<String, dynamic> initialValue,
-      {SaveClickFuture saveClickFuture,
-      OnPop onPop,
-      LinkedHashSet<String> calculatingOrder,
+      {SaveClickFuture? saveClickFuture,
+      OnPop? onPop,
+      LinkedHashSet<String>? calculatingOrder,
       bool isNew = false}) {
     var child = AutoForm._internal(
         context, inputInfoMap, initialValue, saveClickFuture, isNew);
     Stream<List<DataBundle>> bundleStream;
     if (inputInfoMap.relatedTables != null) {
       List<Stream<DataBundle>> streams =
-          inputInfoMap.relatedTables.map((relatedTable) {
+          inputInfoMap.relatedTables!.map((relatedTable) {
         Stream<QuerySnapshot> streams;
         if (relatedTable.query == null) {
           streams =
-              Firestore.instance.collection(relatedTable.tableName).snapshots();
+              FirebaseFirestore.instance.collection(relatedTable.tableName).snapshots();
         } else {
-          streams = relatedTable.query.snapshots();
+          streams = relatedTable.query!.snapshots();
         }
         return streams.map((event) {
-          List<Map> a = event.documents.map((doc) {
+          List<Map> a = event.docs.map((doc) {
             if (relatedTable.documentSnapshotConversion != null) {
-              return relatedTable.documentSnapshotConversion(doc);
+              return relatedTable.documentSnapshotConversion!(doc);
             }
             return doc.data;
-          }).toList();
+          }).toList() as List<Map<dynamic, dynamic>>;
           return DataBundle(relatedTable.tableName, a);
         });
       }).toList();
@@ -79,6 +79,7 @@ class AutoForm extends StatefulWidget {
             bundleStream == null
                 ? child
                 : StreamProvider<List<DataBundle>>(
+              initialData: [],
                     create: (BuildContext context) {
                       return bundleStream;
                     },
@@ -97,12 +98,12 @@ class CheckBoxController extends ValueNotifier<bool> {
   CheckBoxController(bool value) : super(value);
 }
 
-class DateTimeController extends ValueNotifier<DateTime> {
-  DateTimeController(DateTime value) : super(value);
+class DateTimeController extends ValueNotifier<DateTime?> {
+  DateTimeController(DateTime? value) : super(value);
 }
 
 typedef FieldValueChangeCallback = void Function(
-    ValueNotifier notifier, String changedFieldName, dynamic val);
+    ValueNotifier? notifier, String changedFieldName, dynamic val);
 
 class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
   _AutoFormState() : super(isRequireData: true);
@@ -112,7 +113,7 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
   // 1.TextEditingController
   // 2. CheckBoxController
   // 3. DateTimeController.
-  Map<String, ValueNotifier> _allNotifiers = Map();
+  Map<String, ValueNotifier?> _allNotifiers = Map();
   final _formKey = GlobalKey<FormState>();
   Map<String, DataBundle> bundleMap = Map();
   final SizedBox divider = SizedBox(
@@ -122,7 +123,7 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
   @override
   void dispose() {
     _allNotifiers.forEach((key, value) {
-      value.dispose();
+      value!.dispose();
     });
     super.dispose();
   }
@@ -131,8 +132,8 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
 
   @override
   void initState() {
-    widget.inputInfoMap.map.forEach((fieldName, inputInfo) {
-      ValueNotifier notifier;
+    widget.inputInfoMap.map!.forEach((fieldName, inputInfo) {
+      ValueNotifier? notifier;
       if (inputInfo.dataType == DataType.string ||
           inputInfo.dataType == DataType.int) {
         notifier = TextEditingController(
@@ -141,12 +142,12 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
         notifier = CheckBoxController(widget.initialValue[fieldName] ?? false);
       } else if (inputInfo.dataType == DataType.timestamp) {
         notifier = DateTimeController(
-            (widget.initialValue[fieldName] as Timestamp)?.toDate());
+            (widget.initialValue[fieldName] as Timestamp?)?.toDate());
       }
       _allNotifiers[fieldName] = notifier;
     });
     final FieldValueChangeCallback fieldValueChangeCallback =
-        (ValueNotifier notifier1, changedFieldName, val) {
+        (ValueNotifier? notifier1, changedFieldName, val) {
       if (changeCallbackActive) {
         // only allow one callback to run at a time
         return;
@@ -156,14 +157,14 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
       if (DEBUG) print('gia tri thay doi: $changedFieldName $val');
       var resultBundle = getCurrentReturnedMap(filterSavingFields: false)[0];
       if (DEBUG) print('before $resultBundle');
-      if (widget.inputInfoMap.fieldChangedFieldMap[changedFieldName] != null) {
+      if (widget.inputInfoMap.fieldChangedFieldMap![changedFieldName] != null) {
         if (DEBUG)
           print(
-              'affecting field: ${widget.inputInfoMap.fieldChangedFieldMap[changedFieldName]}');
-        widget.inputInfoMap.fieldChangedFieldMap[changedFieldName]
+              'affecting field: ${widget.inputInfoMap.fieldChangedFieldMap![changedFieldName]}');
+        widget.inputInfoMap.fieldChangedFieldMap![changedFieldName]!
             .forEach((fieldName) {
-          var result = widget.inputInfoMap.map[fieldName]
-              .calculate(resultBundle, bundleMap);
+          var result = widget.inputInfoMap.map![fieldName]!
+              .calculate!(resultBundle, bundleMap);
           if (DEBUG) print('$fieldName $result');
           var notifier = _allNotifiers[fieldName];
           if (result != null) {
@@ -181,9 +182,9 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
         print('after ${getCurrentReturnedMap(filterSavingFields: false)[0]}');
       changeCallbackActive = false;
     };
-    for (MapEntry<String, ValueNotifier> entry in _allNotifiers.entries) {
+    for (MapEntry<String, ValueNotifier?> entry in _allNotifiers.entries) {
       if (entry.value is TextEditingController) {
-        entry.value.addListener(() {
+        entry.value!.addListener(() {
           fieldValueChangeCallback(entry.value, entry.key,
               (entry.value as TextEditingController).text);
         });
@@ -192,9 +193,9 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
     super.initState();
   }
 
-  Widget _getWidgetFromDataType(String fieldName) {
+  Widget? _getWidgetFromDataType(String fieldName) {
     var resultWidget;
-    var inputInfo = widget.inputInfoMap.map[fieldName];
+    var inputInfo = widget.inputInfoMap.map![fieldName]!;
     bool isEnabled = inputInfo.canUpdate;
     InputDecoration inputDecoration = EDIT_TEXT_INPUT_DECORATION.copyWith(
         fillColor: isEnabled ? Colors.white : AutoForm.disabledColor);
@@ -205,11 +206,11 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
       case DataType.string:
         if (inputInfo.optionMap == null) {
           resultWidget = TextFormField(
-            controller: _allNotifiers[fieldName],
+            controller: _allNotifiers[fieldName] as TextEditingController?,
             enabled: isEnabled,
             decoration: inputDecoration,
             validator: (val) =>
-                inputInfo.validator == null ? null : inputInfo.validator(val),
+                inputInfo.validator == null ? null : inputInfo.validator!(val),
             obscureText: false,
           );
           if (inputInfo.linkedData != null && isEnabled) {
@@ -219,8 +220,8 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
                 Expanded(child: resultWidget),
                 CommonButton.createDataPickerButton(
                     context,
-                    LoiAllCloudTables.maps[inputInfo.linkedData.tableName],
-                    inputInfo.linkedData.linkedFieldName, (val, _) {
+                    LoiAllCloudTables.maps[inputInfo.linkedData!.tableName],
+                    inputInfo.linkedData!.linkedFieldName, (val, _) {
                   if (val != null) {
                     (_allNotifiers[fieldName] as TextEditingController).text =
                         val;
@@ -231,7 +232,7 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
           }
         } else {
           resultWidget =
-              AutoFormHelper.dropDownText(_allNotifiers[fieldName], inputInfo);
+              AutoFormHelper.dropDownText(_allNotifiers[fieldName] as TextEditingController?, inputInfo);
         }
         break;
 //      case DataType.html:
@@ -281,10 +282,10 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
         if (inputInfo.optionMap == null) {
           resultWidget = TextFormField(
               enabled: isEnabled,
-              controller: _allNotifiers[fieldName],
+              controller: _allNotifiers[fieldName] as TextEditingController?,
               decoration: inputDecoration,
               validator: (val) =>
-                  inputInfo.validator == null ? null : inputInfo.validator(val),
+                  inputInfo.validator == null ? null : inputInfo.validator!(val),
               obscureText: false,
               keyboardType: TextInputType.number,
               inputFormatters: <TextInputFormatter>[
@@ -292,16 +293,16 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
               ]);
         } else {
           resultWidget =
-              AutoFormHelper.dropDownInt(_allNotifiers[fieldName], inputInfo);
+              AutoFormHelper.dropDownInt(_allNotifiers[fieldName] as TextEditingController?, inputInfo);
         }
         break;
       case DataType.timestamp:
         resultWidget = valueNotifierDateTime(
-            context, _allNotifiers[fieldName] as ValueNotifier<DateTime>);
+            context, _allNotifiers[fieldName] as ValueNotifier<DateTime?>);
         break;
       case DataType.boolean:
         resultWidget = valueNotifierCheckBox(
-            _allNotifiers[fieldName] as ValueNotifier<bool>);
+            _allNotifiers[fieldName] as ValueNotifier<bool?>);
         break;
     }
     return resultWidget;
@@ -312,7 +313,7 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
     if (inputInfo.validator == null) {
       return originalErrorStr;
     }
-    var hasError = inputInfo.validator(val);
+    var hasError = inputInfo.validator!(val);
     if (hasError != null) {
       // violation
       originalErrorStr += '$hasError:${inputInfo.fieldDes}\n';
@@ -323,29 +324,29 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
   @override
   Widget delegateBuild(BuildContext context) {
     bundleMap =
-        data.asMap().map((key, value) => MapEntry(value.tableName, value));
+        data!.asMap().map((key, value) => MapEntry(value.tableName, value));
     if (widget.isNew) {
-      widget.inputInfoMap.map.forEach((fieldName, inputInfo) {
+      widget.inputInfoMap.map!.forEach((fieldName, inputInfo) {
         if (inputInfo.initializeFunc != null &&
             _allNotifiers[fieldName] is TextEditingController) {
           var controller = _allNotifiers[fieldName] as TextEditingController;
           if (controller.text.isEmpty) {
             controller.text =
-                inputInfo.initializeFunc(bundleMap).value?.toString();
+                inputInfo.initializeFunc!(bundleMap).value!.toString();
           }
         }
       });
     }
-    List<TableRow> editBoxes = new List();
-    widget.inputInfoMap.map.forEach((fieldName, inputInfo) {
-      Widget resultWidget = _getWidgetFromDataType(fieldName);
+    List<TableRow> editBoxes = [];
+    widget.inputInfoMap.map!.forEach((fieldName, inputInfo) {
+      Widget? resultWidget = _getWidgetFromDataType(fieldName);
       if (resultWidget != null) {
         editBoxes.add(
           TableRow(children: [
             TableCell(
               verticalAlignment: TableCellVerticalAlignment.middle,
               child: Container(
-                child: Text(inputInfo.fieldDes),
+                child: Text(inputInfo.fieldDes!),
                 margin: EdgeInsets.only(right: 5),
               ),
             ),
@@ -364,21 +365,21 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
         appBar: AppBar(
           actions: [
             CommonButton.getButtonAsync(context, () async {
-              if (!_formKey.currentState.validate()) {
+              if (!_formKey.currentState!.validate()) {
                 return;
               }
               var resultBundle =
                   getCurrentReturnedMap(filterSavingFields: true);
               Map<String, dynamic> result = resultBundle[0];
-              String otherError = resultBundle[1];
+              String? otherError = resultBundle[1];
 
               if (otherError?.isEmpty ?? false) {
                 if (widget.saveClickFuture != null) {
-                  await widget.saveClickFuture(result);
+                  await widget.saveClickFuture!(result);
                 }
                 Navigator.pop(context);
               } else {
-                return showInformation(context, "Lỗi", otherError);
+                return showInformation(context, "Lỗi", otherError!);
               }
             },
                 regularColor: Colors.transparent,
@@ -407,33 +408,33 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
   List getCurrentReturnedMap({bool filterSavingFields = false}) {
     Map<String, dynamic> result = Map();
     String otherError = '';
-    widget.inputInfoMap.map.forEach((fieldName, inputInfo) {
+    widget.inputInfoMap.map!.forEach((fieldName, inputInfo) {
       if (!filterSavingFields || inputInfo.needSaving) {
         switch (inputInfo.dataType) {
           case DataType.string:
-            result[fieldName] = _allNotifiers[fieldName].value.text;
+            result[fieldName] = _allNotifiers[fieldName]!.value.text;
             break;
           case DataType.html:
             // TODO: Handle this case.
             break;
           case DataType.int:
             otherError = validateNonStrField(
-                otherError, _allNotifiers[fieldName].value.text, inputInfo);
-            result[fieldName] = _allNotifiers[fieldName].value.text.isEmpty
+                otherError, _allNotifiers[fieldName]!.value.text, inputInfo);
+            result[fieldName] = _allNotifiers[fieldName]!.value.text.isEmpty
                 ? null
-                : int.parse(_allNotifiers[fieldName].value.text);
+                : int.parse(_allNotifiers[fieldName]!.value.text);
             break;
           case DataType.timestamp:
             otherError = validateNonStrField(
-                otherError, _allNotifiers[fieldName].value, inputInfo);
-            result[fieldName] = _allNotifiers[fieldName].value == null
+                otherError, _allNotifiers[fieldName]!.value, inputInfo);
+            result[fieldName] = _allNotifiers[fieldName]!.value == null
                 ? null
-                : Timestamp.fromDate(_allNotifiers[fieldName].value);
+                : Timestamp.fromDate(_allNotifiers[fieldName]!.value);
             break;
           case DataType.boolean:
-            result[fieldName] = _allNotifiers[fieldName].value == null
+            result[fieldName] = _allNotifiers[fieldName]!.value == null
                 ? null
-                : _allNotifiers[fieldName].value;
+                : _allNotifiers[fieldName]!.value;
             break;
         }
       }

@@ -7,7 +7,7 @@ enum DataType {
 }
 
 class CloudObject<T> {
-  String documentId;
+  String? documentId;
   Map<String, dynamic> dataMap;
 
   CloudObject(this.documentId, this.dataMap){

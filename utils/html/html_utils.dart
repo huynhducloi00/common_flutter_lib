@@ -5,7 +5,7 @@ import 'package:platform_detect/platform_detect.dart';
 
 class HtmlUtils extends HtmlUtilsInterface {
   @override
-  Future downloadWeb(List<int> byteList, String downloadName) {
+  Future? downloadWeb(List<int> byteList, String downloadName) {
     // Encode our file in base64
     final _base64 = base64Encode(byteList);
     // Create the link with the file
@@ -13,11 +13,9 @@ class HtmlUtils extends HtmlUtilsInterface {
     AnchorElement(href: 'data:application/octet-stream;base64,$_base64')
       ..target = 'blank';
     // add the name
-    if (downloadName != null) {
-      anchor.download = downloadName;
-    }
+    anchor.download = downloadName;
     // trigger download
-    document.body.append(anchor);
+    document.body!.append(anchor);
     anchor.click();
     anchor.remove();
   }
@@ -30,8 +28,9 @@ class HtmlUtils extends HtmlUtilsInterface {
     window.open(url, "_blank");
     Url.revokeObjectUrl(url);
   }
+
   @override
-  bool isSafari() {
+  bool? isSafari() {
     return browser.isSafari;
   }
 }

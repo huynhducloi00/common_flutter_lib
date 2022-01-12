@@ -17,10 +17,10 @@ abstract class TextWithUnderline extends Widget {
 }
 
 typedef DialogReturnedValue = void Function(
-    dynamic val, Map<String, dynamic> allData);
+    dynamic val, Map<String, dynamic>? allData);
 
 class LoiButtonStyle {
-  Color regularColor, hoverColor, textColor, iconColor, disabledColor;
+  Color? regularColor, hoverColor, textColor, iconColor, disabledColor;
 
   LoiButtonStyle(
       {this.regularColor,
@@ -34,8 +34,8 @@ abstract class CommonButton {
   static Widget createDataListWidget(
       context,
       CloudTableSchema table,
-      Map<String, FilterDataWrapper> filter,
-      PostColorDecorationCondition postColorDecorationCondition) {
+  {Map<String, FilterDataWrapper>? filter,
+      PostColorDecorationCondition? postColorDecorationCondition}) {
     return EditTableWrapper(
         table,
         ParentParam(sortKey: table.sortKey,
@@ -45,14 +45,15 @@ abstract class CommonButton {
   }
 
   static Widget createOpenButton(context, CloudTableSchema table, title,
-      {IconData icon,
-      Map<String, FilterDataWrapper> filter,
-      PostColorDecorationCondition postColorDecorationCondition,
+      {IconData? icon,
+      Map<String, FilterDataWrapper>? filter,
+      PostColorDecorationCondition? postColorDecorationCondition,
       bool isDense = false}) {
     return CommonButton.getOpenButton(
         context,
         createDataListWidget(
-            context, table, filter, postColorDecorationCondition),
+            context, table,filter: filter,
+        postColorDecorationCondition: postColorDecorationCondition),
         title,
         icon,
         isDense: isDense);
@@ -94,14 +95,14 @@ abstract class CommonButton {
   static Widget getButtonAsync(
       BuildContext buildContext, Future Function() onPressedFuture,
       {bool isEnabled = true,
-      String title,
+      String? title,
       TextAlign align = TextAlign.start,
-      IconData iconData,
-      Color regularColor,
-      Color hoverColor,
-      Color textColor,
-      Color iconColor,
-      Color disabledColor,
+      IconData? iconData,
+      Color? regularColor,
+      Color? hoverColor,
+      Color? textColor,
+      Color? iconColor,
+      Color? disabledColor,
       bool isDense = false}) {
     assert(title != null || iconData != null);
     var style = getLoiButtonStyle(buildContext);
@@ -110,7 +111,7 @@ abstract class CommonButton {
     textColor = textColor ?? style.textColor;
     iconColor = iconColor ?? style.iconColor;
     disabledColor = disabledColor ?? style.disabledColor;
-    String titleChanging = title;
+    String? titleChanging = title;
     return StatefulBuilder(
       builder: (BuildContext context, void Function(void Function()) setState) {
         final onPressedChanging = () async {
@@ -145,15 +146,15 @@ abstract class CommonButton {
     );
   }
 
-  static Widget getButton(BuildContext buildContext, Function onPressed,
-      {String title,
+  static Widget getButton(BuildContext buildContext, Function? onPressed,
+      {String? title,
       TextAlign align = TextAlign.start,
-      IconData iconData,
-      Color regularColor,
-      Color hoverColor,
-      Color textColor,
-      Color iconColor,
-      Color disabledColor,
+      IconData? iconData,
+      Color? regularColor,
+      Color? hoverColor,
+      Color? textColor,
+      Color? iconColor,
+      Color? disabledColor,
       bool isEnabled = true,
       bool isDense = false}) {
     var style = getLoiButtonStyle(buildContext);
@@ -163,7 +164,7 @@ abstract class CommonButton {
     iconColor = iconColor ?? style.iconColor;
     disabledColor = disabledColor ?? style.disabledColor;
     if (isEnabled) {
-      return (hover_button.HoverButtonImpl()).createButton(onPressed,
+      return (hover_button.HoverButtonImpl()).createButton(onPressed!,
           title: title,
           align: align,
           iconData: iconData,
@@ -184,9 +185,9 @@ abstract class CommonButton {
         isDense: isDense);
   }
 
-  static Widget createDataPickerButton(context, CloudTableSchema table,
+  static Widget createDataPickerButton(context, CloudTableSchema? table,
       String selectedField, DialogReturnedValue dialogReturnedValue,
-      {String title, IconData iconData, bool isDense=false}) {
+      {String? title, IconData? iconData, bool isDense=false}) {
     return CommonButton.getButtonAsync(context, () async {
       var results = await Navigator.push(
           context,
@@ -194,12 +195,12 @@ abstract class CommonButton {
             return Scaffold(
               appBar: AppBar(
                 title: Text(
-                    'Chọn một ${table.inputInfoMap.map[selectedField]?.fieldDes ?? ''}'),
+                    'Chọn một ${table!.inputInfoMap.map![selectedField]?.fieldDes ?? ''}'),
               ),
               body: EditTableWrapper(
                 table,
                 ParentParam(
-                  sortKey: table.inputInfoMap.map.keys.first,
+                  sortKey: table.inputInfoMap.map!.keys.first,
                   sortKeyDescending: true,
                 ),
                 dataPickerBundle: DataPickerBundle(selectedField),
@@ -223,8 +224,8 @@ class CloudTableUtils {
             icon: table.iconData, isDense: isDense))
         .toList();
     if (isTwoColumns) {
-      return splitAnyColumns(buttons, 2);
+      return splitAnyColumns(buttons as List<Widget>, 2);
     }
-    return columnWithGap(buttons, crossAxisAlignment: crossAxisAlignment);
+    return columnWithGap(buttons as List<Widget>, crossAxisAlignment: crossAxisAlignment);
   }
 }

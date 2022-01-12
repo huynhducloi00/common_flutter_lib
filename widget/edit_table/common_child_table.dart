@@ -15,29 +15,29 @@ import 'parent_param.dart';
 class ChildTableUtils {
   static Widget printButton(context,CollectionReference databaseRef, PrintInfo printInfo,
       ParentParam fallBackParentParam,
-      {isDense = false, Color backgroundColor}) {
+      {isDense = false, Color? backgroundColor}) {
     return CommonButton.getButtonAsync(context, () async {
       var parentParam = printInfo.parentParam ?? fallBackParentParam;
       var allQuery = applyFilterToQuery(databaseRef, parentParam).orderBy(
           parentParam.sortKey,
           descending: parentParam.sortKeyDescending) as Query;
-      return allQuery.getDocuments().then((querySnapshot) async {
+      return allQuery.get().then((querySnapshot) async {
         var creator = create_pdf.PdfCreator();
         await creator.init();
-        List<CloudObject> data = querySnapshot.documents
-            .map((e) => CloudObject(e.documentID, e.data))
+        List<CloudObject> data = querySnapshot.docs
+            .map((e) => CloudObject(e.id, e.data() as Map<String, dynamic>))
             .toList();
         SchemaAndData.fillInCalculatedData(data, printInfo.inputInfoMap);
-        parentParam.filterDataWrappers.forEach((fieldName, filter) {
-          if (filter.postFilterFunction != null) {
+        parentParam.filterDataWrappers!.forEach((fieldName, filter) {
+          if (filter!.postFilterFunction != null) {
             data = data
-                .where((row) => filter.postFilterFunction(row.dataMap))
+                .where((row) => filter.postFilterFunction!(row.dataMap))
                 .toList();
           }
         });
         data.forEach((row) {
           row.dataMap = SchemaAndData.fillInOptionData(
-              row.dataMap, printInfo.inputInfoMap.map);
+              row.dataMap, printInfo.inputInfoMap.map) as Map<String, dynamic>;
         });
         await creator.createPdfSummary(
             context, DateTime.now(), printInfo, data);
@@ -50,7 +50,7 @@ class ChildTableUtils {
   }
 
   static Widget printCurrent(context, PrintInfo printInfo, Map dataMap,
-      {isDense = false, Color backgroundColor}) {
+      {isDense = false, Color? backgroundColor}) {
     return CommonButton.getButtonAsync(context, () async {},
         title: printInfo.buttonTitle,
         iconData: Icons.print,
@@ -60,11 +60,11 @@ class ChildTableUtils {
 
   static void initiateNew(
       context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
-      {bool isPhone = false, Map<String, dynamic> initialValues}) {
+      {bool isPhone = false, Map<String, dynamic>? initialValues}) {
     var autoForm =
         AutoForm.createAutoForm(context, inputInfoMap, initialValues ?? {},
             saveClickFuture: (resultMap) {
-      return databaseRef.document().setData(resultMap);
+      return databaseRef.doc().set(resultMap);
     }, isNew: true);
     if (isPhone) {
       Navigator.push(
@@ -81,14 +81,14 @@ class ChildTableUtils {
 
   static Widget newButton(
           context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
-          {bool isPhone = false, Map<String, dynamic> initialValues, title='Mới'}) =>
+          {bool isPhone = false, Map<String, dynamic>? initialValues, title='Mới'}) =>
       CommonButton.getButton(context, () {
         initiateNew(context, databaseRef, inputInfoMap,
             isPhone: isPhone, initialValues: initialValues);
       }, title: title, iconData: Icons.wallpaper);
 
   static Widget editButton(
-      context, databaseRef, SchemaAndData schemaAndData, int rowIndex,
+      context, databaseRef, SchemaAndData schemaAndData, int? rowIndex,
       {bool isPhone = false}) {
     return CommonButton.getButton(context, () {
       if (isPhone) popWindow(context);
@@ -100,12 +100,12 @@ class ChildTableUtils {
                   InputInfo(DataType.string,
                       fieldDes: 'Mã', canUpdate: false, needSaving: false))
             ] +
-            map.entries.toList());
+            map!.entries.toList());
       }
       var autoForm = AutoForm.createAutoForm(
         context,
         schemaAndData.cloudTableSchema.inputInfoMap.cloneInputInfoMap(map),
-        schemaAndData.data[rowIndex].dataMap,
+        schemaAndData.data[rowIndex!].dataMap,
         saveClickFuture: (resultMap) async {
           await databaseRef
               .document(schemaAndData.data[rowIndex].documentId)
@@ -128,20 +128,20 @@ class ChildTableUtils {
   }
 
   static Widget deleteButton(
-          context, databaseRef, SchemaAndData schemaAndData, int rowIndex) =>
+          context, databaseRef, SchemaAndData schemaAndData, int? rowIndex) =>
       CommonButton.getButton(context, () {
         popWindow(context);
         showAlertDialog(context, actions: [
           CommonButton.getButtonAsync(context, () async {
             await databaseRef
-                .document(schemaAndData.data[rowIndex].documentId)
+                .document(schemaAndData.data[rowIndex!].documentId)
                 .delete();
             popWindow(context);
           }, title: 'Có'),
           CommonButton.getCloseButton(context, 'Không')
         ], builder: (_) {
           return Text(
-              'Bạn thật sự muốn xoá ${toText(context, schemaAndData.data[rowIndex].dataMap[schemaAndData.cloudTableSchema.inputInfoMap.map.keys.elementAt(0)])}?');
+              'Bạn thật sự muốn xoá ${toText(context, schemaAndData.data[rowIndex!].dataMap[schemaAndData.cloudTableSchema.inputInfoMap.map!.keys.elementAt(0)])}?');
         });
       },
           title: "Xoá",
@@ -149,7 +149,7 @@ class ChildTableUtils {
           iconData: Icons.delete_forever);
 
   static Widget printLineButton(
-      BuildContext context, PrintTicket printTicket, Map data, bool isEnabled) {
+      BuildContext context, PrintTicket? printTicket, Map? data, bool isEnabled) {
     return CommonButton.getButtonAsync(context, () async {
       var creator = create_pdf.PdfCreator();
       await creator.init();

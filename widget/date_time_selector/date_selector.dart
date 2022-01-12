@@ -11,14 +11,14 @@ class CurrentDateNotifier extends ValueNotifier<DateTime> {
 }
 
 class DateSelector extends StatelessWidget {
-  CurrentDateNotifier currentDateNotifier;
+  late CurrentDateNotifier currentDateNotifier;
   double gap;
 
   DateSelector({this.gap = 100});
 
   Future<Null> _selectDate(BuildContext context) async {
     var today = DateTime.now();
-    final DateTime picked = await showDatePicker(
+    final DateTime? picked = await showDatePicker(
         context: context,
         initialDate: today,
         firstDate: DateTime(2015, 8),
@@ -34,7 +34,7 @@ class DateSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<CurrentDateNotifier>(
-        builder: (BuildContext context, value, Widget child) {
+        builder: (BuildContext context, value, Widget? child) {
       currentDateNotifier = value;
       return Row(
           mainAxisAlignment: MainAxisAlignment.center,

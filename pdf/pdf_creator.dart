@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import '../utils/html/html_no_op.dart'
     if (dart.library.html) '../utils/html/html_utils.dart' as html_utils;
 import 'package:flutter/foundation.dart';
@@ -44,7 +47,7 @@ class PdfCreator extends PdfCreatorInterface {
     return PdfUtils.init();
   }
 
-  List<int> _generatingPdfSummary(
+  Future<List<int>> _generatingPdfSummary(
       BuildContext buildContext,
       DateTime timeOfPrint,
       PrintInfo printInfo,
@@ -53,14 +56,14 @@ class PdfCreator extends PdfCreatorInterface {
     Map<int, pw.TableColumnWidth> colWidths = Map();
     double sumFraction = 0;
 
-    Map<String, InputInfo> usedInputInfoMap = printInfo.inputInfoMap
-        .filterMap((printInfo.groupByFields ?? []) + printInfo.printFields);
+    Map<String, InputInfo?> usedInputInfoMap = printInfo.inputInfoMap
+        .filterMap((printInfo.groupByFields ?? []) + printInfo.printFields!);
     usedInputInfoMap.entries.forEach((e) {
-      InputInfo inputInfo = e.value;
-      sumFraction += inputInfo.printFlex;
+      InputInfo inputInfo = e.value!;
+      sumFraction += inputInfo.printFlex!;
     });
     usedInputInfoMap.entries.toList().asMap().forEach((key, value) {
-      colWidths[key] = pw.FractionColumnWidth(value.value.printFlex / sumFraction);
+      colWidths[key] = pw.FractionColumnWidth(value.value!.printFlex! / sumFraction);
     });
     int count = 0;
     // for landscape
@@ -73,28 +76,30 @@ class PdfCreator extends PdfCreatorInterface {
     pw.Table header = pw.Table(columnWidths: colWidths, children: [
       pw.TableRow(
           children: usedInputInfoMap.entries
-              .map((e) => PdfUtils.writeRegular(e.value.fieldDes))
+              .map((e) => PdfUtils.writeRegular(e.value!.fieldDes!))
               .toList())
     ]);
-    List<pw.TableRow> tableRows = List();
-    List<pw.Table> tables = List();
-    Map<String, int> aggregationStatInt = Map();
+    List<pw.TableRow> tableRows = [];
+    List<pw.Table> tables = [];
+    Map<String, int?> aggregationStatInt = {};
     if (printInfo.groupByFields != null) {
-      Map<GroupByKey, Map<String, int>> grouped = Map();
+      Map<GroupByKey, Map<String, int>> grouped = {};
       data.forEach((row) {
         GroupByKey groupByKey =
-            GroupByKey(printInfo.groupByFields.map((e) => row[e]).toList());
-        var map = grouped[groupByKey];
-        if (map == null) {
-          map = Map();
+            GroupByKey(printInfo.groupByFields!.map((e) => row[e]).toList());
+        var map;
+        if (grouped[groupByKey]==null){
+          map = {};
           grouped[groupByKey] = map;
+        } else {
+          map = grouped[groupByKey];
         }
-        printInfo.printFields.forEach((fieldName) {
-          if (!printInfo.groupByFields.contains(fieldName)) {
+        printInfo.printFields!.forEach((fieldName) {
+          if (!printInfo.groupByFields!.contains(fieldName)) {
             if (map[fieldName] == null) {
               map[fieldName] = row[fieldName] ?? 0;
             } else {
-              map[fieldName] += row[fieldName] ?? 0;
+              map[fieldName] +=  row[fieldName] ??0;
             }
           }
         });
@@ -102,14 +107,14 @@ class PdfCreator extends PdfCreatorInterface {
       data.clear();
       grouped.entries.forEach((e) {
         Map<String, dynamic> newMap = Map.from(e.value);
-        printInfo.groupByFields.asMap().forEach((index, groupedField) {
+        printInfo.groupByFields!.asMap().forEach((index, groupedField) {
           newMap[groupedField] = e.key.values[index];
         });
         data.add(newMap);
       });
     }
     data.forEach((row) {
-      printInfo.aggregateFields.forEach((fieldName) {
+      printInfo.aggregateFields!.forEach((fieldName) {
         if (aggregationStatInt.containsKey(fieldName)) {
           aggregationStatInt[fieldName] =
               sum([aggregationStatInt[fieldName], row[fieldName]]);
@@ -127,10 +132,10 @@ class PdfCreator extends PdfCreatorInterface {
           (tables.length > 0 && count == limitOtherPage)) {
         tables.add(pw.Table(columnWidths: colWidths, children: tableRows));
         count = 0;
-        tableRows = List();
+        tableRows = [];
       }
     });
-    if (tableRows.length != 0) {
+    if (tableRows.isNotEmpty) {
       tables.add(pw.Table(columnWidths: colWidths, children: tableRows));
     }
     pdf.addPage(pw.MultiPage(
@@ -152,7 +157,7 @@ class PdfCreator extends PdfCreatorInterface {
             PdfUtils.writeRegular(PdfUtils.REPORT_TITLE),
             PdfUtils.writeLight(PdfUtils.REPORT_SUBTITLE),
             PdfUtils.center(
-              PdfUtils.writeRegular(printInfo.title.toUpperCase()),
+              PdfUtils.writeRegular(printInfo.title!.toUpperCase()),
             ),
             PdfUtils.center(PdfUtils.writeRegular(
                 'Ngày in: ${formatDatetime(buildContext, timeOfPrint)}')),
@@ -175,16 +180,16 @@ class PdfCreator extends PdfCreatorInterface {
             // NOT enough space for adding summary
             children.add(pw.NewPage());
           }
-          List<Map<String, String>> maps = partitionMap(
+          List<Map<String?, String?>?> maps = partitionMap(
               aggregationStatInt.map((fieldName, value) => MapEntry(
-                  printInfo.inputInfoMap.map[fieldName].fieldDes,
+                  printInfo.inputInfoMap.map![fieldName]!.fieldDes,
                   toText(buildContext, value))),
               LAST_PAGE_COLUMN_NUM);
           List<pw.Widget> mapWidgets =
-              maps.map((map) => PdfUtils.tableOfTwo(map, width: 100)).toList();
+              maps.map((map) => PdfUtils.tableOfTwo(map!, width: 100)).toList();
           children.add(pw.Container(
               decoration:
-                  pw.BoxDecoration(border: pw.BoxBorder(bottom: true))));
+                  const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide()))));
           children.add(pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               mainAxisSize: pw.MainAxisSize.max,
@@ -195,12 +200,12 @@ class PdfCreator extends PdfCreatorInterface {
   }
 
   @override
-  Future createPdfSummary(BuildContext buildContext, DateTime timeOfPrint,
-      PrintInfo printInfo, List<CloudObject> data) {
-    List<int> bytes = _generatingPdfSummary(buildContext, timeOfPrint,
+  Future createPdfSummary(BuildContext context, DateTime timeOfPrint,
+      PrintInfo printInfo, List<CloudObject> data) async {
+    List<int> bytes = await _generatingPdfSummary(context, timeOfPrint,
         printInfo, data.map((e) => e.dataMap).toList());
     if (kIsWeb) {
-      if (html_utils.HtmlUtils().isSafari()) {
+      if (html_utils.HtmlUtils().isSafari()!) {
         (html_utils.HtmlUtils()).downloadWeb(bytes, 'report.pdf');
       } else {
         (html_utils.HtmlUtils()).viewBytes(bytes);
@@ -209,20 +214,20 @@ class PdfCreator extends PdfCreatorInterface {
     } else {
       // android
       return Printing.layoutPdf(onLayout: (PdfPageFormat format) async {
-        return bytes;
+        return bytes as FutureOr<Uint8List>;
       });
     }
   }
 
   @override
   Future createPdfTicket(BuildContext buildContext, DateTime timeOfPrint,
-      PrintTicket printTicket, Map dataMap) {
+      PrintTicket? printTicket, Map? dataMap) {
     return Printing.layoutPdf(onLayout: (PdfPageFormat format) async {
       final Document pdf = pw.Document();
       pdf.addPage(pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: pw.EdgeInsets.all(15),
-          orientation: printTicket.printVertical
+          orientation: printTicket!.printVertical
               ? pw.PageOrientation.natural
               : pw.PageOrientation.landscape,
           build: (pw.Context context) {
@@ -231,7 +236,7 @@ class PdfCreator extends PdfCreatorInterface {
               PdfUtils.writeRegular(PdfUtils.REPORT_TITLE),
               PdfUtils.writeLight(PdfUtils.REPORT_SUBTITLE),
               PdfUtils.center(
-                PdfUtils.writeRegular(printTicket.title.toUpperCase()),
+                PdfUtils.writeRegular(printTicket.title!.toUpperCase()),
               ),
               PdfUtils.center(PdfUtils.writeRegular(
                   'Ngày in: ${formatDatetime(buildContext, timeOfPrint)}')),
@@ -240,7 +245,7 @@ class PdfCreator extends PdfCreatorInterface {
             printTicket.ticketParagraphs.forEach((paragraph) {
               if (paragraph.fieldNames != null) {
                 List lists = partitionListToBin(
-                    paragraph.fieldNames, paragraph.numColumn);
+                    paragraph.fieldNames!, paragraph.numColumn);
                 children.add(pw.Row(
                     mainAxisSize: pw.MainAxisSize.max,
                     mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
@@ -251,7 +256,7 @@ class PdfCreator extends PdfCreatorInterface {
                     }).toList()));
               } else if (paragraph.hardCodeTexts != null) {
                 List<List> lists = partitionListToBin(
-                    paragraph.hardCodeTexts, paragraph.numColumn);
+                    paragraph.hardCodeTexts!, paragraph.numColumn);
                 children.add(pw.Row(
                     mainAxisSize: pw.MainAxisSize.max,
                     mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
@@ -267,7 +272,7 @@ class PdfCreator extends PdfCreatorInterface {
                 // Both are null, meaning just line breaks
                 // 1 line break is 1cm
                 children.add(pw.SizedBox(
-                    height: paragraph.numLineBreak * DOT_PER_CM * 1.0));
+                    height: paragraph.numLineBreak! * DOT_PER_CM * 1.0));
               }
             });
             return children;
@@ -277,11 +282,11 @@ class PdfCreator extends PdfCreatorInterface {
   }
 
   pw.Widget tableOfTwo(BuildContext buildContext, List<String> fieldNames,
-      Map<String, InputInfo> inputInfoMap, Map dataMap) {
+      Map<String, InputInfo>? inputInfoMap, Map? dataMap) {
     return PdfUtils.tableOfTwo(
         fieldNames.asMap().map((key, fieldName) {
-          return MapEntry(inputInfoMap[fieldName].fieldDes,
-              toText(buildContext, dataMap[fieldName] ?? ''));
+          return MapEntry(inputInfoMap![fieldName]!.fieldDes,
+              toText(buildContext, dataMap![fieldName] ?? ''));
         }),
         width: null);
   }

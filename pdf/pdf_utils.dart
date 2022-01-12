@@ -4,8 +4,8 @@ import 'package:pdf/widgets.dart' as pw;
 class PdfUtils {
   static String REPORT_TITLE = 'CÔNG TY TNHH MTV HUỲNH HIỆP HƯNG';
   static String REPORT_SUBTITLE = 'XUÂN ĐỊNH- XUÂN LỘC-ĐỒNG NAI';
-  static pw.TextStyle lightTextStyle;
-  static pw.TextStyle regularTextStyle;
+  static late pw.TextStyle lightTextStyle;
+  static late pw.TextStyle regularTextStyle;
 
   static Future init() async {
     lightTextStyle = pw.TextStyle(
@@ -35,15 +35,15 @@ class PdfUtils {
   }
 
   // pass width as null to shrink as much as possible.
-  static pw.Widget tableOfTwo(Map<String, String> map,
-      {bool boldLeft = false, bool boldRight = false, double width=200}) {
+  static pw.Widget tableOfTwo(Map<String?, String?> map,
+      {bool boldLeft = false, bool boldRight = false, double? width=200}) {
     List<pw.TableRow> list = [];
     for (int i = 0; i < map.entries.length; i++) {
       var e = map.entries.elementAt(i);
       list.add(pw.TableRow(children: [writeLight('${e.key}:'), pw.Container(
         margin: pw.EdgeInsets.only(left: 10),
           alignment: pw.Alignment.centerRight,
-          child:writeLight(e.value))]));
+          child:writeLight(e.value!))]));
     }
     if (width==null) {
       return pw.Table(

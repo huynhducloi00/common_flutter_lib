@@ -6,7 +6,7 @@ import '../auth_service.dart';
 import '../sign_in/sign_in_page.dart';
 import 'sign_in_page.dart';
 
-class SignInWrapper<USER extends User, TYPE> extends StatelessWidget {
+class SignInWrapper<USER extends User?, TYPE> extends StatelessWidget {
   bool debugging;
   ConvertToUserFunc convertToUserFunc;
   String appName;
@@ -31,6 +31,7 @@ class SignInWrapper<USER extends User, TYPE> extends StatelessWidget {
                 value: AuthService<USER>(convertToUserFunc),
                 child: Builder(builder: (BuildContext context) {
                   return StreamProvider.value(
+                    initialData: null,
                       catchError: (context, error) {
                         print(error);
                       },
@@ -51,7 +52,7 @@ class SignInWrapper<USER extends User, TYPE> extends StatelessWidget {
   }
 }
 
-Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
+Future<dynamic>? myBackgroundMessageHandler(Map<String, dynamic> message) {
   print('back ground ${message}');
   if (message.containsKey('data')) {
     // Handle data message

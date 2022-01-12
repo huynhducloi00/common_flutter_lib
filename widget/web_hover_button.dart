@@ -6,12 +6,12 @@ import 'web_utils.dart';
 
 class HoverButtonImpl extends HoverButtonInterface {
   @override
-  Widget createButton(Function onPressed,
-      {String title,
+  Widget createButton(Function? onPressed,
+      {String? title,
       TextAlign align = TextAlign.start,
-      IconData iconData,
-      Color regularColor,
-      Color hoverColor,
+      IconData? iconData,
+      Color? regularColor,
+      Color? hoverColor,
       Color textColor = Colors.white,
       Color iconColor = Colors.black,
       bool isDense = false}) {
@@ -21,12 +21,12 @@ class HoverButtonImpl extends HoverButtonInterface {
 }
 
 class HoverButton extends StatefulWidget {
-  final Function onPressed;
-  final String title;
+  final Function? onPressed;
+  final String? title;
   final TextAlign align;
-  final IconData iconData;
-  final Color regularColor;
-  final Color hoverColor;
+  final IconData? iconData;
+  final Color? regularColor;
+  final Color? hoverColor;
   final Color iconColor;
   final Color textColor;
   final bool isDense;
@@ -53,7 +53,7 @@ class _HoverButtonState extends State<HoverButton> {
   Widget build(BuildContext context) {
     bool showEmptyPlaceHolder = isStringEmpty(widget.title) && widget.iconData == null;
     return GestureDetector(
-      onTap: widget.onPressed,
+      onTap: widget.onPressed as void Function()?,
       child: MouseRegion(
         onEnter: (e) => hover(true),
         onExit: (e) => hover(false),
@@ -76,14 +76,14 @@ class _HoverButtonState extends State<HoverButton> {
                 isStringEmpty(widget.title)
                     ? null
                     : Text(
-                        widget.title,
+                        widget.title!,
                         style: TextStyle(
                           fontSize: 18,
                           color: widget.textColor,
                           decoration: TextDecoration.none,
                         ),
                       )
-              ].where((element) => element != null).toList()),
+              ].where((element) => element != null).toList() as List<Widget>),
           decoration: BoxDecoration(
             color: _hovering ? widget.hoverColor : widget.regularColor,
             borderRadius: BorderRadius.circular(5),

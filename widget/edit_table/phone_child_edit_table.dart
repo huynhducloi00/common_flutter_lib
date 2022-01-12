@@ -1,3 +1,5 @@
+import 'package:loi_tenant/common/data/cloud_obj.dart';
+
 import '../../loadingstate/loading_stream_builder.dart';
 import '../../utils.dart';
 import '../../widget/edit_table/child_param.dart';
@@ -12,7 +14,7 @@ import 'parent_param.dart';
 
 class PhoneChildEditTable<SchemaAndData> extends StatefulWidget {
   final CollectionReference databaseRef;
-  DataPickerBundle dataPickerBundle;
+  DataPickerBundle? dataPickerBundle;
   bool showAllData;
   bool showNewButton;
   PhoneChildEditTable(this.databaseRef,
@@ -28,7 +30,7 @@ class _PhoneChildEditTableState
     var calculated;
     if (val != null) {
       calculated =
-          inputInfo.optionMap == null ? null : inputInfo.optionMap[val];
+          inputInfo.optionMap == null ? null : inputInfo.optionMap![val];
     }
     return calculated == null ? '${toText(context, val ?? '')}' : '$calculated';
   }
@@ -44,16 +46,16 @@ class _PhoneChildEditTableState
   @override
   Widget delegateBuild(BuildContext context) {
     ParentParam parentParam = Provider.of<ParentParam>(context, listen: false);
-    var schemaAndData = data;
+    SchemaAndData<CloudObject<dynamic>> schemaAndData = data;
     Widget navigator;
     navigator = Consumer<DatabasePagerNotifier>(builder: (BuildContext context,
-        DatabasePagerNotifier databasePagerNotifier, Widget child) {
+        DatabasePagerNotifier databasePagerNotifier, Widget? child) {
       var moreInfoWidget =
           ExpansionTile(title: Text('Thông tin thêm'), children: <Widget>[
         Wrap(
             runSpacing: 4,
             spacing: 8,
-            children: schemaAndData.cloudTableSchema.printInfos
+            children: schemaAndData.cloudTableSchema.printInfos!
                 .map(
                   (printInfo) => ChildTableUtils.printButton(
                       context, widget.databaseRef, printInfo, parentParam,
@@ -65,7 +67,7 @@ class _PhoneChildEditTableState
           height: screenHeight(context) * 0.1,
           child: tableOfTwo({
             'Trường sắp xếp':
-                '${schemaAndData.cloudTableSchema.inputInfoMap.map[parentParam.sortKey].fieldDes}-${parentParam.sortKeyDescending ? "Giảm dần" : "Tăng dần"}',
+                '${schemaAndData.cloudTableSchema.inputInfoMap.map![parentParam.sortKey!]!.fieldDes}-${parentParam.sortKeyDescending! ? "Giảm dần" : "Tăng dần"}',
             'Hiển thị sau':
                 toText(context, databasePagerNotifier.value.startAfter),
             'Hiển thị trước':
@@ -91,20 +93,20 @@ class _PhoneChildEditTableState
                   databasePagerNotifier.value = ChildParam();
                 }, title: 'Về trang đầu'),
                 newButton
-              ].where((element) => element != null).toList());
+              ].where((element) => element != null).toList() as List<Widget>);
         }
         var beforeQuery = applyFilterToQuery(widget.databaseRef, parentParam)
             .orderBy(parentParam.sortKey,
                 descending: parentParam.sortKeyDescending)
             .endBefore([
-          schemaAndData.data.first.dataMap[parentParam.sortKey]
-        ]).limit(1) as Query;
+          schemaAndData.data.first.dataMap[parentParam.sortKey!]
+        ]).limit(1) as Query?;
         var afterQuery = applyFilterToQuery(widget.databaseRef, parentParam)
             .orderBy(parentParam.sortKey,
                 descending: parentParam.sortKeyDescending)
             .startAfter([
-          schemaAndData.data.last.dataMap[parentParam.sortKey]
-        ]).limit(1) as Query;
+          schemaAndData.data.last.dataMap[parentParam.sortKey!]
+        ]).limit(1) as Query?;
         return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -113,19 +115,20 @@ class _PhoneChildEditTableState
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   StreamProvider<bool>.value(
+                    initialData: false,
                     value: isLoading
                         ? Stream<bool>.value(false)
-                        : beforeQuery.snapshots().map((event) {
-                            return event.documents.length > 0;
+                        : beforeQuery!.snapshots().map((event) {
+                            return event.docs.isNotEmpty;
                           }),
                     child: Builder(
                       builder: (BuildContext context) {
-                        bool existBefore = Provider.of<bool>(context) ?? false;
+                        bool existBefore = Provider.of<bool>(context);
                         return CommonButton.getButton(context, () {
                           // go back
                           databasePagerNotifier.value = ChildParam(
                               endBefore: schemaAndData
-                                  .data.first.dataMap[parentParam.sortKey]);
+                                  .data.first.dataMap[parentParam.sortKey!]);
                         },
                             title: "",
                             iconData:
@@ -135,18 +138,19 @@ class _PhoneChildEditTableState
                     ),
                   ),
                   StreamProvider<bool>.value(
+                    initialData: false,
                     value: isLoading
                         ? Stream<bool>.value(false)
-                        : afterQuery
+                        : afterQuery!
                             .snapshots()
-                            .map((event) => event.documents.length > 0),
+                            .map((event) => event.docs.isNotEmpty),
                     child: Builder(builder: (BuildContext context) {
-                      bool existAfter = Provider.of<bool>(context) ?? false;
+                      bool existAfter = Provider.of<bool>(context);
                       return CommonButton.getButton(context, () {
                         // go forward
                         databasePagerNotifier.value = ChildParam(
                             startAfter: schemaAndData
-                                .data.last.dataMap[parentParam.sortKey]);
+                                .data.last.dataMap[parentParam.sortKey!]);
                       },
                           title: "",
                           iconData: existAfter ? Icons.navigate_next : null,
@@ -154,9 +158,9 @@ class _PhoneChildEditTableState
                     }),
                   ),
                   newButton
-                ].where((element) => element != null).toList(),
+                ].whereType<Widget>().toList(),
               ),
-            ].where((element) => element != null).toList());
+            ].whereType<Widget>().toList());
       }
     });
     List<Widget> itemList = schemaAndData.data.asMap().entries.map((entry) {
@@ -168,7 +172,7 @@ class _PhoneChildEditTableState
 
       return Card(
           color: parentParam.postColorDecorationCondition != null
-              ? parentParam.postColorDecorationCondition(cloudObj.dataMap)
+              ? parentParam.postColorDecorationCondition!(cloudObj.dataMap)
               : null,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15.0),
@@ -178,23 +182,22 @@ class _PhoneChildEditTableState
                 ? Icon(schemaAndData.cloudTableSchema.iconData)
                 : null,
             title: Text(_concat(
-                    row, schemaAndData.cloudTableSchema.primaryFields)) ??
-                '',
-            subtitle: tableOfTwo(schemaAndData.cloudTableSchema.subtitleFields
+                    row, schemaAndData.cloudTableSchema.primaryFields!)),
+            subtitle: tableOfTwo(schemaAndData.cloudTableSchema.subtitleFields!
                 .asMap()
                 .map((index, fieldName) => MapEntry(
-                    inputInfoMap.map[fieldName].fieldDes,
+                    inputInfoMap.map![fieldName]!.fieldDes,
                     toText(context, row[fieldName])))),
             trailing: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
-                children: schemaAndData.cloudTableSchema.trailingFields
+                children: schemaAndData.cloudTableSchema.trailingFields!
                     .map((fieldName) =>
                         Text(toText(context, row[fieldName]) ?? ''))
                     .toList()),
             onTap: () {
               if (widget.dataPickerBundle != null) {
                 Navigator.pop(
-                    context, [row[widget.dataPickerBundle.fieldName], row]);
+                    context, [row[widget.dataPickerBundle!.fieldName], row]);
                 return;
               }
               showAlertDialog(context, builder: (_) {

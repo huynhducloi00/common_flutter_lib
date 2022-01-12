@@ -18,8 +18,8 @@ import '../common.dart';
 
 class EditTableWrapper extends StatefulWidget {
   ParentParam parentParam;
-  CloudTableSchema cloudTable;
-  DataPickerBundle dataPickerBundle;
+  CloudTableSchema? cloudTable;
+  DataPickerBundle? dataPickerBundle;
   bool showAllData;
   bool showFilterBar;
   bool showNewButton;
@@ -37,13 +37,13 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
   Widget getFilterButton() {
     return ExpansionTile(
       title: Text('Lọc'),
-      children: widget.cloudTable.inputInfoMap.map.entries
+      children: widget.cloudTable!.inputInfoMap.map!.entries
           .map((entry) {
             var fieldName = entry.key;
             var inputInfo = entry.value;
             if (inputInfo.needSaving) {
               return ListTile(
-                  title: Text(inputInfo.fieldDes),
+                  title: Text(inputInfo.fieldDes!),
                   subtitle: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
@@ -55,8 +55,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
             }
             return null;
           })
-          .where((element) => element != null)
-          .toList(),
+          .whereType<Widget>().toList(),
     );
   }
 
@@ -67,22 +66,22 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
           if (widget.parentParam.sortKey == fieldName) {
             // change sort direction
             widget.parentParam.sortKeyDescending =
-                !widget.parentParam.sortKeyDescending;
+                !widget.parentParam.sortKeyDescending!;
           } else {
             widget.parentParam.sortKey = fieldName;
             widget.parentParam.sortKeyDescending = false;
           }
-          if (widget.parentParam.filterDataWrappers[fieldName] != null &&
-              widget.parentParam.filterDataWrappers[fieldName]
+          if (widget.parentParam.filterDataWrappers![fieldName] != null &&
+              widget.parentParam.filterDataWrappers![fieldName]!
                       .exactMatchValue !=
                   null) {
             // cannot be sorted and have exact value
-            widget.parentParam.filterDataWrappers.remove(fieldName);
+            widget.parentParam.filterDataWrappers!.remove(fieldName);
           }
           setState(() {});
         },
             iconData: widget.parentParam.sortKey == fieldName
-                ? (widget.parentParam.sortKeyDescending
+                ? (widget.parentParam.sortKeyDescending!
                     ? Icons.arrow_downward
                     : Icons.arrow_upward)
                 : Icons.check_box_outline_blank,
@@ -94,12 +93,12 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
     return SizedBox(
       height: 20,
       child: CommonButton.getButton(context, () {
-        if (widget.parentParam.filterDataWrappers.containsKey(fieldName)) {
-          widget.parentParam.filterDataWrappers.remove(fieldName);
+        if (widget.parentParam.filterDataWrappers!.containsKey(fieldName)) {
+          widget.parentParam.filterDataWrappers!.remove(fieldName);
           setState(() {});
           return;
         }
-        InputInfoMap usedMap;
+        late InputInfoMap usedMap;
         switch (inputInfo.dataType) {
           case DataType.string:
             usedMap = STRING_FILTER_INFO_MAP;
@@ -122,7 +121,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
             builder: (_) {
           return AutoForm.createAutoForm(context, usedMap, {},
               saveClickFuture: (valueMap) {
-            FilterDataWrapper filterResult;
+            FilterDataWrapper? filterResult;
             switch (inputInfo.dataType) {
               case DataType.string:
                 filterResult = convertFromStringFilterMap(valueMap);
@@ -141,23 +140,23 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
                 break;
             }
 
-            widget.parentParam.filterDataWrappers[fieldName] = filterResult;
-            if (filterResult.exactMatchValue != null) {
+            widget.parentParam.filterDataWrappers![fieldName] = filterResult;
+            if (filterResult!.exactMatchValue != null) {
               if (widget.parentParam.sortKey == fieldName) {
                 // cannot have both exact match and sortkey
-                widget.parentParam.sortKey = widget.cloudTable.sortKey;
+                widget.parentParam.sortKey = widget.cloudTable!.sortKey;
                 widget.parentParam.sortKeyDescending =
-                    widget.cloudTable.sortDescending;
+                    widget.cloudTable!.sortDescending;
               }
             } else {
               // filter range, all other keys must not have filter range.
-              List<String> removeField = List();
-              widget.parentParam.filterDataWrappers.forEach((field, value) {
-                if (value.exactMatchValue == null && field != fieldName) {
+              List<String> removeField = [];
+              widget.parentParam.filterDataWrappers!.forEach((field, value) {
+                if (value!.exactMatchValue == null && field != fieldName) {
                   removeField.add(field);
                 }
               });
-              widget.parentParam.filterDataWrappers
+              widget.parentParam.filterDataWrappers!
                   .removeWhere((key, value) => removeField.contains(key));
             }
             setState(() {});
@@ -165,7 +164,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
           });
         });
       },
-          iconColor: widget.parentParam.filterDataWrappers[fieldName] == null
+          iconColor: widget.parentParam.filterDataWrappers![fieldName] == null
               ? null
               : Colors.red,
           iconData: Icons.filter_list,
@@ -175,7 +174,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
   }
 
   List getHeaderRow() {
-    var filteredMap = widget.cloudTable.inputInfoMap.filterVisibleFields();
+    var filteredMap = widget.cloudTable!.inputInfoMap.filterVisibleFields();
     var tableCells = filteredMap.entries.map((e) {
       var fieldName = e.key;
       var inputInfo = e.value;
@@ -193,7 +192,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
               )),
               widget.showFilterBar ? toggleSort(fieldName) : null,
               widget.showFilterBar ? toggleFilter(inputInfo, fieldName) : null
-            ].where((element) => element != null).toList()),
+            ].where((element) => element != null).toList() as List<Widget>),
       );
     }).toList();
     TableWidthAndSize tableWidthAndSize =
@@ -228,7 +227,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
           children: [
             widget.showFilterBar ? getFilterButton() : null,
             content,
-          ].where((element) => element != null).toList()),
+          ].whereType<Widget>().toList()),
     );
     var tablet = LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -263,8 +262,8 @@ class TableWrapper extends StatefulWidget {
   @override
   _TableWrapperState createState() => _TableWrapperState();
 
-  CloudTableSchema cloudTable;
-  DataPickerBundle dataPickerBundle;
+  CloudTableSchema? cloudTable;
+  DataPickerBundle? dataPickerBundle;
   bool showAllData;
   bool showNewButton;
   TableWrapper(this.cloudTable, this.dataPickerBundle,
@@ -283,16 +282,16 @@ class _TableWrapperState extends State<TableWrapper> {
     return ChangeNotifierProvider(create: (BuildContext context) {
       return databasePagerNotifier;
     }, child: Consumer<DatabasePagerNotifier>(
-      builder: (BuildContext context, DatabasePagerNotifier _, Widget child) {
+      builder: (BuildContext context, DatabasePagerNotifier _, Widget? child) {
         ParentParam parentParam =
             Provider.of<ParentParam>(context, listen: false);
-        CollectionReference _databaseRef = widget.cloudTable.getCollectionRef();
+        CollectionReference _databaseRef = widget.cloudTable!.getCollectionRef();
         // Apply both parent and child params.
         var query = applyFilterToQuery(_databaseRef, parentParam);
         // startAfter ... table ... endBefore, which affected by sort direction
         bool reverse = false;
         if (!widget.showAllData) {
-          if (parentParam.sortKeyDescending) {
+          if (parentParam.sortKeyDescending!) {
             if (databasePagerNotifier.value.endBefore != null) {
               // reverse of endBefore is start after
               query = query
@@ -326,12 +325,12 @@ class _TableWrapperState extends State<TableWrapper> {
         }
         Stream<SchemaAndData<CloudObject>> newSnapshot =
             (query as Query).snapshots().map((event) {
-          List<DocumentSnapshot> snapshots = List();
-          snapshots.addAll(event.documents);
+          List<DocumentSnapshot> snapshots = [];
+          snapshots.addAll(event.docs);
           if (reverse) {
             snapshots = snapshots.reversed.toList();
           }
-          return widget.cloudTable.convertSnapshotToDataList(snapshots);
+          return widget.cloudTable!.convertSnapshotToDataList(snapshots);
         });
         return createStreamBuilder<SchemaAndData<CloudObject>, Widget>(
             stream: newSnapshot,

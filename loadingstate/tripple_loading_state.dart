@@ -9,9 +9,9 @@ abstract class TrippleLoadingState<T extends StatefulWidget, L1,L2,L3> extends S
   bool isRequireData = false;
   Loading loadingScreen = Loading();
   bool keepAlive;
-  L1 data1;
-  L2 data2;
-  L3 data3;
+  L1? data1;
+  L2? data2;
+  L3? data3;
   TrippleLoadingState({this.isRequireData = false, this.tag="", this.keepAlive = false}):super();
 
   void markLoading() {

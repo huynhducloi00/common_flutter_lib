@@ -15,13 +15,13 @@ InputInfoMap STRING_FILTER_INFO_MAP = InputInfoMap({
 });
 
 FilterDataWrapper convertFromStringFilterMap(Map val) {
-  String strStart = val[_CONTAIN_STR];
+  String? strStart = val[_CONTAIN_STR];
   if (val[_EXACT_MATCH_STR]) {
     return FilterDataWrapper(
       exactMatchValue: strStart,
     );
   } else {
-    String strEnd = strStart;
+    String strEnd = strStart!;
     strEnd = strEnd.substring(0, strEnd.length - 1) +
         String.fromCharCode(strEnd.codeUnitAt(strEnd.length - 1) + 1);
     return FilterDataWrapper(
@@ -33,7 +33,7 @@ FilterDataWrapper convertFromStringFilterMap(Map val) {
 
 const String _EXACT_MATCH_INT = '_EXACT_MATCH_INT';
 
-InputInfoMap INT_FILTER_INFO_MAP(Map<dynamic, String> originalFieldOptionMap) =>
+InputInfoMap INT_FILTER_INFO_MAP(Map<dynamic, String?>? originalFieldOptionMap) =>
     InputInfoMap({
       _EXACT_MATCH_INT: InputInfo(DataType.int,
           optionMap: originalFieldOptionMap,
@@ -81,7 +81,7 @@ FilterDataWrapper convertFromBooleanFilterMap(Map val) {
   return FilterDataWrapper(exactMatchValue: val[_BOOLEAN_VALUE]);
 }
 
-Query specificFilter(var original, String fieldName,
+Query? specificFilter(var original, String fieldName,
     FilterDataWrapper filterDataWrapper, bool toSort) {
   if (filterDataWrapper.exactMatchValue != null) {
     return original.where(fieldName,
@@ -92,16 +92,16 @@ Query specificFilter(var original, String fieldName,
     original = original.orderBy(fieldName);
   }
   return original.where(fieldName,
-      isGreaterThan: filterDataWrapper.filterStartIncludeValue
+      isGreaterThan: filterDataWrapper.filterStartIncludeValue!
           ? null
           : filterDataWrapper.filterStartValue,
-      isGreaterThanOrEqualTo: filterDataWrapper.filterStartIncludeValue
+      isGreaterThanOrEqualTo: filterDataWrapper.filterStartIncludeValue!
           ? filterDataWrapper.filterStartValue
           : null,
-      isLessThanOrEqualTo: filterDataWrapper.filterEndIncludeValue
+      isLessThanOrEqualTo: filterDataWrapper.filterEndIncludeValue!
           ? filterDataWrapper.filterEndValue
           : null,
-      isLessThan: filterDataWrapper.filterEndIncludeValue
+      isLessThan: filterDataWrapper.filterEndIncludeValue!
           ? null
           : filterDataWrapper.filterEndValue);
 }
@@ -110,7 +110,7 @@ Query specificFilter(var original, String fieldName,
 dynamic applyFilterToQuery(
     CollectionReference collectionReference, ParentParam parentParam) {
   var result;
-  parentParam.filterDataWrappers.forEach((fieldName, filterDataWrapper) {
+  parentParam.filterDataWrappers!.forEach((fieldName, filterDataWrapper) {
     if (result == null) {
       result = collectionReference;
     }
@@ -118,7 +118,7 @@ dynamic applyFilterToQuery(
     result = specificFilter(
         result,
         fieldName,
-        filterDataWrapper,
+        filterDataWrapper!,
         /* toSort= */
         fieldName != parentParam.sortKey);
   });
@@ -130,11 +130,11 @@ typedef PostFilterFunction = bool Function(Map row);
 
 class FilterDataWrapper {
   dynamic filterStartValue;
-  bool filterStartIncludeValue;
+  bool? filterStartIncludeValue;
   dynamic filterEndValue;
-  bool filterEndIncludeValue;
+  bool? filterEndIncludeValue;
   dynamic exactMatchValue;
-  PostFilterFunction postFilterFunction;
+  PostFilterFunction? postFilterFunction;
 
   FilterDataWrapper(
       {this.filterEndIncludeValue = true,
@@ -153,10 +153,10 @@ class FilterDataWrapper {
 typedef PostColorDecorationCondition = Color Function(Map<String, dynamic> dataMap);
 
 class ParentParam {
-  String sortKey;
-  bool sortKeyDescending;
-  Map<String, FilterDataWrapper> filterDataWrappers;
-  PostColorDecorationCondition postColorDecorationCondition;
+  String? sortKey;
+  bool? sortKeyDescending;
+  Map<String, FilterDataWrapper?>? filterDataWrappers;
+  PostColorDecorationCondition? postColorDecorationCondition;
 
   ParentParam(
       {this.filterDataWrappers,

@@ -4,14 +4,14 @@ import 'package:provider/provider.dart';
 
 import '../utils.dart';
 
-Widget valueNotifierCheckBox<V extends ValueNotifier<bool>>(V valueNotifier,
-    {String title, TextStyle style}) {
+Widget valueNotifierCheckBox<V extends ValueNotifier<bool?>>(V valueNotifier,
+    {String? title, TextStyle? style}) {
   return ChangeNotifierProvider<V>.value(
       value: valueNotifier,
       child: Consumer<V>(builder: (_, __, ___) {
         Widget checkbox = Checkbox(
           tristate: false,
-          onChanged: (bool value) {
+          onChanged: (bool? value) {
             valueNotifier.value = value;
           },
           value: valueNotifier.value,
@@ -24,7 +24,7 @@ Widget valueNotifierCheckBox<V extends ValueNotifier<bool>>(V valueNotifier,
       }));
 }
 
-Widget valueNotifierDateTime<V extends ValueNotifier<DateTime>>(
+Widget valueNotifierDateTime<V extends ValueNotifier<DateTime?>>(
     context, V valueNotifier) {
   return ChangeNotifierProvider<V>.value(
       value: valueNotifier,
@@ -40,7 +40,7 @@ Widget valueNotifierDateTime<V extends ValueNotifier<DateTime>>(
             Text(
                 currentDateTime == null ? '' : '${formatDateOnly(context, currentDateTime)} '),
             CommonButton.getButtonAsync(context, () async {
-              final DateTime picked = await showDatePicker(
+              final DateTime? picked = await showDatePicker(
                   context: context,
                   initialDate: currentDateTime ?? DateTime.now(),
                   firstDate: firstDate,
@@ -60,22 +60,22 @@ Widget valueNotifierDateTime<V extends ValueNotifier<DateTime>>(
               children: [
                 Text(initialTime == null ? '' : '${initialTime.format(context)} '),
                 CommonButton.getButton(context, () async {
-                  final TimeOfDay picked_s = await showTimePicker(
+                  final TimeOfDay? picked_s = await showTimePicker(
                       context: context,
                       initialTime: initialTime == null
                           ? TimeOfDay.fromDateTime(DateTime.now())
                           : initialTime,
-                      builder: (BuildContext context, Widget child) {
+                      builder: (BuildContext context, Widget? child) {
                         return MediaQuery(
                           data: MediaQuery.of(context)
                               .copyWith(alwaysUse24HourFormat: false),
-                          child: child,
+                          child: child!,
                         );
                       });
 
                   if (picked_s != null) {
                     valueNotifier.value = DateTime(
-                        currentDateTime.year,
+                        currentDateTime!.year,
                         currentDateTime.month,
                         currentDateTime.day,
                         picked_s.hour,

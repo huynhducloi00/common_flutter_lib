@@ -22,8 +22,8 @@ const EDIT_TABLE_HORIZONTAL_BORDER_SIDE =
     BorderSide(width: 1, color: Colors.brown, style: BorderStyle.solid);
 
 class LoiAllCloudTables {
-  static List<CloudTableSchema> cloudTables;
-  static Map<String, CloudTableSchema> maps;
+  static late List<CloudTableSchema> cloudTables;
+  static late Map<String?, CloudTableSchema> maps;
 
   static void init(List<CloudTableSchema> list) {
     cloudTables = list;
@@ -32,8 +32,8 @@ class LoiAllCloudTables {
 }
 
 class TableWidthAndSize {
-  double width;
-  Map<int, TableColumnWidth> colWidths;
+  double? width;
+  Map<int, TableColumnWidth>? colWidths;
 
   TableWidthAndSize({this.width, this.colWidths});
 }
@@ -46,7 +46,7 @@ TableWidthAndSize getEditTableColWidths(
   int index = 0;
   double sumWidth = 0;
   inputInfoMap.forEach((fieldName, inputInfo) {
-    double width = inputInfo.displayFlex * standardColWidth;
+    double width = inputInfo.displayFlex! * standardColWidth;
     sumWidth += width;
     colWidths[index] = FixedColumnWidth(width);
     index++;
@@ -74,7 +74,7 @@ String formatNumber(int num) {
   return num == null ? "" : NUM_FORMAT.format(num);
 }
 
-int sum(List args) {
+int? sum(List args) {
   return args.reduce((value, element) {
     return (value ?? 0) + (element ?? 0);
   });
@@ -86,7 +86,7 @@ String formatTimestamp(BuildContext context, Timestamp timestamp) {
   return formatDatetime(context, dateTime);
 }
 
-String toText(context, dynamic val) {
+String? toText(context, dynamic val) {
   if (val is String) {
     return val;
   } else if (val is int) {
@@ -108,7 +108,7 @@ double screenWidth(context) {
   return MediaQuery.of(context).size.width;
 }
 
-Widget tableOfTwo(Map<String, String> map,
+Widget tableOfTwo(Map<String?, String?> map,
     {bool boldLeft = false, bool boldRight = false}) {
   List<TableRow> list = [];
   for (int i = 0; i < map.entries.length; i++) {
@@ -126,7 +126,7 @@ Widget tableOfTwo(Map<String, String> map,
               textAlign: TextAlign.start,
             ),
             Text(
-              e.value,
+              e.value!,
               textAlign: TextAlign.end,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -177,12 +177,12 @@ getMaxDate(DateTime a, DateTime b) {
   return b;
 }
 
-List<Map<V, D>> partitionMap<V, D>(Map<V, D> map, int size) {
+List<Map<V, D>?> partitionMap<V, D>(Map<V, D> map, int size) {
   var lists = partitionList<MapEntry<V, D>>(map.entries.toList(), size);
-  List<Map<V, D>> maps = List(lists.length);
+  List<Map<V, D>?> maps = List.filled(lists.length, null);
   lists.asMap().forEach((index, list) {
-    maps[index] = Map();
-    maps[index].addEntries(list);
+    maps[index] = {};
+    maps[index]!.addEntries(list);
   });
   return maps;
 }
@@ -213,8 +213,8 @@ List<List<T>> partitionListToBin<T>(List<T> list, int binNum) {
 }
 
 class CurrentLastNextMonthInfo {
-  int month, year, pMonth, pYear, nMonth, nYear;
-  Timestamp thisMonthTimeStamp, nextMonthTimeStamp, lastMonthTimeStamp;
+  int? month, year, pMonth, pYear, nMonth, nYear;
+  Timestamp? thisMonthTimeStamp, nextMonthTimeStamp, lastMonthTimeStamp;
 }
 
 CurrentLastNextMonthInfo getCurrentLastNextMonthInfo() {
@@ -225,25 +225,25 @@ CurrentLastNextMonthInfo getCurrentLastNextMonthInfo() {
   info.year = dtNow.year;
   if (info.month == 0) {
     info.pMonth = 12;
-    info.pYear = info.year - 1;
+    info.pYear = info.year! - 1;
     info.nMonth = 1;
     info.nYear = info.year;
   } else if (info.month == 12) {
     info.pMonth = 11;
     info.pYear = info.year;
     info.nMonth = 1;
-    info.nYear = info.year + 1;
+    info.nYear = info.year! + 1;
   } else {
-    info.pMonth = info.month - 1;
+    info.pMonth = info.month! - 1;
     info.pYear = info.year;
-    info.nMonth = info.month + 1;
+    info.nMonth = info.month! + 1;
     info.nYear = info.year;
   }
-  info.thisMonthTimeStamp = Timestamp.fromDate(DateTime(info.year, info.month));
+  info.thisMonthTimeStamp = Timestamp.fromDate(DateTime(info.year!, info.month!));
   info.nextMonthTimeStamp =
-      Timestamp.fromDate(DateTime(info.nYear, info.nMonth));
+      Timestamp.fromDate(DateTime(info.nYear!, info.nMonth!));
   info.lastMonthTimeStamp =
-      Timestamp.fromDate(DateTime(info.pYear, info.pMonth));
+      Timestamp.fromDate(DateTime(info.pYear!, info.pMonth!));
   return info;
 }
 
@@ -276,7 +276,7 @@ Future showInformation(context, String title, String content) {
 Column columnWithGap(List<Widget> children,
     {CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start,
     double gap = 8}) {
-  List<Widget> result = List();
+  List<Widget> result = [];
   children.forEach((element) {
     result.add(element);
     result.add(SizedBox(
@@ -322,7 +322,7 @@ Widget wrapLoiButtonStyle(context, child) {
   );
 }
 
-bool isStringEmpty(String val) {
+bool isStringEmpty(String? val) {
   return val?.isEmpty ?? true;
 }
 
@@ -341,20 +341,20 @@ Route createMaterialPageRoute(parentContext, WidgetBuilder builder) {
 }
 
 Future showAlertDialog(BuildContext context,
-    {WidgetBuilder builder,
-    String title,
-    List<Widget> actions,
-    double percentageWidth}) {
+    {WidgetBuilder? builder,
+    String? title,
+    List<Widget>? actions,
+    double? percentageWidth}) {
   return showDialog(
       context: context,
       builder: (_) {
         return AlertDialog(
           title: title == null ? null : Text(title),
           content: percentageWidth == null
-              ? builder(context)
+              ? builder!(context)
               : Container(
                   width: screenWidth(context) * percentageWidth,
-                  child: builder(context)),
+                  child: builder!(context)),
           contentPadding: EdgeInsets.zero,
           actions: actions,
         );
@@ -384,18 +384,18 @@ DateTime stripTime(DateTime dateTime) {
   return DateTime(dateTime.year, dateTime.month, dateTime.day);
 }
 
-int multiply(int val1, int val2) {
+int? multiply(int val1, int val2) {
   if (val1 == null || val2 == null) return null;
   return val1 * val2;
 }
 
-int minus(int val1, int val2) {
+int? minus(int val1, int val2) {
   if (val1 == null || val2 == null) return null;
   return val1 - val2;
 }
 
-int absMinus(int val1, int val2) {
-  int minusRes = minus(val1, val2);
+int? absMinus(int val1, int val2) {
+  int? minusRes = minus(val1, val2);
   return minusRes == null ? null : minusRes.abs();
 }
 

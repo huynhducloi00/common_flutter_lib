@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 
 class HoverButtonImpl extends HoverButtonInterface {
   @override
-  Widget createButton(Function onPressed,
-      {String title,
+  Widget createButton(Function? onPressed,
+      {String? title,
       TextAlign align = TextAlign.start,
-      IconData iconData,
-      Color regularColor,
-      Color hoverColor,
-      Color textColor = Colors.white,
-      Color iconColor = Colors.black,
+      IconData? iconData,
+      Color? regularColor,
+      Color? hoverColor,
+      Color? textColor = Colors.white,
+      Color? iconColor = Colors.black,
       bool isDense = false}) {
     bool showEmptyPlaceHolder = isStringEmpty(title) && iconData == null;
     return FlatButton(
@@ -23,7 +23,7 @@ class HoverButtonImpl extends HoverButtonInterface {
       child: Container(
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
+          children: <Widget?>[
             iconData != null || showEmptyPlaceHolder
                 ? Icon(
                     iconData,
@@ -37,12 +37,12 @@ class HoverButtonImpl extends HoverButtonInterface {
                 : null,
             isStringEmpty(title)
                 ? null
-                : Text(title,
+                : Text(title!,
                     style: TextStyle(color: textColor), textAlign: align),
-          ].where((element) => element != null).toList(),
+          ].whereType<Widget>().toList(),
         ),
       ),
-      onPressed: onPressed,
+      onPressed: onPressed as void Function()?,
     );
   }
 }

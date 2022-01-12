@@ -12,8 +12,8 @@ import '../common.dart';
 import 'edit_table_wrapper.dart';
 import 'parent_param.dart';
 
-class SelectedIndexChangeNotifier extends ValueNotifier<int> {
-  SelectedIndexChangeNotifier(int value) : super(value);
+class SelectedIndexChangeNotifier extends ValueNotifier<int?> {
+  SelectedIndexChangeNotifier(int? value) : super(value);
 }
 
 class ChildEditTable<SchemaAndData> extends StatefulWidget {
@@ -45,7 +45,7 @@ class _ChildEditTableState
   Widget delegateBuild(BuildContext context) {
     _selectedIndexChangeNotifier.value = null;
     ParentParam parentParam = Provider.of<ParentParam>(context, listen: false);
-    var schemaAndData = data;
+    SchemaAndData<CloudObject<dynamic>> schemaAndData = data;
     Map<String, InputInfo> filterVisibleFieldMap = schemaAndData
         .cloudTableSchema.inputInfoMap
         .filterVisibleFields();
@@ -62,7 +62,7 @@ class _ChildEditTableState
                 child: Consumer<SelectedIndexChangeNotifier>(
                   builder: (BuildContext context,
                       SelectedIndexChangeNotifier selectedIndexNotifier,
-                      Widget child) {
+                      Widget? child) {
                     return Table(
                         columnWidths: tableWidthAndSize.colWidths,
                         border: TableBorder(
@@ -93,12 +93,12 @@ class _ChildEditTableState
                                     ? Colors.red[50]
                                     : Colors.white,
                                 alignment: schemaAndData.cloudTableSchema
-                                            .inputInfoMap.map[field].dataType ==
+                                            .inputInfoMap.map![field]!.dataType ==
                                         DataType.int
                                     ? Alignment.centerRight
                                     : Alignment.centerLeft,
                                 child: Text(
-                                  toText(context, inducedRow[field] ?? ''),
+                                  toText(context, inducedRow[field] ?? '')!,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(fontSize: 20),
                                 ),
@@ -110,11 +110,11 @@ class _ChildEditTableState
                   },
                 )),
             Consumer<DatabasePagerNotifier>(builder: (BuildContext context,
-                DatabasePagerNotifier databasePagerNotifier, Widget child) {
+                DatabasePagerNotifier databasePagerNotifier, Widget? child) {
               return Consumer<SelectedIndexChangeNotifier>(builder:
                   (BuildContext context,
                       SelectedIndexChangeNotifier selectedIndexChangeNotifier,
-                      Widget child) {
+                      Widget? child) {
 //                print(
 //                    '${isLoading} ${parentParam.sortKeyDescending} ${schemaAndData.data.first.dataMap[parentParam.sortKey]}');
 //                  ' ${StackTrace.current}');
@@ -128,15 +128,15 @@ class _ChildEditTableState
                         .orderBy(parentParam.sortKey,
                             descending: parentParam.sortKeyDescending)
                         .endBefore([
-                  schemaAndData.data.first.dataMap[parentParam.sortKey]
-                ]).limit(1) as Query;
+                  schemaAndData.data.first.dataMap[parentParam.sortKey!]
+                ]).limit(1) as Query?;
                 var afterQuery =
                     applyFilterToQuery(widget.databaseRef, parentParam)
                         .orderBy(parentParam.sortKey,
                             descending: parentParam.sortKeyDescending)
                         .startAfter([
-                  schemaAndData.data.last.dataMap[parentParam.sortKey]
-                ]).limit(1) as Query;
+                  schemaAndData.data.last.dataMap[parentParam.sortKey!]
+                ]).limit(1) as Query?;
                 return Column(
                     children: [
                   SizedBox(
@@ -144,7 +144,7 @@ class _ChildEditTableState
                     height: screenHeight(context) * 0.1,
                     child: tableOfTwo({
                       'Trường sắp xếp':
-                          '${schemaAndData.cloudTableSchema.inputInfoMap.map[parentParam.sortKey].fieldDes}-${parentParam.sortKeyDescending ? "Giảm dần" : "Tăng dần"}',
+                          '${schemaAndData.cloudTableSchema.inputInfoMap.map![parentParam.sortKey!]!.fieldDes}-${parentParam.sortKeyDescending! ? "Giảm dần" : "Tăng dần"}',
                       'Hiển thị sau': toText(
                           context, databasePagerNotifier.value.startAfter),
                       'Hiển thị trước': toText(
@@ -158,20 +158,21 @@ class _ChildEditTableState
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             StreamProvider<bool>.value(
+                              initialData:false,
                               value: isLoading
                                   ? Stream<bool>.value(false)
-                                  : beforeQuery.snapshots().map((event) {
-                                      return event.documents.length > 0;
+                                  : beforeQuery!.snapshots().map((event) {
+                                      return event.docs.isNotEmpty;
                                     }),
                               child: Builder(
                                 builder: (BuildContext context) {
                                   bool existBefore =
-                                      Provider.of<bool>(context) ?? false;
+                                      Provider.of<bool>(context);
                                   return CommonButton.getButton(context, () {
                                     // go back
                                     databasePagerNotifier.value = ChildParam(
                                         endBefore: schemaAndData.data.first
-                                            .dataMap[parentParam.sortKey]);
+                                            .dataMap[parentParam.sortKey!]);
                                   },
                                       title: "",
                                       iconData: existBefore
@@ -185,18 +186,19 @@ class _ChildEditTableState
                               width: 20,
                             ),
                             StreamProvider<bool>.value(
+                              initialData:false,
                               value: isLoading
                                   ? Stream<bool>.value(false)
-                                  : afterQuery.snapshots().map(
-                                      (event) => event.documents.length > 0),
+                                  : afterQuery!.snapshots().map(
+                                      (event) => event.docs.isNotEmpty),
                               child: Builder(builder: (BuildContext context) {
                                 bool existAfter =
-                                    Provider.of<bool>(context) ?? false;
+                                    Provider.of<bool>(context);
                                 return CommonButton.getButton(context, () {
                                   // go forward
                                   databasePagerNotifier.value = ChildParam(
                                       startAfter: schemaAndData.data.last
-                                          .dataMap[parentParam.sortKey]);
+                                          .dataMap[parentParam.sortKey!]);
                                 },
                                     title: "",
                                     iconData:
@@ -206,7 +208,7 @@ class _ChildEditTableState
                             ),
                           ],
                         ),
-                ].where((element) => element != null).toList());
+                ].where((element) => element != null).toList() as List<Widget>);
               });
             }),
             SizedBox(
@@ -215,19 +217,19 @@ class _ChildEditTableState
             Consumer<SelectedIndexChangeNotifier>(builder:
                 (BuildContext buildContext,
                     SelectedIndexChangeNotifier selectedIndexChangeNotifier,
-                    Widget child) {
+                    Widget? child) {
               PrintInfo defaultWindowPrint = schemaAndData
-                  .cloudTableSchema.printInfos
+                  .cloudTableSchema.printInfos!
                   .where((element) => element.isDefault)
                   .toList()[0];
               List<PrintInfo> otherPrints = schemaAndData
-                  .cloudTableSchema.printInfos
+                  .cloudTableSchema.printInfos!
                   .where((element) => !element.isDefault)
                   .toList();
-              Map inducedRow = selectedIndexChangeNotifier.value != null
+              Map? inducedRow = selectedIndexChangeNotifier.value != null
                   ? SchemaAndData.fillInOptionData(
                       schemaAndData
-                          .data[selectedIndexChangeNotifier.value].dataMap,
+                          .data[selectedIndexChangeNotifier.value!].dataMap,
                       schemaAndData.cloudTableSchema.inputInfoMap.map)
                   : null;
               return Wrap(runSpacing: 30,
@@ -259,7 +261,7 @@ class _ChildEditTableState
                                           backgroundColor: Colors.transparent),
                                     ))
                                 .toList(),
-                            onChanged: (value) {},
+                            onChanged: (dynamic value) {},
                           ),
                         )
                       : null,
@@ -269,7 +271,7 @@ class _ChildEditTableState
                       schemaAndData, selectedIndexChangeNotifier.value),
                   ChildTableUtils.deleteButton(context, widget.databaseRef,
                       schemaAndData, selectedIndexChangeNotifier.value)
-                ].where((element) => element != null).toList(),
+                ].where((element) => element != null).toList() as List<Widget>,
               );
             })
           ])),
