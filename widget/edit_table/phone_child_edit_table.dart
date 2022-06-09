@@ -1,4 +1,8 @@
+// import 'dart:html';
+
 import 'package:loi_tenant/common/data/cloud_obj.dart';
+import 'package:loi_tenant/common/loadingstate/loading_state.dart';
+import 'package:loi_tenant/common/widget/edit_table/current_query_notifier.dart';
 
 import '../../loadingstate/loading_stream_builder.dart';
 import '../../utils.dart';
@@ -18,22 +22,20 @@ class PhoneChildEditTable<SchemaAndData> extends StatefulWidget {
   bool showAllData;
   bool showNewButton;
   PhoneChildEditTable(this.databaseRef,
-      {this.dataPickerBundle, this.showAllData = false, this.showNewButton=true});
+      {Key? key,
+      this.dataPickerBundle,
+      this.showAllData = false,
+      this.showNewButton = true})
+      : super(key: key);
 
   @override
   _PhoneChildEditTableState createState() => _PhoneChildEditTableState();
 }
 
 class _PhoneChildEditTableState
-    extends StreamStatefulChildState<PhoneChildEditTable, SchemaAndData> {
-  String inducedField(val, InputInfo inputInfo) {
-    var calculated;
-    if (val != null) {
-      calculated =
-          inputInfo.optionMap == null ? null : inputInfo.optionMap![val];
-    }
-    return calculated == null ? '${toText(context, val ?? '')}' : '$calculated';
-  }
+    extends LoadingState<PhoneChildEditTable, SchemaAndData?> {
+  CurrentQueryNotifier? currentQueryNotifier;
+  _PhoneChildEditTableState() : super(isRequireData: true);
 
   String _concat(Map row, List<String> fieldList) {
     String result = toText(context, row[fieldList[0]]) ?? '';
@@ -43,127 +45,117 @@ class _PhoneChildEditTableState
     return result;
   }
 
-  @override
-  Widget delegateBuild(BuildContext context) {
-    ParentParam parentParam = Provider.of<ParentParam>(context, listen: false);
-    SchemaAndData<CloudObject<dynamic>> schemaAndData = data;
-    Widget navigator;
-    navigator = Consumer<DatabasePagerNotifier>(builder: (BuildContext context,
-        DatabasePagerNotifier databasePagerNotifier, Widget? child) {
-      var moreInfoWidget =
-          ExpansionTile(title: Text('Thông tin thêm'), children: <Widget>[
-        Wrap(
-            runSpacing: 4,
-            spacing: 8,
-            children: schemaAndData.cloudTableSchema.printInfos!
-                .map(
-                  (printInfo) => ChildTableUtils.printButton(
-                      context, widget.databaseRef, printInfo, parentParam,
-                      isDense: true),
-                )
-                .toList()),
-        SizedBox(
-          width: screenWidth(context),
-          height: screenHeight(context) * 0.1,
-          child: tableOfTwo({
-            'Trường sắp xếp':
-                '${schemaAndData.cloudTableSchema.inputInfoMap.map![parentParam.sortKey!]!.fieldDes}-${parentParam.sortKeyDescending! ? "Giảm dần" : "Tăng dần"}',
-            'Hiển thị sau':
-                toText(context, databasePagerNotifier.value.startAfter),
-            'Hiển thị trước':
-                toText(context, databasePagerNotifier.value.endBefore),
-            'Số lượng hiển thị': '${schemaAndData.data.length}',
-          }, boldRight: true),
-        ),
-      ]);
-      var newButton = widget.dataPickerBundle == null && widget.showNewButton
-          ? ChildTableUtils.newButton(context, widget.databaseRef,
-              schemaAndData.cloudTableSchema.inputInfoMap,
-              isPhone: true)
-          : null;
+  Widget getNavigator() {
+    SchemaAndData<CloudObject> schemaAndData = data!;
+    var parentParam = currentQueryNotifier!.parentParam;
+    var moreInfoWidget =
+        ExpansionTile(title: Text('Thông tin thêm'), children: <Widget>[
+      Wrap(
+          runSpacing: 4,
+          spacing: 8,
+          children: schemaAndData.cloudTableSchema.printInfos!
+              .map(
+                (printInfo) => ChildTableUtils.printButton(
+                    context, widget.databaseRef, printInfo, parentParam,
+                    isDense: true, ),
+              )
+              .toList()),
+      SizedBox(
+        width: screenWidth(context),
+        height: screenHeight(context) * 0.1,
+        child: tableOfTwo({
+          'Trường sắp xếp':
+              '${schemaAndData.cloudTableSchema.inputInfoMap.map![parentParam.sortKey!]!.fieldDes}-${parentParam.sortKeyDescending! ? "Giảm dần" : "Tăng dần"}',
+          'Số lượng hiển thị': '${schemaAndData.data.length}',
+        }, boldRight: true),
+      ),
+    ]);
+    var newButton = widget.dataPickerBundle == null && widget.showNewButton
+        ? ChildTableUtils.newButton(context, widget.databaseRef,
+            schemaAndData.cloudTableSchema.inputInfoMap,
+            isPhone: true)
+        : null;
 
-      if (widget.showAllData) {
-        return moreInfoWidget;
-      } else {
-        if (schemaAndData.data.length == 0) {
-          return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                CommonButton.getButton(context, () {
-                  databasePagerNotifier.value = ChildParam();
-                }, title: 'Về trang đầu'),
-                newButton
-              ].where((element) => element != null).toList() as List<Widget>);
-        }
-        var beforeQuery = applyFilterToQuery(widget.databaseRef, parentParam)
-            .orderBy(parentParam.sortKey,
-                descending: parentParam.sortKeyDescending)
-            .endBefore([
-          schemaAndData.data.first.dataMap[parentParam.sortKey!]
-        ]).limit(1) as Query?;
-        var afterQuery = applyFilterToQuery(widget.databaseRef, parentParam)
-            .orderBy(parentParam.sortKey,
-                descending: parentParam.sortKeyDescending)
-            .startAfter([
-          schemaAndData.data.last.dataMap[parentParam.sortKey!]
-        ]).limit(1) as Query?;
-        return Column(
-            mainAxisSize: MainAxisSize.min,
+    if (widget.showAllData) {
+      return moreInfoWidget;
+    } else {
+      if (schemaAndData.data.isEmpty) {
+        return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              widget.dataPickerBundle != null ? null : moreInfoWidget,
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  StreamProvider<bool>.value(
-                    initialData: false,
-                    value: isLoading
-                        ? Stream<bool>.value(false)
-                        : beforeQuery!.snapshots().map((event) {
-                            return event.docs.isNotEmpty;
-                          }),
-                    child: Builder(
-                      builder: (BuildContext context) {
-                        bool existBefore = Provider.of<bool>(context);
-                        return CommonButton.getButton(context, () {
-                          // go back
-                          databasePagerNotifier.value = ChildParam(
-                              endBefore: schemaAndData
-                                  .data.first.dataMap[parentParam.sortKey!]);
-                        },
-                            title: "",
-                            iconData:
-                                existBefore ? Icons.navigate_before : null,
-                            isEnabled: existBefore);
-                      },
-                    ),
-                  ),
-                  StreamProvider<bool>.value(
-                    initialData: false,
-                    value: isLoading
-                        ? Stream<bool>.value(false)
-                        : afterQuery!
-                            .snapshots()
-                            .map((event) => event.docs.isNotEmpty),
-                    child: Builder(builder: (BuildContext context) {
-                      bool existAfter = Provider.of<bool>(context);
-                      return CommonButton.getButton(context, () {
-                        // go forward
-                        databasePagerNotifier.value = ChildParam(
-                            startAfter: schemaAndData
-                                .data.last.dataMap[parentParam.sortKey!]);
-                      },
-                          title: "",
-                          iconData: existAfter ? Icons.navigate_next : null,
-                          isEnabled: existAfter);
-                    }),
-                  ),
-                  newButton
-                ].whereType<Widget>().toList(),
-              ),
+              CommonButton.getButton(context, () {
+                // databasePagerNotifier.value = ChildParam();
+              }, title: 'Về trang đầu'),
+              newButton
             ].whereType<Widget>().toList());
       }
-    });
-    List<Widget> itemList = schemaAndData.data.asMap().entries.map((entry) {
+      var originalQuery = currentQueryNotifier!.originalQuery;
+      var hasBefore = originalQuery
+          .endBeforeDocument(schemaAndData.documentSnapshots.first)
+          .limit(1)
+          .snapshots()
+          .map((QuerySnapshot snapshot) {
+        return snapshot.size > 0;
+      });
+      var hasAfter = originalQuery
+          .startAfterDocument(schemaAndData.documentSnapshots.last)
+          .limit(1)
+          .snapshots()
+          .map((QuerySnapshot event) {
+        return event.size > 0;
+      });
+      return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            widget.dataPickerBundle != null ? null : moreInfoWidget,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                StreamProvider<bool>.value(
+                  initialData: false,
+                  value: isLoading ? Stream<bool>.value(false) : hasBefore,
+                  child: Builder(
+                    builder: (BuildContext context) {
+                      bool existBefore = Provider.of<bool>(context);
+                      return CommonButton.getButton(context, () {
+                        // go back
+                        currentQueryNotifier!.currentPagingQuery =
+                            originalQuery.endBeforeDocument(
+                                schemaAndData.documentSnapshots.first);
+                      },
+                          title: "",
+                          iconData: existBefore ? Icons.navigate_before : null,
+                          isEnabled: existBefore);
+                    },
+                  ),
+                ),
+                StreamProvider<bool>.value(
+                  initialData: false,
+                  value: isLoading ? Stream<bool>.value(false) : hasAfter,
+                  child: Builder(builder: (BuildContext context) {
+                    bool existAfter = Provider.of<bool>(context);
+                    return CommonButton.getButton(context, () {
+                      // go forward
+                      currentQueryNotifier!.currentPagingQuery =
+                          originalQuery.startAfterDocument(
+                              schemaAndData.documentSnapshots.last);
+                    },
+                        title: "",
+                        iconData: existAfter ? Icons.navigate_next : null,
+                        isEnabled: existAfter);
+                  }),
+                ),
+                newButton
+              ].whereType<Widget>().toList(),
+            ),
+          ].whereType<Widget>().toList());
+    }
+  }
+
+  getTable() {
+    SchemaAndData<CloudObject> schemaAndData = data!;
+    var parentParam = currentQueryNotifier!.parentParam;
+    return schemaAndData.data.asMap().entries.map((entry) {
       var index = entry.key;
       var cloudObj = entry.value;
       var row = SchemaAndData.fillInOptionData(
@@ -181,13 +173,14 @@ class _PhoneChildEditTableState
             leading: schemaAndData.cloudTableSchema.showIconDataOnRow
                 ? Icon(schemaAndData.cloudTableSchema.iconData)
                 : null,
-            title: Text(_concat(
-                    row, schemaAndData.cloudTableSchema.primaryFields!)),
+            title: Text(
+                _concat(row, schemaAndData.cloudTableSchema.primaryFields!)),
             subtitle: tableOfTwo(schemaAndData.cloudTableSchema.subtitleFields!
                 .asMap()
                 .map((index, fieldName) => MapEntry(
                     inputInfoMap.map![fieldName]!.fieldDes,
-                    toText(context, row[fieldName])))),
+                    inputInfoMap.map![fieldName]!
+                        .displayConverter(context, row[fieldName])))),
             trailing: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: schemaAndData.cloudTableSchema.trailingFields!
@@ -205,19 +198,25 @@ class _PhoneChildEditTableState
                   ChildTableUtils.printLineButton(context,
                       schemaAndData.cloudTableSchema.printTicket, row, true),
                   ChildTableUtils.editButton(
-                      context, widget.databaseRef, schemaAndData, index,
+                      context, widget.databaseRef, schemaAndData, [index],
                       isPhone: true),
                   ChildTableUtils.deleteButton(
-                      context, widget.databaseRef, schemaAndData, index)
+                      context, widget.databaseRef, schemaAndData, [index])
                 ], crossAxisAlignment: CrossAxisAlignment.center);
               });
             },
           ));
     }).toList();
+  }
+
+  @override
+  Widget delegateBuild(BuildContext context) {
+    currentQueryNotifier =
+        Provider.of<CurrentQueryNotifier>(context, listen: false);
+    var navigator = getNavigator();
+    var itemList = getTable();
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: navigator == null ? itemList : [navigator] + itemList,
-    );
+        mainAxisSize: MainAxisSize.min, children: [navigator] + itemList);
   }
 }

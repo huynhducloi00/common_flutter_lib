@@ -1,13 +1,13 @@
 import 'dart:collection';
 import 'dart:core';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../widget/edit_table/parent_param.dart';
-
 import '../data/cloud_obj.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils.dart';
+import '../widget/edit_table/parent_param.dart';
 
 class UseDataCalculationResult {
   dynamic value;
@@ -38,7 +38,7 @@ class LinkedData {
       if (predefined == null) return null;
       DataBundle bundle = predefined[tableName]!;
       for (var otherTableRow in bundle.dataRows) {
-        if (otherTableRow[CloudTableSchema.DOCUMENT_ID_FIELD] ==
+        if (otherTableRow[CloudTableSchema.documentIdField] ==
             row![fieldContainsDocumentId]) {
           return UseDataCalculationResult(otherTableRow[getField]);
         }
@@ -55,9 +55,10 @@ class LinkedData {
       if (predefined == null) return null;
       DataBundle bundle = predefined[tableName]!;
       for (var otherTableRow in bundle.dataRows) {
-        if (otherTableRow[CloudTableSchema.DOCUMENT_ID_FIELD] ==
+        if (otherTableRow[CloudTableSchema.documentIdField] ==
             row![fieldContainsDocumentId]) {
-          return UseDataCalculationResult(getFieldFunc(otherTableRow as Map<String, dynamic>));
+          return UseDataCalculationResult(
+              getFieldFunc(otherTableRow as Map<String, dynamic>));
         }
       }
       return null;
@@ -66,7 +67,7 @@ class LinkedData {
 }
 
 class InputInfo {
-  String? fieldDes;
+  String fieldDes;
 
   // relative to 1.0
   double? displayFlex;
@@ -76,6 +77,8 @@ class InputInfo {
   // Calculate only happens when initializing data, or when its contributor variables changes.
   UseDataCalculation? calculate;
   InitialDataCalculation? initializeFunc;
+  String? Function(BuildContext, dynamic) displayConverter;
+  dynamic Function()? onNewData;
   bool canUpdate;
 
   // needSaving can be true for some calculated variables, or for nonUpdatale variables, mainly
@@ -104,9 +107,11 @@ class InputInfo {
 
   InputInfo(this.dataType,
       {this.validator,
-      this.fieldDes,
+      required this.fieldDes,
       this.fieldsForCalculation,
       this.calculate,
+      this.onNewData,
+      this.displayConverter = toText,
       this.canUpdate = true,
       this.needSaving = true,
       this.isVisible = true,
@@ -117,16 +122,18 @@ class InputInfo {
       this.optionMap,
       this.limitToOptions = false}) {
     if (displayFlex == null) {
-      if (dataType == DataType.int)
+      if (dataType == DataType.int) {
         displayFlex = SMALL_INT_COLUMN;
-      else
+      } else {
         displayFlex = 1.0;
+      }
     }
     if (printFlex == null) {
-      if (dataType == DataType.int)
+      if (dataType == DataType.int) {
         printFlex = SMALL_INT_COLUMN;
-      else
+      } else {
         printFlex = displayFlex;
+      }
     }
   }
 
@@ -143,11 +150,12 @@ class InputInfo {
   }
 
   static String? nonNullValidator(dynamic value) {
-       return value == null ? CANT_BE_NULL : null;
+    return value == null ? CANT_BE_NULL : null;
   }
+
   @override
   String toString() {
-    return '$fieldDes';
+    return '$fieldDes-$linkedData}';
   }
 }
 
@@ -220,9 +228,10 @@ class InputInfoMap {
     return result;
   }
 
-  Map<String, InputInfo?> filterMap(List<String> printFields) {
-    return Map.fromEntries(
-        printFields.map((e) => MapEntry(e, map![e])).toList());
+  Map<String, InputInfo> filterMap(List<String> printFields) {
+    return Map.fromEntries(printFields.map((e) {
+      return MapEntry(e, map![e]!);
+    }).toList());
   }
 
   Map<String, InputInfo> filterVisibleFields() {
@@ -332,27 +341,24 @@ class PrintInfo {
       this.isDefault = false,
       this.aggregateFields,
       this.groupByFields}) {
-    if (printFields == null) {
-      printFields = inputInfoMap.map!.keys.toList();
-    }
-    if (aggregateFields == null) {
-      aggregateFields = inputInfoMap.map!.entries
+    printFields ??= inputInfoMap.map!.keys.toList();
+    aggregateFields ??= inputInfoMap.map!.entries
           .where((element) =>
               element.value.dataType == DataType.int &&
               element.value.optionMap == null)
           .map((e) => e.key)
           .toList();
-    }
   }
 }
 
 abstract class CloudTableSchema<T extends CloudObject> {
-  static final DOCUMENT_ID_FIELD = 'documentId';
+  static const documentIdField = 'documentId';
   String? tableName;
   String? tableDescription;
   String? sortKey;
   bool? sortDescending;
   InputInfoMap inputInfoMap;
+  T Function(String, Object?) convertData;
   LinkedHashSet<String>? calculatingOrder;
   List<PrintInfo>? printInfos;
   List<String>? defaultPrintFields;
@@ -376,6 +382,7 @@ abstract class CloudTableSchema<T extends CloudObject> {
       this.tableDescription,
       this.printInfos,
       required this.inputInfoMap,
+      required this.convertData,
       this.defaultPrintFields,
       this.showDocumentId = false,
       this.defaultPrintVertical = true,
@@ -386,21 +393,22 @@ abstract class CloudTableSchema<T extends CloudObject> {
       this.trailingFields,
       this.iconData,
       this.printTicket,
-      this.showIconDataOnRow = true}) {
-    List<String> allVisibleKeys = inputInfoMap.filterVisibleFields().keys.toList();
+      this.showIconDataOnRow = false}) {
+    List<String> allVisibleKeys =
+        inputInfoMap.filterVisibleFields().keys.toList();
     defaultPrintFields ??= allVisibleKeys;
     printTicket ??= PrintTicket(
-          [TicketParagraph(fieldNames: defaultPrintFields)], inputInfoMap,
-          title: tableDescription ?? tableName);
+        [TicketParagraph(fieldNames: defaultPrintFields)], inputInfoMap,
+        title: tableDescription ?? tableName);
     printInfos ??= [
-        PrintInfo(inputInfoMap,
-            title: 'TẤT CẢ $tableDescription',
-            buttonTitle: 'In cửa sổ',
-            isDefault: true,
-            printFields: defaultPrintFields,
-            printVertical: defaultPrintVertical,
-            parentParam: null)
-      ];
+      PrintInfo(inputInfoMap,
+          title: 'TẤT CẢ $tableDescription',
+          buttonTitle: 'In cửa sổ',
+          isDefault: true,
+          printFields: defaultPrintFields,
+          printVertical: defaultPrintVertical,
+          parentParam: null)
+    ];
     primaryFields ??= allVisibleKeys.sublist(0, 1);
     subtitleFields ??= allVisibleKeys.sublist(1);
     trailingFields ??= [];
@@ -408,14 +416,26 @@ abstract class CloudTableSchema<T extends CloudObject> {
     sortDescending ??= false;
   }
 
-  SchemaAndData<T> convertSnapshotToDataList(List<DocumentSnapshot> event);
+  SchemaAndData<T> convertSnapshotToDataList(QuerySnapshot snapshot) {
+    List<T> result = snapshot.docs.asMap().entries.map((e) {
+      return convertData(e.value.id, e.value.data());
+    }).toList();
+    return SchemaAndData<T>(this, result, snapshot.docs);
+  }
+
+  Stream<List<T>> getStream() {
+    return getCollectionRef().snapshots().map((snapshot) {
+      return convertSnapshotToDataList(snapshot).data;
+    });
+  }
 }
 
 class SchemaAndData<T extends CloudObject> {
   CloudTableSchema<T> cloudTableSchema;
+  List<DocumentSnapshot> documentSnapshots;
   List<T> data;
 
-  SchemaAndData(this.cloudTableSchema, this.data) {
+  SchemaAndData(this.cloudTableSchema, this.data, this.documentSnapshots) {
     fillInCalculatedData(data, cloudTableSchema.inputInfoMap);
   }
 
@@ -424,8 +444,8 @@ class SchemaAndData<T extends CloudObject> {
       inputInfoMap.calculatingOrder!.forEach((fieldName) {
         // Since this is initializing calculation, no need to calculate saved data.
         if (!inputInfoMap.map![fieldName]!.needSaving) {
-          var result = inputInfoMap.map![fieldName]!
-              .calculate!(cloudObj.dataMap, /* predefined= */ null);
+          var result = inputInfoMap.map![fieldName]!.calculate!(
+              cloudObj.dataMap, /* predefined= */ null);
           cloudObj.dataMap[fieldName] = result == null ? null : result.value;
         }
       });
@@ -433,7 +453,7 @@ class SchemaAndData<T extends CloudObject> {
   }
 
   static Map fillInOptionData(Map row, Map<String, InputInfo>? inputInfoMap) {
-    Map<String, dynamic> result = Map();
+    Map<String, dynamic> result = {};
     row.keys.forEach((fieldName) {
       var inputInfo = inputInfoMap![fieldName];
       if (inputInfo != null && inputInfo.optionMap != null) {

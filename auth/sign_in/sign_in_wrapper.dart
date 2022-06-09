@@ -14,8 +14,9 @@ class SignInWrapper<USER extends User?, TYPE> extends StatelessWidget {
   Widget appRender;
   USER Function(TYPE userType) getDebugUser;
 
-  SignInWrapper(this.debugging,this.accountType, this.getDebugUser,
-      this.convertToUserFunc, this.appName, this.appRender);
+  SignInWrapper(this.debugging,this.accountType,this.appName, this.appRender,
+      {required this.getDebugUser,
+      required this.convertToUserFunc});
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +40,7 @@ class SignInWrapper<USER extends User?, TYPE> extends StatelessWidget {
                           .getUserStream(),
                       child: Builder(
                         builder: (BuildContext context) {
-                          var userData = Provider.of<USER>(context);
+                          var userData = Provider.of<USER?>(context);
                           if (userData == null) {
                             return SignInPage<USER>();
                           } else {

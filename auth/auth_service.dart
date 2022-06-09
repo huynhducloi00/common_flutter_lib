@@ -8,11 +8,13 @@ import 'package:google_sign_in/google_sign_in.dart';
 //  cloud_firestore: ^0.13.5
 //#web dep:
 //firebase: ^7.3.0
-typedef ConvertToUserFunc= dynamic Function(Map<String, dynamic>);
+typedef ConvertToUserFunc = dynamic Function(Map<String, dynamic>);
+
 class AuthService<T> {
-  static const String USER_TABLE_NAME='users';
+  static const String USER_TABLE_NAME = 'users';
   final FirebaseAuth auth = FirebaseAuth.instance;
-  final CollectionReference _ref = FirebaseFirestore.instance.collection(USER_TABLE_NAME);
+  final CollectionReference _ref =
+      FirebaseFirestore.instance.collection(USER_TABLE_NAME);
   final GoogleSignIn googleSignIn = GoogleSignIn();
   ConvertToUserFunc convertToUser;
 
@@ -30,8 +32,7 @@ class AuthService<T> {
   }
 
   Future<T?> _getUserWithEmail(String? email) async {
-    QuerySnapshot snapshot =
-        await _ref.where("email", isEqualTo: email).get();
+    QuerySnapshot snapshot = await _ref.where("email", isEqualTo: email).get();
     if (snapshot.docs.isEmpty) {
       return null;
     } else {
@@ -70,7 +71,7 @@ class AuthService<T> {
 //    }
 //  }
 
-  Future<void> signInWithGoogleAccount() async {
+  signInWithGoogleAccount() async {
     GoogleSignInAccount? currentUser = googleSignIn.currentUser;
     if (currentUser != null) {
       await googleSignIn.signOut();
@@ -82,13 +83,14 @@ class AuthService<T> {
       print(error);
       return null;
     });
-    final GoogleSignInAccount? googleSignInAccount = await (signIn as FutureOr<GoogleSignInAccount?>);
+    final GoogleSignInAccount? googleSignInAccount =
+        await (signIn as FutureOr<GoogleSignInAccount?>);
     if (googleSignInAccount == null) {
-      return Future.value(null);
+      return null;
     }
     T? inDatabaseUser = await _getUserWithEmail(googleSignInAccount.email);
     if (inDatabaseUser == null) {
-      return Future.error(
+      throw(
           'Người dùng ${googleSignInAccount.email} chưa được phép vào dữ liệu. Xin liên hệ Lợi');
     }
     final GoogleSignInAuthentication googleSignInAuthentication =

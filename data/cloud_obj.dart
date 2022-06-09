@@ -4,9 +4,11 @@ enum DataType {
   int,
   timestamp,
   boolean,
+  double,
+  firebaseImage,
 }
 
-class CloudObject<T> {
+class CloudObject{
   String? documentId;
   Map<String, dynamic> dataMap;
 

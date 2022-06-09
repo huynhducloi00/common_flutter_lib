@@ -10,7 +10,10 @@ abstract class LoadingState<T extends StatefulWidget, L> extends State<T>
   Loading loadingScreen = Loading();
   bool keepAlive;
   L? data;
-  LoadingState({this.isRequireData = false, this.tag="", this.keepAlive = false}):super();
+  bool firstLoad = false;
+  LoadingState(
+      {this.isRequireData = false, this.tag = "", this.keepAlive = false})
+      : super();
 
   void markLoading() {
     setState(() {
@@ -35,6 +38,10 @@ abstract class LoadingState<T extends StatefulWidget, L> extends State<T>
         return loadingScreen;
       }
     }
+    if (data != null && !firstLoad) {
+      firstLoad = true;
+      firstLoadCallback();
+    }
     if (isLoading) {
       return loadingScreen;
     } else {
@@ -42,6 +49,7 @@ abstract class LoadingState<T extends StatefulWidget, L> extends State<T>
     }
   }
 
+  firstLoadCallback() {}
   Widget delegateBuild(BuildContext context);
   @override
   bool get wantKeepAlive => keepAlive;

@@ -1,9 +1,10 @@
-import '../../utils.dart';
-import '../auth_service.dart';
-import '../../loadingstate/loading_state.dart';
-import '../../widget/common.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../loadingstate/loading_state.dart';
+import '../../utils.dart';
+import '../../widget/common.dart';
+import '../auth_service.dart';
 
 class SignInPage<T> extends StatefulWidget {
   @override
@@ -19,16 +20,21 @@ class _SignInPageState<T> extends LoadingState<SignInPage, dynamic> {
     return Container(
       color: Colors.white,
       child: Center(
-        child: CommonButton.getButton(context, () {
+        child: CommonButton.getButton(context, () async {
           markLoading();
-          authService.signInWithGoogleAccount().then((value) {
+          try {
+            await authService.signInWithGoogleAccount();
+
             markDoneLoading();
             return null;
-          }).catchError((error) {
+          } catch (error) {
             markDoneLoading();
             showInformation(context, "Thông báo", error.toString());
-          });
-        }, title: 'Đăng nhập với Google', align: TextAlign.center),
+          }
+        },
+            title: 'Sign in with Google',
+            align: TextAlign.center,
+            iconData: Icons.login),
       ),
     );
   }

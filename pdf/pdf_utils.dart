@@ -2,8 +2,6 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/widgets.dart' as pw;
 
 class PdfUtils {
-  static String REPORT_TITLE = 'CÔNG TY TNHH MTV HUỲNH HIỆP HƯNG';
-  static String REPORT_SUBTITLE = 'XUÂN ĐỊNH- XUÂN LỘC-ĐỒNG NAI';
   static late pw.TextStyle lightTextStyle;
   static late pw.TextStyle regularTextStyle;
 

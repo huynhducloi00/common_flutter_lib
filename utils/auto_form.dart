@@ -1,19 +1,19 @@
 import 'dart:collection';
 
-import '../loadingstate/loading_state.dart';
-import 'package:provider/provider.dart';
-
-import '../utils/auto_form_helper.dart';
-
-import '../utils.dart';
-import '../utils/value_notifier.dart';
-import '../widget/common.dart';
+import 'package:async/async.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:async/async.dart';
+import 'package:loi_tenant/common/utils/firebase_image_picker/image_picker_container.dart';
+import 'package:provider/provider.dart';
+
 import '../data/cloud_obj.dart';
 import '../data/cloud_table.dart';
+import '../loadingstate/loading_state.dart';
+import '../utils.dart';
+import '../utils/auto_form_helper.dart';
+import '../utils/value_notifier.dart';
+import '../widget/common.dart';
 
 const InputDecoration EDIT_TEXT_INPUT_DECORATION = InputDecoration(
     fillColor: Colors.white,
@@ -48,8 +48,9 @@ class AutoForm extends StatefulWidget {
           inputInfoMap.relatedTables!.map((relatedTable) {
         Stream<QuerySnapshot> streams;
         if (relatedTable.query == null) {
-          streams =
-              FirebaseFirestore.instance.collection(relatedTable.tableName).snapshots();
+          streams = FirebaseFirestore.instance
+              .collection(relatedTable.tableName)
+              .snapshots();
         } else {
           streams = relatedTable.query!.snapshots();
         }
@@ -78,8 +79,8 @@ class AutoForm extends StatefulWidget {
             context,
             bundleStream == null
                 ? child
-                : StreamProvider<List<DataBundle>>(
-              initialData: [],
+                : StreamProvider<List<DataBundle>?>(
+                    initialData: null,
                     create: (BuildContext context) {
                       return bundleStream;
                     },
@@ -105,7 +106,7 @@ class DateTimeController extends ValueNotifier<DateTime?> {
 typedef FieldValueChangeCallback = void Function(
     ValueNotifier? notifier, String changedFieldName, dynamic val);
 
-class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
+class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
   _AutoFormState() : super(isRequireData: true);
 
   // Map from field name to TEXT/INT controller
@@ -113,9 +114,9 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
   // 1.TextEditingController
   // 2. CheckBoxController
   // 3. DateTimeController.
-  Map<String, ValueNotifier?> _allNotifiers = Map();
+  final Map<String, ValueNotifier?> _allNotifiers = Map();
   final _formKey = GlobalKey<FormState>();
-  Map<String, DataBundle> bundleMap = Map();
+  Map<String, DataBundle> bundleMap = {};
   final SizedBox divider = SizedBox(
     width: 20,
   );
@@ -134,15 +135,27 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
   void initState() {
     widget.inputInfoMap.map!.forEach((fieldName, inputInfo) {
       ValueNotifier? notifier;
-      if (inputInfo.dataType == DataType.string ||
-          inputInfo.dataType == DataType.int) {
-        notifier = TextEditingController(
-            text: widget.initialValue[fieldName]?.toString());
-      } else if (inputInfo.dataType == DataType.boolean) {
-        notifier = CheckBoxController(widget.initialValue[fieldName] ?? false);
-      } else if (inputInfo.dataType == DataType.timestamp) {
-        notifier = DateTimeController(
-            (widget.initialValue[fieldName] as Timestamp?)?.toDate());
+      switch (inputInfo.dataType) {
+        case DataType.string:
+        case DataType.int:
+        case DataType.double:
+          notifier = TextEditingController(
+              text: widget.initialValue[fieldName]?.toString());
+          break;
+        case DataType.html:
+          break;
+        case DataType.timestamp:
+          notifier = DateTimeController(
+              (widget.initialValue[fieldName] as Timestamp?)?.toDate());
+          break;
+        case DataType.boolean:
+          notifier =
+              CheckBoxController(widget.initialValue[fieldName] ?? false);
+          break;
+        case DataType.firebaseImage:
+          notifier = ImageValueNotifier(
+              ImageCombo.fromImageLink(widget.initialValue[fieldName]));
+          break;
       }
       _allNotifiers[fieldName] = notifier;
     });
@@ -163,8 +176,8 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
               'affecting field: ${widget.inputInfoMap.fieldChangedFieldMap![changedFieldName]}');
         widget.inputInfoMap.fieldChangedFieldMap![changedFieldName]!
             .forEach((fieldName) {
-          var result = widget.inputInfoMap.map![fieldName]!
-              .calculate!(resultBundle, bundleMap);
+          var result = widget.inputInfoMap.map![fieldName]!.calculate!(
+              resultBundle, bundleMap);
           if (DEBUG) print('$fieldName $result');
           var notifier = _allNotifiers[fieldName];
           if (result != null) {
@@ -202,7 +215,6 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
     switch (inputInfo.dataType) {
       case DataType.html:
         return null;
-        break;
       case DataType.string:
         if (inputInfo.optionMap == null) {
           resultWidget = TextFormField(
@@ -220,7 +232,8 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
                 Expanded(child: resultWidget),
                 CommonButton.createDataPickerButton(
                     context,
-                    LoiAllCloudTables.maps[inputInfo.linkedData!.tableName],
+                    LoiAllCloudTables.getValueInMap(
+                        inputInfo.linkedData!.tableName),
                     inputInfo.linkedData!.linkedFieldName, (val, _) {
                   if (val != null) {
                     (_allNotifiers[fieldName] as TextEditingController).text =
@@ -231,8 +244,8 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
             );
           }
         } else {
-          resultWidget =
-              AutoFormHelper.dropDownText(_allNotifiers[fieldName] as TextEditingController?, inputInfo);
+          resultWidget = AutoFormHelper.dropDownText(
+              _allNotifiers[fieldName] as TextEditingController?, inputInfo);
         }
         break;
 //      case DataType.html:
@@ -278,22 +291,25 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
 //          ],
 //        );
         break;
+      case DataType.double:
       case DataType.int:
         if (inputInfo.optionMap == null) {
           resultWidget = TextFormField(
-              enabled: isEnabled,
-              controller: _allNotifiers[fieldName] as TextEditingController?,
-              decoration: inputDecoration,
-              validator: (val) =>
-                  inputInfo.validator == null ? null : inputInfo.validator!(val),
-              obscureText: false,
-              keyboardType: TextInputType.number,
-              inputFormatters: <TextInputFormatter>[
-                WhitelistingTextInputFormatter.digitsOnly
-              ]);
+            enabled: isEnabled,
+            controller: _allNotifiers[fieldName] as TextEditingController?,
+            decoration: inputDecoration,
+            validator: (val) =>
+                inputInfo.validator == null ? null : inputInfo.validator!(val),
+            obscureText: false,
+            keyboardType: TextInputType.numberWithOptions(
+                decimal: inputInfo.dataType == DataType.double),
+            // inputFormatters: <TextInputFormatter>[
+            //   FilteringTextInputFormatter.allow(RegExp(r'[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)'))
+            // ]
+          );
         } else {
-          resultWidget =
-              AutoFormHelper.dropDownInt(_allNotifiers[fieldName] as TextEditingController?, inputInfo);
+          resultWidget = AutoFormHelper.dropDownInt(
+              _allNotifiers[fieldName] as TextEditingController?, inputInfo);
         }
         break;
       case DataType.timestamp:
@@ -303,6 +319,10 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
       case DataType.boolean:
         resultWidget = valueNotifierCheckBox(
             _allNotifiers[fieldName] as ValueNotifier<bool?>);
+        break;
+      case DataType.firebaseImage:
+        resultWidget = valueNotifierImageCombo(
+            context, _allNotifiers[fieldName] as ImageValueNotifier);
         break;
     }
     return resultWidget;
@@ -346,7 +366,7 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
             TableCell(
               verticalAlignment: TableCellVerticalAlignment.middle,
               child: Container(
-                child: Text(inputInfo.fieldDes!),
+                child: Text(inputInfo.fieldDes),
                 margin: EdgeInsets.only(right: 5),
               ),
             ),
@@ -379,12 +399,12 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
                 }
                 Navigator.pop(context);
               } else {
-                return showInformation(context, "Lỗi", otherError!);
+                return showInformation(context, "Error", otherError!);
               }
             },
                 regularColor: Colors.transparent,
                 iconData: Icons.save,
-                title: 'Lưu')
+                title: 'Save')
           ],
         ),
         backgroundColor: Colors.brown[100],
@@ -395,7 +415,7 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
               key: _formKey,
               child: Table(
                 defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                columnWidths: {0: IntrinsicColumnWidth()},
+                columnWidths: {0: FlexColumnWidth(2), 1: FlexColumnWidth(3)},
                 children: editBoxes,
               ),
             ),
@@ -417,6 +437,13 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
           case DataType.html:
             // TODO: Handle this case.
             break;
+          case DataType.double:
+            otherError = validateNonStrField(
+                otherError, _allNotifiers[fieldName]!.value.text, inputInfo);
+            result[fieldName] = _allNotifiers[fieldName]!.value.text.isEmpty
+                ? null
+                : double.parse(_allNotifiers[fieldName]!.value.text);
+            break;
           case DataType.int:
             otherError = validateNonStrField(
                 otherError, _allNotifiers[fieldName]!.value.text, inputInfo);
@@ -432,9 +459,13 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>> {
                 : Timestamp.fromDate(_allNotifiers[fieldName]!.value);
             break;
           case DataType.boolean:
-            result[fieldName] = _allNotifiers[fieldName]!.value == null
-                ? null
-                : _allNotifiers[fieldName]!.value;
+            result[fieldName] = _allNotifiers[fieldName]!.value;
+            break;
+          case DataType.firebaseImage:
+            result[fieldName] =
+                (_allNotifiers[fieldName]! as ImageValueNotifier)
+                    .value
+                    .imageLink;
             break;
         }
       }

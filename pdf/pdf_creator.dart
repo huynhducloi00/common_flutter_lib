@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:loi_tenant/common/widget/edit_table/common_child_table.dart';
+
 import '../utils/html/html_no_op.dart'
     if (dart.library.html) '../utils/html/html_utils.dart' as html_utils;
 import 'package:flutter/foundation.dart';
@@ -76,23 +78,24 @@ class PdfCreator extends PdfCreatorInterface {
     pw.Table header = pw.Table(columnWidths: colWidths, children: [
       pw.TableRow(
           children: usedInputInfoMap.entries
-              .map((e) => PdfUtils.writeRegular(e.value!.fieldDes!))
+              .map((e) => PdfUtils.writeRegular(e.value!.fieldDes))
               .toList())
     ]);
     List<pw.TableRow> tableRows = [];
     List<pw.Table> tables = [];
-    Map<String, int?> aggregationStatInt = {};
+    // dynamic can be int or double
+    Map<String, dynamic> aggregationStatInt = {};
     if (printInfo.groupByFields != null) {
-      Map<GroupByKey, Map<String, int>> grouped = {};
+      Map<GroupByKey, Map<String, dynamic>> grouped = {};
       data.forEach((row) {
         GroupByKey groupByKey =
             GroupByKey(printInfo.groupByFields!.map((e) => row[e]).toList());
-        var map;
-        if (grouped[groupByKey]==null){
+        Map<String, dynamic> map;
+        if (grouped.containsKey(groupByKey)) {
+          map = grouped[groupByKey]!;
+        } else {
           map = {};
           grouped[groupByKey] = map;
-        } else {
-          map = grouped[groupByKey];
         }
         printInfo.printFields!.forEach((fieldName) {
           if (!printInfo.groupByFields!.contains(fieldName)) {
@@ -128,8 +131,8 @@ class PdfCreator extends PdfCreatorInterface {
         return PdfUtils.writeLight(toText(buildContext, row[fieldName]) ?? "",
             maxLine: 1);
       }).toList()));
-      if ((tables.length == 0 && count == limitFirstPage) ||
-          (tables.length > 0 && count == limitOtherPage)) {
+      if ((tables.isEmpty && count == limitFirstPage) ||
+          (tables.isNotEmpty && count == limitOtherPage)) {
         tables.add(pw.Table(columnWidths: colWidths, children: tableRows));
         count = 0;
         tableRows = [];
@@ -154,8 +157,8 @@ class PdfCreator extends PdfCreatorInterface {
         build: (pw.Context context) {
           List<pw.Widget> children = [];
           children.addAll([
-            PdfUtils.writeRegular(PdfUtils.REPORT_TITLE),
-            PdfUtils.writeLight(PdfUtils.REPORT_SUBTITLE),
+            PdfUtils.writeRegular(ChildTableUtils.reportTitle),
+            PdfUtils.writeLight(ChildTableUtils.reportSubtitle),
             PdfUtils.center(
               PdfUtils.writeRegular(printInfo.title!.toUpperCase()),
             ),
@@ -233,8 +236,8 @@ class PdfCreator extends PdfCreatorInterface {
           build: (pw.Context context) {
             List<pw.Widget> children = [];
             children.addAll([
-              PdfUtils.writeRegular(PdfUtils.REPORT_TITLE),
-              PdfUtils.writeLight(PdfUtils.REPORT_SUBTITLE),
+              PdfUtils.writeRegular(ChildTableUtils.reportTitle),
+              PdfUtils.writeLight(ChildTableUtils.reportSubtitle),
               PdfUtils.center(
                 PdfUtils.writeRegular(printTicket.title!.toUpperCase()),
               ),

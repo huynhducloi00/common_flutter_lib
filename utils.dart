@@ -1,16 +1,17 @@
 import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart' as res_builder;
 
 import 'auth/auth_service.dart';
-import 'widget/edit_table/parent_param.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-
+import 'data/cloud_obj.dart';
 import 'data/cloud_table.dart';
 import 'widget/common.dart';
+import 'widget/edit_table/parent_param.dart';
 
 final NumberFormat NUM_FORMAT = NumberFormat("#,###");
 final TABLE_OF_TWO_DIVIDER = "TABLE_OF_TWO_DIVIDER";
@@ -23,11 +24,16 @@ const EDIT_TABLE_HORIZONTAL_BORDER_SIDE =
 
 class LoiAllCloudTables {
   static late List<CloudTableSchema> cloudTables;
-  static late Map<String?, CloudTableSchema> maps;
+  static late Map<String?, CloudTableSchema> _maps;
 
   static void init(List<CloudTableSchema> list) {
     cloudTables = list;
-    maps = list.asMap().map((_, value) => MapEntry(value.tableName, value));
+    _maps = list.asMap().map((_, value) => MapEntry(value.tableName, value));
+  }
+
+  static CloudTableSchema<T> getValueInMap<T extends CloudObject>(
+      String cloudTableName) {
+    return _maps[cloudTableName]! as CloudTableSchema<T>;
   }
 }
 
@@ -74,21 +80,24 @@ String formatNumber(int num) {
   return num == null ? "" : NUM_FORMAT.format(num);
 }
 
-int? sum(List args) {
+double? sum(List args) {
   return args.reduce((value, element) {
     return (value ?? 0) + (element ?? 0);
   });
 }
 
-String formatTimestamp(BuildContext context, Timestamp timestamp) {
+String formatTimestamp(BuildContext context, Timestamp? timestamp,
+    {format = formatDatetime}) {
   if (timestamp == null) return "";
   DateTime dateTime = timestamp.toDate();
-  return formatDatetime(context, dateTime);
+  return format(context, dateTime);
 }
 
-String? toText(context, dynamic val) {
+String? toText(BuildContext context, dynamic val) {
   if (val is String) {
     return val;
+  } else if (val is double) {
+    return val.toStringAsFixed(2);
   } else if (val is int) {
     return formatNumber(val);
   } else if (val is Timestamp) {
@@ -108,8 +117,24 @@ double screenWidth(context) {
   return MediaQuery.of(context).size.width;
 }
 
-Widget tableOfTwo(Map<String?, String?> map,
-    {bool boldLeft = false, bool boldRight = false}) {
+String dateShortMonthTimestampConvert(context, value) {
+  return dateShortMonthDateTimeConvert(context, (value as Timestamp).toDate());
+}
+
+String dateShortMonthDateTimeConvert(context, value) {
+  return DateFormat('dd-MMM-yyyy').format(value);
+}
+
+double? convertUnknownNumberToDouble(data) {
+  if (data is int) {
+    return data * 1.0;
+  } else {
+    return data;
+  }
+}
+
+Widget tableOfTwo(Map<String, String?> map,
+    {bool boldLeft = false, bool boldRight = false, double? fontSize}) {
   List<TableRow> list = [];
   for (int i = 0; i < map.entries.length; i++) {
     var e = map.entries.elementAt(i);
@@ -124,20 +149,23 @@ Widget tableOfTwo(Map<String?, String?> map,
             Text(
               '${e.key}:',
               textAlign: TextAlign.start,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: fontSize),
             ),
             Text(
               e.value!,
               textAlign: TextAlign.end,
-              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
+                  fontSize: fontSize,
                   fontWeight: boldRight ? FontWeight.bold : FontWeight.normal),
             )
           ]));
     }
   }
   return Table(
-      columnWidths: {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
+      columnWidths: {0: FlexColumnWidth(), 1: IntrinsicColumnWidth()},
       children: list);
 }
 
@@ -211,6 +239,33 @@ List<List<T>> partitionListToBin<T>(List<T> list, int binNum) {
   }
   return chunks;
 }
+getLastYearFilterDataWrapper(){
+  var startDateLastYear = Jiffy()
+      .startOf(Units.YEAR)
+      .subtract(years: 1)
+      .dateTime;
+  var endDateLastYear = Jiffy()
+      .endOf(Units.YEAR)
+      .subtract(years: 1)
+      .dateTime;
+  return FilterDataWrapper(
+      filterStartValue: Timestamp.fromDate(startDateLastYear),
+      filterEndValue: Timestamp.fromDate(endDateLastYear),
+      filterEndIncludeValue: false);
+}
+
+getThisYearFilterDataWrapper(){
+  var startDateLastYear = Jiffy()
+      .startOf(Units.YEAR)
+      .dateTime;
+  var endDateLastYear = Jiffy()
+      .endOf(Units.YEAR)
+      .dateTime;
+  return FilterDataWrapper(
+      filterStartValue: Timestamp.fromDate(startDateLastYear),
+      filterEndValue: Timestamp.fromDate(endDateLastYear),
+      filterEndIncludeValue: false);
+}
 
 class CurrentLastNextMonthInfo {
   int? month, year, pMonth, pYear, nMonth, nYear;
@@ -239,7 +294,8 @@ CurrentLastNextMonthInfo getCurrentLastNextMonthInfo() {
     info.nMonth = info.month! + 1;
     info.nYear = info.year;
   }
-  info.thisMonthTimeStamp = Timestamp.fromDate(DateTime(info.year!, info.month!));
+  info.thisMonthTimeStamp =
+      Timestamp.fromDate(DateTime(info.year!, info.month!));
   info.nextMonthTimeStamp =
       Timestamp.fromDate(DateTime(info.nYear!, info.nMonth!));
   info.lastMonthTimeStamp =
@@ -269,7 +325,17 @@ Future showInformation(context, String title, String content) {
   }, actions: [
     CommonButton.getButton(context, () {
       Navigator.pop(context);
-    }, title: 'Ok')
+    }, title: 'Ok', iconData: Icons.close)
+  ]);
+}
+
+Future showFullSizeImage(context, Image image) {
+  return showAlertDialog(context, builder: (_) {
+    return SizedBox.expand(child: image);
+  }, actions: [
+    CommonButton.getButton(context, () {
+      Navigator.pop(context);
+    }, title: 'Close', iconData: Icons.close)
   ]);
 }
 
@@ -301,8 +367,7 @@ Widget splitAnyColumns(List<Widget> widgets, int numBin, {double gap = 10}) {
       .toList();
   for (int i = widgetList.length - 1; i >= 1; i--) {
     widgetList.insert(
-        i,
-        SizedBox(
+        i,SizedBox(
           width: gap,
         ));
   }
@@ -311,7 +376,7 @@ Widget splitAnyColumns(List<Widget> widgets, int numBin, {double gap = 10}) {
   return Row(mainAxisSize: MainAxisSize.max, children: widgetList);
 }
 
-LoiButtonStyle getLoiButtonStyle(context) {
+LoiButtonStyle getLoiButtonStyle(BuildContext context) {
   return Provider.of<LoiButtonStyle>(context, listen: false);
 }
 
@@ -341,20 +406,21 @@ Route createMaterialPageRoute(parentContext, WidgetBuilder builder) {
 }
 
 Future showAlertDialog(BuildContext context,
-    {WidgetBuilder? builder,
+    {required WidgetBuilder builder,
     String? title,
     List<Widget>? actions,
     double? percentageWidth}) {
   return showDialog(
+      useRootNavigator: false,
       context: context,
       builder: (_) {
         return AlertDialog(
           title: title == null ? null : Text(title),
           content: percentageWidth == null
-              ? builder!(context)
+              ? builder(context)
               : Container(
                   width: screenWidth(context) * percentageWidth,
-                  child: builder!(context)),
+                  child: builder(context)),
           contentPadding: EdgeInsets.zero,
           actions: actions,
         );
@@ -397,6 +463,10 @@ int? minus(int val1, int val2) {
 int? absMinus(int val1, int val2) {
   int? minusRes = minus(val1, val2);
   return minusRes == null ? null : minusRes.abs();
+}
+
+String showMonthYearOnly(DateTime dateTime) {
+  return '${dateTime.year}-${dateTime.month}';
 }
 
 String showDateOnly(DateTime dateTime) {

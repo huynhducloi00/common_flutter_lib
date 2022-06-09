@@ -194,10 +194,10 @@ class ExcelOperation {
 
 class DeciderField {
   String fieldName;
-  String? fieldDes;
+  String fieldDes;
   String? inFileDes;
 
-  DeciderField(this.fieldName, {this.fieldDes, this.inFileDes}) {
+  DeciderField(this.fieldName, {required this.fieldDes, this.inFileDes}) {
     if (inFileDes == null) {
       inFileDes = fieldDes;
     }

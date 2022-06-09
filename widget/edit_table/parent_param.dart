@@ -5,18 +5,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/cloud_obj.dart';
 import '../../data/cloud_table.dart';
 
-const String _CONTAIN_STR = 'CONTAIN_STR';
-const String _EXACT_MATCH_STR = 'EXACT_MATCH_STR';
-InputInfoMap STRING_FILTER_INFO_MAP = InputInfoMap({
-  _CONTAIN_STR: InputInfo(DataType.string,
+const String containsStr = 'CONTAIN_STR';
+const String exactMatchStr = 'EXACT_MATCH_STR';
+InputInfoMap strFilterInfoMap = InputInfoMap({
+  containsStr: InputInfo(DataType.string,
       fieldDes: 'Bắt đầu bằng', validator: InputInfo.nonEmptyStrValidator),
-  _EXACT_MATCH_STR: InputInfo(DataType.boolean,
-      fieldDes: 'Chính xác', validator: InputInfo.nonEmptyStrValidator),
+  exactMatchStr: InputInfo(DataType.boolean,
+      fieldDes: 'Chính xác', validator: InputInfo.nonEmptyStrValidator,
+  ),
 });
 
 FilterDataWrapper convertFromStringFilterMap(Map val) {
-  String? strStart = val[_CONTAIN_STR];
-  if (val[_EXACT_MATCH_STR]) {
+  String? strStart = val[containsStr];
+  if (val[exactMatchStr]) {
     return FilterDataWrapper(
       exactMatchValue: strStart,
     );
@@ -31,11 +32,12 @@ FilterDataWrapper convertFromStringFilterMap(Map val) {
   }
 }
 
-const String _EXACT_MATCH_INT = '_EXACT_MATCH_INT';
+const String exactMatchInt = '_EXACT_MATCH_INT';
 
-InputInfoMap INT_FILTER_INFO_MAP(Map<dynamic, String?>? originalFieldOptionMap) =>
+InputInfoMap intFilterInfoMap(
+        Map<dynamic, String?>? originalFieldOptionMap) =>
     InputInfoMap({
-      _EXACT_MATCH_INT: InputInfo(DataType.int,
+      exactMatchInt: InputInfo(DataType.int,
           optionMap: originalFieldOptionMap,
           fieldDes: 'Bằng',
           validator: InputInfo.nonNullValidator),
@@ -43,42 +45,38 @@ InputInfoMap INT_FILTER_INFO_MAP(Map<dynamic, String?>? originalFieldOptionMap) 
 
 FilterDataWrapper convertFromIntFilterMap(Map val) {
   return FilterDataWrapper(
-    exactMatchValue: val[_EXACT_MATCH_INT],
+    exactMatchValue: val[exactMatchInt],
   );
 }
 
-const String _START_DATE = '_START_DATE';
-const String _END_DATE = '_END_DATE';
-const String _INCLUDE_START_DATE = '_INCLUDE_START_DATE';
-const String _INCLUDE_END_DATE = '_INCLUDE_END_DATE';
-InputInfoMap TIME_STAMP_FILTER_INFO_MAP = InputInfoMap({
-  _START_DATE: InputInfo(DataType.timestamp,
-      fieldDes: 'Ngày bắt đầu'),
-  _INCLUDE_START_DATE: InputInfo(DataType.boolean,
-      fieldDes: 'Bao gồm ngày bắt đầu',
-      validator: InputInfo.nonNullValidator),
-  _END_DATE: InputInfo(DataType.timestamp,
-      fieldDes: 'Ngày kết thúc'),
-  _INCLUDE_END_DATE: InputInfo(DataType.boolean,
-      fieldDes: 'Bao gồm ngày kết thúc',
-      validator: InputInfo.nonNullValidator),
+const String startDate = '_START_DATE';
+const String endDate = '_END_DATE';
+const String includeStartDate = '_INCLUDE_START_DATE';
+const String includeEndDate = '_INCLUDE_END_DATE';
+InputInfoMap timestampFilterInfoMap = InputInfoMap({
+  startDate: InputInfo(DataType.timestamp, fieldDes: 'Ngày bắt đầu'),
+  includeStartDate: InputInfo(DataType.boolean,
+      fieldDes: 'Bao gồm ngày bắt đầu', validator: InputInfo.nonNullValidator),
+  endDate: InputInfo(DataType.timestamp, fieldDes: 'Ngày kết thúc'),
+  includeEndDate: InputInfo(DataType.boolean,
+      fieldDes: 'Bao gồm ngày kết thúc', validator: InputInfo.nonNullValidator),
 });
 
 FilterDataWrapper convertFromTimeStampFilterMap(Map val) {
   return FilterDataWrapper(
-      filterStartValue: val[_START_DATE],
-      filterEndValue: val[_END_DATE],
-      filterStartIncludeValue: val[_INCLUDE_START_DATE],
-      filterEndIncludeValue: val[_INCLUDE_END_DATE]);
+      filterStartValue: val[startDate],
+      filterEndValue: val[endDate],
+      filterStartIncludeValue: val[includeStartDate],
+      filterEndIncludeValue: val[includeEndDate]);
 }
 
-const String _BOOLEAN_VALUE = '_BOOLEAN_VALUE';
-InputInfoMap BOOLEAN_FILTER_INFO_MAP = InputInfoMap({
-  _BOOLEAN_VALUE: InputInfo(DataType.boolean, fieldDes: 'Giá trị'),
+const String booleanValue = '_BOOLEAN_VALUE';
+InputInfoMap booleanFilterInfoMap = InputInfoMap({
+  booleanValue: InputInfo(DataType.boolean, fieldDes: 'Giá trị'),
 });
 
 FilterDataWrapper convertFromBooleanFilterMap(Map val) {
-  return FilterDataWrapper(exactMatchValue: val[_BOOLEAN_VALUE]);
+  return FilterDataWrapper(exactMatchValue: val[booleanValue]);
 }
 
 Query? specificFilter(var original, String fieldName,
@@ -111,9 +109,7 @@ dynamic applyFilterToQuery(
     CollectionReference collectionReference, ParentParam parentParam) {
   var result;
   parentParam.filterDataWrappers!.forEach((fieldName, filterDataWrapper) {
-    if (result == null) {
-      result = collectionReference;
-    }
+    result ??= collectionReference;
     // Only sort for other filter keys and not sortKey.
     result = specificFilter(
         result,
@@ -150,7 +146,8 @@ class FilterDataWrapper {
   }
 }
 
-typedef PostColorDecorationCondition = Color Function(Map<String, dynamic> dataMap);
+typedef PostColorDecorationCondition = Color Function(
+    Map<String, dynamic> dataMap);
 
 class ParentParam {
   String? sortKey;
@@ -161,11 +158,16 @@ class ParentParam {
   ParentParam(
       {this.filterDataWrappers,
       this.sortKey,
-      this.sortKeyDescending=false,
+      this.sortKeyDescending = false,
       this.postColorDecorationCondition}) {
-    if (filterDataWrappers == null) {
-      filterDataWrappers = {};
-    }
+    filterDataWrappers ??= {};
+  }
+  ParentParam deepClone() {
+    return ParentParam(
+        filterDataWrappers: filterDataWrappers,
+        sortKey: sortKey,
+        sortKeyDescending: sortKeyDescending,
+        postColorDecorationCondition: postColorDecorationCondition);
   }
 
   @override

@@ -1,8 +1,9 @@
-import '../widget/common.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../utils.dart';
+import '../widget/common.dart';
+import 'firebase_image_picker/image_picker_container.dart';
 
 Widget valueNotifierCheckBox<V extends ValueNotifier<bool?>>(V valueNotifier,
     {String? title, TextStyle? style}) {
@@ -24,6 +25,12 @@ Widget valueNotifierCheckBox<V extends ValueNotifier<bool?>>(V valueNotifier,
       }));
 }
 
+Widget valueNotifierImageCombo(
+    context, ImageValueNotifier valueNotifier) {
+  return ChangeNotifierProvider.value(
+      value: valueNotifier, child: ImageValuePicker());
+}
+
 Widget valueNotifierDateTime<V extends ValueNotifier<DateTime?>>(
     context, V valueNotifier) {
   return ChangeNotifierProvider<V>.value(
@@ -37,8 +44,9 @@ Widget valueNotifierDateTime<V extends ValueNotifier<DateTime?>>(
         var lastDate = DateTime.now().add(Duration(days: 365 * 2));
         return Wrap(children: [
           Row(mainAxisSize: MainAxisSize.min, children: [
-            Text(
-                currentDateTime == null ? '' : '${formatDateOnly(context, currentDateTime)} '),
+            Text(currentDateTime == null
+                ? ''
+                : '${formatDateOnly(context, currentDateTime)} '),
             CommonButton.getButtonAsync(context, () async {
               final DateTime? picked = await showDatePicker(
                   context: context,
@@ -58,7 +66,9 @@ Widget valueNotifierDateTime<V extends ValueNotifier<DateTime?>>(
           Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(initialTime == null ? '' : '${initialTime.format(context)} '),
+                Text(initialTime == null
+                    ? ''
+                    : '${initialTime.format(context)} '),
                 CommonButton.getButton(context, () async {
                   final TimeOfDay? picked_s = await showTimePicker(
                       context: context,
@@ -82,7 +92,7 @@ Widget valueNotifierDateTime<V extends ValueNotifier<DateTime?>>(
                         picked_s.minute);
                   }
                 }, isEnabled: currentDateTime != null, iconData: Icons.timer),
-              ].where((element) => element != null).toList())
+              ].whereType<Widget>().toList())
         ]);
       }));
 }

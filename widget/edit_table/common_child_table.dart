@@ -1,3 +1,5 @@
+import 'package:loi_tenant/common/widget/edit_table/child_edit_table.dart';
+
 import '../../utils.dart';
 
 import '../../data/cloud_obj.dart';
@@ -13,11 +15,14 @@ import '../common.dart';
 import 'parent_param.dart';
 
 class ChildTableUtils {
-  static Widget printButton(context,CollectionReference databaseRef, PrintInfo printInfo,
-      ParentParam fallBackParentParam,
+  static String reportTitle = '';
+  static String reportSubtitle = '';
+
+  static Widget printButton(context, CollectionReference databaseRef,
+      PrintInfo printInfo, ParentParam? fallBackParentParam,
       {isDense = false, Color? backgroundColor}) {
     return CommonButton.getButtonAsync(context, () async {
-      var parentParam = printInfo.parentParam ?? fallBackParentParam;
+      var parentParam = printInfo.parentParam ?? fallBackParentParam!;
       var allQuery = applyFilterToQuery(databaseRef, parentParam).orderBy(
           parentParam.sortKey,
           descending: parentParam.sortKeyDescending) as Query;
@@ -80,15 +85,38 @@ class ChildTableUtils {
   }
 
   static Widget newButton(
-          context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
-          {bool isPhone = false, Map<String, dynamic>? initialValues, title='Mới'}) =>
-      CommonButton.getButton(context, () {
-        initiateNew(context, databaseRef, inputInfoMap,
-            isPhone: isPhone, initialValues: initialValues);
-      }, title: title, iconData: Icons.wallpaper);
+      context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
+      {bool isPhone = false,
+      title = 'Mới'}) {
+    return CommonButton.getButton(context, () {
+      Map<String,dynamic> initialData = {};
+      inputInfoMap.map!.forEach((key, value) {
+        if (value.onNewData != null) {
+          initialData[key] = value.onNewData!();
+        }
+      });
+      initiateNew(context, databaseRef, inputInfoMap,
+          isPhone: isPhone,
+          initialValues: initialData.isEmpty ? null : initialData);
+    }, title: title, iconData: Icons.wallpaper);
+  }
+
+  static Widget duplicate(
+      context, databaseRef, SchemaAndData schemaAndData, List<int> rowIndices,
+      {bool isPhone = false}) {
+    return CommonButton.getButton(context, () {
+      initiateNew(
+          context, databaseRef, schemaAndData.cloudTableSchema.inputInfoMap,
+          isPhone: isPhone,
+          initialValues: schemaAndData.data[rowIndices[0]].dataMap);
+    },
+        title: "Duplicate",
+        iconData: Icons.accessible_forward_outlined,
+        isEnabled: rowIndices.length == 1);
+  }
 
   static Widget editButton(
-      context, databaseRef, SchemaAndData schemaAndData, int? rowIndex,
+      context, databaseRef, SchemaAndData schemaAndData, List<int> rowIndices,
       {bool isPhone = false}) {
     return CommonButton.getButton(context, () {
       if (isPhone) popWindow(context);
@@ -96,7 +124,7 @@ class ChildTableUtils {
       if (schemaAndData.cloudTableSchema.showDocumentId) {
         map = Map.fromEntries([
               MapEntry(
-                  CloudTableSchema.DOCUMENT_ID_FIELD,
+                  CloudTableSchema.documentIdField,
                   InputInfo(DataType.string,
                       fieldDes: 'Mã', canUpdate: false, needSaving: false))
             ] +
@@ -105,11 +133,11 @@ class ChildTableUtils {
       var autoForm = AutoForm.createAutoForm(
         context,
         schemaAndData.cloudTableSchema.inputInfoMap.cloneInputInfoMap(map),
-        schemaAndData.data[rowIndex!].dataMap,
+        schemaAndData.data[rowIndices[0]].dataMap,
         saveClickFuture: (resultMap) async {
-          await databaseRef
-              .document(schemaAndData.data[rowIndex].documentId)
-              .setData(resultMap);
+          await (databaseRef as CollectionReference)
+              .doc(schemaAndData.data[rowIndices[0]].documentId)
+              .set(resultMap);
         },
       );
       if (isPhone) {
@@ -124,32 +152,48 @@ class ChildTableUtils {
           return autoForm;
         }, percentageWidth: 0.8);
       }
-    }, title: "Chỉnh sửa", iconData: Icons.edit, isEnabled: rowIndex != null);
+    },
+        title: "Chỉnh sửa",
+        iconData: Icons.edit,
+        isEnabled: rowIndices.length == 1);
   }
 
-  static Widget deleteButton(
-          context, databaseRef, SchemaAndData schemaAndData, int? rowIndex) =>
+  static Widget deleteButton(context, CollectionReference databaseRef,
+          SchemaAndData schemaAndData, List<int> rowIndices,
+          {bool toPopWindow = true}) =>
       CommonButton.getButton(context, () {
-        popWindow(context);
+        if (toPopWindow) {
+          popWindow(context);
+        }
         showAlertDialog(context, actions: [
           CommonButton.getButtonAsync(context, () async {
-            await databaseRef
-                .document(schemaAndData.data[rowIndex!].documentId)
-                .delete();
+            await Future.wait(rowIndices.map((index) => databaseRef
+                .doc(schemaAndData.data[index].documentId)
+                .delete()));
             popWindow(context);
           }, title: 'Có'),
           CommonButton.getCloseButton(context, 'Không')
         ], builder: (_) {
+          var items = rowIndices
+              .map((index) => toText(
+                  context,
+                  schemaAndData.data[index].dataMap[schemaAndData
+                      .cloudTableSchema.inputInfoMap.map!.keys
+                      .elementAt(0)]))
+              .toList()
+              .asMap()
+              .entries
+              .map((e) => "${e.key}.\"${e.value}\"");
           return Text(
-              'Bạn thật sự muốn xoá ${toText(context, schemaAndData.data[rowIndex!].dataMap[schemaAndData.cloudTableSchema.inputInfoMap.map!.keys.elementAt(0)])}?');
+              'Bạn thật sự muốn xoá ${rowIndices.length} items?\n${items.join('\n')}');
         });
       },
           title: "Xoá",
-          isEnabled: rowIndex != null,
+          isEnabled: rowIndices.isNotEmpty,
           iconData: Icons.delete_forever);
 
-  static Widget printLineButton(
-      BuildContext context, PrintTicket? printTicket, Map? data, bool isEnabled) {
+  static Widget printLineButton(BuildContext context, PrintTicket? printTicket,
+      Map? data, bool isEnabled) {
     return CommonButton.getButtonAsync(context, () async {
       var creator = create_pdf.PdfCreator();
       await creator.init();
