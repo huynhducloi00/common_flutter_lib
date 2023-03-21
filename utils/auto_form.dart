@@ -3,17 +3,16 @@ import 'dart:collection';
 import 'package:async/async.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:loi_tenant/common/utils/firebase_image_picker/image_picker_container.dart';
 import 'package:provider/provider.dart';
 
 import '../data/cloud_obj.dart';
 import '../data/cloud_table.dart';
 import '../loadingstate/loading_state.dart';
 import '../utils.dart';
-import '../utils/auto_form_helper.dart';
 import '../utils/value_notifier.dart';
 import '../widget/common.dart';
+import 'auto_form_helper.dart';
+import 'firebase_image_picker/image_picker_container.dart';
 
 const InputDecoration EDIT_TEXT_INPUT_DECORATION = InputDecoration(
     fillColor: Colors.white,
@@ -48,19 +47,19 @@ class AutoForm extends StatefulWidget {
           inputInfoMap.relatedTables!.map((relatedTable) {
         Stream<QuerySnapshot> streams;
         if (relatedTable.query == null) {
-          streams = FirebaseFirestore.instance
+          streams = Firestore.instance
               .collection(relatedTable.tableName)
               .snapshots();
         } else {
           streams = relatedTable.query!.snapshots();
         }
         return streams.map((event) {
-          List<Map> a = event.docs.map((doc) {
+          List<Map> a = event.documents.map((doc) {
             if (relatedTable.documentSnapshotConversion != null) {
               return relatedTable.documentSnapshotConversion!(doc);
             }
             return doc.data;
-          }).toList() as List<Map<dynamic, dynamic>>;
+          }).toList();
           return DataBundle(relatedTable.tableName, a);
         });
       }).toList();

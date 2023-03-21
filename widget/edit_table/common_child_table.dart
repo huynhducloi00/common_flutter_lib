@@ -1,5 +1,3 @@
-import 'package:loi_tenant/common/widget/edit_table/child_edit_table.dart';
-
 import '../../utils.dart';
 
 import '../../data/cloud_obj.dart';
@@ -26,11 +24,11 @@ class ChildTableUtils {
       var allQuery = applyFilterToQuery(databaseRef, parentParam).orderBy(
           parentParam.sortKey,
           descending: parentParam.sortKeyDescending) as Query;
-      return allQuery.get().then((querySnapshot) async {
+      return allQuery.getDocuments().then((querySnapshot) async {
         var creator = create_pdf.PdfCreator();
         await creator.init();
-        List<CloudObject> data = querySnapshot.docs
-            .map((e) => CloudObject(e.id, e.data() as Map<String, dynamic>))
+        List<CloudObject> data = querySnapshot.documents
+            .map((e) => CloudObject(e.documentID, e.data))
             .toList();
         SchemaAndData.fillInCalculatedData(data, printInfo.inputInfoMap);
         parentParam.filterDataWrappers!.forEach((fieldName, filter) {
@@ -69,7 +67,7 @@ class ChildTableUtils {
     var autoForm =
         AutoForm.createAutoForm(context, inputInfoMap, initialValues ?? {},
             saveClickFuture: (resultMap) {
-      return databaseRef.doc().set(resultMap);
+      return databaseRef.document().setData(resultMap);
     }, isNew: true);
     if (isPhone) {
       Navigator.push(
@@ -136,8 +134,8 @@ class ChildTableUtils {
         schemaAndData.data[rowIndices[0]].dataMap,
         saveClickFuture: (resultMap) async {
           await (databaseRef as CollectionReference)
-              .doc(schemaAndData.data[rowIndices[0]].documentId)
-              .set(resultMap);
+              .document(schemaAndData.data[rowIndices[0]].documentId)
+              .setData(resultMap);
         },
       );
       if (isPhone) {
@@ -168,7 +166,7 @@ class ChildTableUtils {
         showAlertDialog(context, actions: [
           CommonButton.getButtonAsync(context, () async {
             await Future.wait(rowIndices.map((index) => databaseRef
-                .doc(schemaAndData.data[index].documentId)
+                .document(schemaAndData.data[index].documentId)
                 .delete()));
             popWindow(context);
           }, title: 'Có'),

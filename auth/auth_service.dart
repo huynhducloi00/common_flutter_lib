@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+
 // firebase_auth: 0.16.0
 //  cloud_firestore: ^0.13.5
 //#web dep:
@@ -14,29 +15,29 @@ class AuthService<T> {
   static const String USER_TABLE_NAME = 'users';
   final FirebaseAuth auth = FirebaseAuth.instance;
   final CollectionReference _ref =
-      FirebaseFirestore.instance.collection(USER_TABLE_NAME);
+      Firestore.instance.collection(USER_TABLE_NAME);
   final GoogleSignIn googleSignIn = GoogleSignIn();
   ConvertToUserFunc convertToUser;
 
   AuthService(this.convertToUser);
 
   Stream<T?> getUserStream() async* {
-    Stream<User?> stream = auth.authStateChanges();
+    Stream<FirebaseUser> stream = auth.onAuthStateChanged;
     await for (var returnedUser in stream) {
       if (returnedUser == null) {
         yield null;
       } else {
-        yield await _getUserWithEmail(returnedUser.email);
+        yield await _getUserWithEmail<T>(returnedUser.email);
       }
     }
   }
 
-  Future<T?> _getUserWithEmail(String? email) async {
-    QuerySnapshot snapshot = await _ref.where("email", isEqualTo: email).get();
-    if (snapshot.docs.isEmpty) {
+  Future<T?> _getUserWithEmail<T>(String? email) async {
+    QuerySnapshot snapshot = await _ref.where("email", isEqualTo: email).getDocuments();
+    if (snapshot.documents.isEmpty) {
       return null;
     } else {
-      Map data = snapshot.docs[0].data() as Map<dynamic, dynamic>;
+      Map data = snapshot.documents[0].data;
       T user = convertToUser(data as Map<String, dynamic>);
       return user;
     }
@@ -55,9 +56,7 @@ class AuthService<T> {
 
   Future<void> signOut() async {
     GoogleSignInAccount? googleSignInAccount = googleSignIn.currentUser;
-    if (googleSignInAccount != null) {
-      await googleSignIn.signOut();
-    }
+    await googleSignIn.signOut();
     await auth.signOut();
   }
 
@@ -73,11 +72,9 @@ class AuthService<T> {
 
   signInWithGoogleAccount() async {
     GoogleSignInAccount? currentUser = googleSignIn.currentUser;
-    if (currentUser != null) {
-      await googleSignIn.signOut();
-      await auth.signOut();
-      print('Signed out complete.');
-    }
+    await googleSignIn.signOut();
+    await auth.signOut();
+    print('Signed out complete.');
     // Nullify all errors
     Future signIn = googleSignIn.signIn().catchError((error) {
       print(error);
@@ -95,7 +92,7 @@ class AuthService<T> {
     }
     final GoogleSignInAuthentication googleSignInAuthentication =
         await googleSignInAccount.authentication;
-    final AuthCredential credential = GoogleAuthProvider.credential(
+    final AuthCredential credential = GoogleAuthProvider.getCredential(
       accessToken: googleSignInAuthentication.accessToken,
       idToken: googleSignInAuthentication.idToken,
     );

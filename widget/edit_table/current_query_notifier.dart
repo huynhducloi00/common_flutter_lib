@@ -1,8 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:loi_tenant/common/widget/edit_table/parent_param.dart';
-
 import 'edit_table_wrapper.dart';
+import 'parent_param.dart';
 
 class CurrentQueryNotifier extends ChangeNotifier {
   late CollectionReference colRef;

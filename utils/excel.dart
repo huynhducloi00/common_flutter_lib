@@ -56,8 +56,8 @@ class ExcelOperation {
   }
 
   Future<bool> _deleteAllData() async {
-    QuerySnapshot result = await collectionReference!.get();
-    List<Future<bool>> list = result.docs.map((doc) {
+    QuerySnapshot result = await collectionReference!.getDocuments();
+    List<Future<bool>> list = result.documents.map((doc) {
       return _createDeleteFuture(doc);
     }).toList();
     _wholeProcess.sink.add("Tạo danh mục xoá thành công");
@@ -66,7 +66,7 @@ class ExcelOperation {
   }
 
   Future<void> _createAddFuture(row) async {
-    await collectionReference!.doc().set(row);
+    await collectionReference!.document().setData(row);
     _wholeProcess.sink.add("Thêm $row");
   }
 
@@ -186,8 +186,8 @@ class ExcelOperation {
     });
   }
 
-  static void downloadWeb(Excel excel, fileName) {
-    var bytes = excel.encode()!;
+  static void downloadWeb(Excel excel, fileName) async {
+    var bytes = await excel.encode()!;
     (HtmlUtils()).downloadWeb(bytes, '$fileName.xlsx');
   }
 }

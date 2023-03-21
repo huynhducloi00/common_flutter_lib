@@ -1,4 +1,4 @@
-import 'package:loi_tenant/common/utils/firebase_image_picker/upload_interface.dart';
+import 'package:canxe/common/utils/firebase_image_picker/upload_interface.dart';
 
 class JsUtilImpl extends JsUtil{
   @override

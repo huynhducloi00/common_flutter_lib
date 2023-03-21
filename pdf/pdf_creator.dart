@@ -1,7 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
-
-import 'package:loi_tenant/common/widget/edit_table/common_child_table.dart';
 
 import '../utils/html/html_no_op.dart'
     if (dart.library.html) '../utils/html/html_utils.dart' as html_utils;
@@ -49,7 +46,7 @@ class PdfCreator extends PdfCreatorInterface {
     return PdfUtils.init();
   }
 
-  Future<List<int>> _generatingPdfSummary(
+  List<int> _generatingPdfSummary(
       BuildContext buildContext,
       DateTime timeOfPrint,
       PrintInfo printInfo,
@@ -157,8 +154,8 @@ class PdfCreator extends PdfCreatorInterface {
         build: (pw.Context context) {
           List<pw.Widget> children = [];
           children.addAll([
-            PdfUtils.writeRegular(ChildTableUtils.reportTitle),
-            PdfUtils.writeLight(ChildTableUtils.reportSubtitle),
+            PdfUtils.writeRegular("Test"),
+            PdfUtils.writeLight("Test"),
             PdfUtils.center(
               PdfUtils.writeRegular(printInfo.title!.toUpperCase()),
             ),
@@ -199,13 +196,13 @@ class PdfCreator extends PdfCreatorInterface {
               children: mapWidgets));
           return children;
         }));
-    return pdf.save();
+    return pdf.save().toList();
   }
 
   @override
   Future createPdfSummary(BuildContext context, DateTime timeOfPrint,
       PrintInfo printInfo, List<CloudObject> data) async {
-    List<int> bytes = await _generatingPdfSummary(context, timeOfPrint,
+    List<int> bytes = _generatingPdfSummary(context, timeOfPrint,
         printInfo, data.map((e) => e.dataMap).toList());
     if (kIsWeb) {
       if (html_utils.HtmlUtils().isSafari()!) {
@@ -236,8 +233,8 @@ class PdfCreator extends PdfCreatorInterface {
           build: (pw.Context context) {
             List<pw.Widget> children = [];
             children.addAll([
-              PdfUtils.writeRegular(ChildTableUtils.reportTitle),
-              PdfUtils.writeLight(ChildTableUtils.reportSubtitle),
+              PdfUtils.writeRegular("Test"),
+              PdfUtils.writeLight("Test"),
               PdfUtils.center(
                 PdfUtils.writeRegular(printTicket.title!.toUpperCase()),
               ),

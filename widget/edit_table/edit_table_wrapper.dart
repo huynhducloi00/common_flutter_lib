@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:loi_tenant/common/widget/edit_table/toggle_sort_filter_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -11,6 +10,7 @@ import '../../widget/edit_table/parent_param.dart';
 import 'common_child_table.dart';
 import 'current_query_notifier.dart';
 import 'phone_child_edit_table.dart';
+import 'toggle_sort_filter_helper.dart';
 
 const tableTableRowLimit = 7;
 
@@ -127,7 +127,7 @@ class _TableWrapperState extends State<TableWrapper> {
             value: newSnapshotStream,
             initialData: null,
             catchError: (context, error) {
-              print("Stream Error ${error}");
+              print("Stream Error $error");
               return null;
             },
             child: widget.dataPickerBundle == null

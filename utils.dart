@@ -24,16 +24,16 @@ const EDIT_TABLE_HORIZONTAL_BORDER_SIDE =
 
 class LoiAllCloudTables {
   static late List<CloudTableSchema> cloudTables;
-  static late Map<String?, CloudTableSchema> _maps;
+  static late Map<String?, CloudTableSchema> maps;
 
   static void init(List<CloudTableSchema> list) {
     cloudTables = list;
-    _maps = list.asMap().map((_, value) => MapEntry(value.tableName, value));
+    maps = list.asMap().map((_, value) => MapEntry(value.tableName, value));
   }
 
   static CloudTableSchema<T> getValueInMap<T extends CloudObject>(
       String cloudTableName) {
-    return _maps[cloudTableName]! as CloudTableSchema<T>;
+    return maps[cloudTableName]! as CloudTableSchema<T>;
   }
 }
 
@@ -363,7 +363,7 @@ Widget splitAnyColumns(List<Widget> widgets, int numBin, {double gap = 10}) {
       .map((list) => Expanded(
             child: columnWithGap(list,
                 crossAxisAlignment: CrossAxisAlignment.stretch),
-          ) as Widget)
+          ) as Widget) 
       .toList();
   for (int i = widgetList.length - 1; i >= 1; i--) {
     widgetList.insert(
@@ -450,13 +450,13 @@ DateTime stripTime(DateTime dateTime) {
   return DateTime(dateTime.year, dateTime.month, dateTime.day);
 }
 
-int? multiply(int val1, int val2) {
+int? multiply(int? val1, int? val2) {
   if (val1 == null || val2 == null) return null;
   return val1 * val2;
 }
 
 int? minus(int val1, int val2) {
-  if (val1 == null || val2 == null) return null;
+  if (val2 == null) return null;
   return val1 - val2;
 }
 

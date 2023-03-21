@@ -1,13 +1,8 @@
-import 'package:loi_tenant/common/loadingstate/loading_state.dart';
-import 'package:loi_tenant/common/utils/auto_form.dart';
-import 'package:loi_tenant/common/widget/edit_table/toggle_sort_filter_helper.dart';
-
+import '../../loadingstate/loading_state.dart';
 import 'common_child_table.dart';
 
 import '../../data/cloud_obj.dart';
-import '../../loadingstate/loading_stream_builder.dart';
 import '../../utils.dart';
-import '../../widget/edit_table/child_param.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +11,7 @@ import '../common.dart';
 import 'current_query_notifier.dart';
 import 'edit_table_wrapper.dart';
 import 'parent_param.dart';
+import 'toggle_sort_filter_helper.dart';
 
 class SelectedIndicesChangeNotifier extends ValueNotifier<List<bool>> {
   SelectedIndicesChangeNotifier(List<bool> value) : super(value);
@@ -64,14 +60,14 @@ class _ChildEditTableState
         .limit(1)
         .snapshots()
         .map((QuerySnapshot snapshot) {
-      return snapshot.size > 0;
+      return snapshot.documents.length > 0;
     });
     var hasAfter = originalQuery
         .startAfterDocument(schemaAndData.documentSnapshots.last)
         .limit(1)
         .snapshots()
         .map((QuerySnapshot event) {
-      return event.size > 0;
+      return event.documents.length > 0;
     });
     return Column(
         children: [
@@ -97,7 +93,7 @@ class _ChildEditTableState
                   initialData: false,
                   value: isLoading ? Stream<bool>.value(false) : hasBefore,
                   catchError: (_,error){
-                    print("Loi 1 ${error}");
+                    print("Loi 1 $error");
                     return false;
                   },
                   child: Builder(
@@ -106,7 +102,7 @@ class _ChildEditTableState
                       return CommonButton.getButton(context, () {
                         // go back
                         currentQueryNotifier!.currentPagingQuery =
-                            originalQuery.limitToLast(tableTableRowLimit).endBeforeDocument(
+                            originalQuery.limit(tableTableRowLimit).endBeforeDocument(
                                 schemaAndData.documentSnapshots.first);
                       },
                           title: "",
@@ -122,7 +118,7 @@ class _ChildEditTableState
                   initialData: false,
                   value: isLoading ? Stream<bool>.value(false) : hasAfter,
                   catchError: (_,error){
-                    print("Loi 2 ${error}");
+                    print("Loi 2 $error");
                     return false;
                   },
                   child: Builder(builder: (BuildContext context) {

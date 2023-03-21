@@ -1,19 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:loi_tenant/common/utils.dart';
-import 'package:loi_tenant/common/utils/image_compression/luban.dart';
-import 'package:loi_tenant/common/widget/common.dart';
 import 'package:provider/provider.dart';
 
+import '../../utils.dart';
+import '../../widget/common.dart';
+import '../image_compression/luban.dart';
 import 'native_interface.dart' if (dart.library.html) 'web_interface.dart'
     as jsutil;
 
@@ -21,7 +19,7 @@ const double imageMaxHeight = 500;
 const int imageQuality = 75;
 
 class ImageCombo {
-  XFile? cameraFile;
+  File? cameraFile;
   Uint8List? byteArray;
   double storageSize;
   String? imageLink;
@@ -60,7 +58,7 @@ class ImageCombo {
         needUploadToFirebase: false);
   }
 
-  ImageCombo takeCameraPicture(XFile xFile, length) {
+  ImageCombo takeCameraPicture(File xFile, length) {
     return ImageCombo(
         cameraFile: xFile,
         storageSize: length,
@@ -89,12 +87,12 @@ class ImageCombo {
       refPath = originalImageLink!;
     }
     if (byteArray != null) {
-      await firestore.ref(refPath).putData(byteArray!);
+      firestore.ref().putData(byteArray!);
     } else if (cameraFile != null) {
       if (kIsWeb) {
-        await firestore.ref(refPath).putData(await cameraFile!.readAsBytes());
+        firestore.ref().putData(await cameraFile!.readAsBytes());
       } else {
-        await firestore.ref(refPath).putFile(File(cameraFile!.path));
+        firestore.ref().child(refPath).putFile(File(cameraFile!.path));
       }
     }
 
@@ -140,19 +138,17 @@ class _ImageValuePickerState extends State<ImageValuePicker> {
   }
 
   Future getImageFromCamera(ImageValueNotifier imageValueNotifier) async {
-    var xFile = await imagePicker.pickImage(
+    var xFile = await ImagePicker.pickImage(
       source: ImageSource.camera,
       maxHeight: imageMaxHeight,
       imageQuality: imageQuality, //compress later
     );
-    if (xFile != null) {
-      var bytes = await xFile.readAsBytes();
-      imageValueNotifier.value =
-          await imageValueNotifier.value.deduceFromBytes(bytes);
-    }
+    var bytes = await xFile.readAsBytes();
+    imageValueNotifier.value =
+        await imageValueNotifier.value.deduceFromBytes(bytes);
   }
 
-  getFileSize(XFile? file) async {
+  getFileSize(File? file) async {
     if (file == null) return 0;
     final bytes = await file.length();
     return bytes / 1024;
@@ -195,7 +191,7 @@ class _ImageValuePickerState extends State<ImageValuePicker> {
       fileSize = getFileSizeWidget(imageCombo.storageSize);
     } else if (imageCombo.imageLink != null) {
       var link = await ImageCombo.firestore
-          .ref(imageCombo.imageLink!)
+          .ref().child(imageCombo.imageLink!)
           .getDownloadURL();
       image = Image.network(link, fit: fit, loadingBuilder:
           (BuildContext context, Widget child,
@@ -213,8 +209,8 @@ class _ImageValuePickerState extends State<ImageValuePicker> {
         );
       });
       var metaData =
-          await ImageCombo.firestore.ref(imageCombo.imageLink!).getMetadata();
-      fileSize = getFileSizeWidget(metaData.size! / 1024.0);
+          await ImageCombo.firestore.ref().child(imageCombo.imageLink!).getMetadata();
+      fileSize = getFileSizeWidget(metaData.sizeBytes! / 1024.0);
     }
     return [image, fileSize];
   }
