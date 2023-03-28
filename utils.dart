@@ -76,7 +76,7 @@ String formatDatetime(context, DateTime dateTime) {
   return '${formatDateOnly(context, dateTime)} $time';
 }
 
-String formatNumber(int num) {
+String formatNumber(int? num) {
   return num == null ? "" : NUM_FORMAT.format(num);
 }
 
@@ -455,7 +455,7 @@ int? multiply(int? val1, int? val2) {
   return val1 * val2;
 }
 
-int? minus(int val1, int val2) {
+int? minus(int val1, int? val2) {
   if (val2 == null) return null;
   return val1 - val2;
 }

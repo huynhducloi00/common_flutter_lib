@@ -33,7 +33,7 @@ abstract class LoadingState<T extends StatefulWidget, L> extends State<T>
       super.build(context);
     }
     if (isRequireData) {
-      data = Provider.of<L>(context);
+      data = Provider.of<L?>(context);
       if (data == null) {
         return loadingScreen;
       }

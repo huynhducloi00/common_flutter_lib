@@ -46,7 +46,7 @@ class PdfCreator extends PdfCreatorInterface {
     return PdfUtils.init();
   }
 
-  List<int> _generatingPdfSummary(
+  Future<List<int>> _generatingPdfSummary(
       BuildContext buildContext,
       DateTime timeOfPrint,
       PrintInfo printInfo,
@@ -196,13 +196,13 @@ class PdfCreator extends PdfCreatorInterface {
               children: mapWidgets));
           return children;
         }));
-    return pdf.save().toList();
+    return pdf.save();
   }
 
   @override
   Future createPdfSummary(BuildContext context, DateTime timeOfPrint,
       PrintInfo printInfo, List<CloudObject> data) async {
-    List<int> bytes = _generatingPdfSummary(context, timeOfPrint,
+    List<int> bytes = await _generatingPdfSummary(context, timeOfPrint,
         printInfo, data.map((e) => e.dataMap).toList());
     if (kIsWeb) {
       if (html_utils.HtmlUtils().isSafari()!) {

@@ -24,11 +24,11 @@ class ChildTableUtils {
       var allQuery = applyFilterToQuery(databaseRef, parentParam).orderBy(
           parentParam.sortKey,
           descending: parentParam.sortKeyDescending) as Query;
-      return allQuery.getDocuments().then((querySnapshot) async {
+      return allQuery.get().then((querySnapshot) async {
         var creator = create_pdf.PdfCreator();
         await creator.init();
-        List<CloudObject> data = querySnapshot.documents
-            .map((e) => CloudObject(e.documentID, e.data))
+        List<CloudObject> data = querySnapshot.docs
+            .map((e) => CloudObject(e.id, e.data() as Map<String, dynamic>))
             .toList();
         SchemaAndData.fillInCalculatedData(data, printInfo.inputInfoMap);
         parentParam.filterDataWrappers!.forEach((fieldName, filter) {
@@ -67,7 +67,7 @@ class ChildTableUtils {
     var autoForm =
         AutoForm.createAutoForm(context, inputInfoMap, initialValues ?? {},
             saveClickFuture: (resultMap) {
-      return databaseRef.document().setData(resultMap);
+      return databaseRef.doc().set(resultMap);
     }, isNew: true);
     if (isPhone) {
       Navigator.push(
@@ -134,8 +134,8 @@ class ChildTableUtils {
         schemaAndData.data[rowIndices[0]].dataMap,
         saveClickFuture: (resultMap) async {
           await (databaseRef as CollectionReference)
-              .document(schemaAndData.data[rowIndices[0]].documentId)
-              .setData(resultMap);
+              .doc(schemaAndData.data[rowIndices[0]].documentId)
+              .set(resultMap);
         },
       );
       if (isPhone) {
@@ -166,7 +166,7 @@ class ChildTableUtils {
         showAlertDialog(context, actions: [
           CommonButton.getButtonAsync(context, () async {
             await Future.wait(rowIndices.map((index) => databaseRef
-                .document(schemaAndData.data[index].documentId)
+                .doc(schemaAndData.data[index].documentId)
                 .delete()));
             popWindow(context);
           }, title: 'Có'),

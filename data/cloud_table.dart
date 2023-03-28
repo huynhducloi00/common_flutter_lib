@@ -374,7 +374,7 @@ abstract class CloudTableSchema<T extends CloudObject> {
   bool showIconDataOnRow;
 
   CollectionReference getCollectionRef() {
-    return Firestore.instance.collection(tableName!);
+    return FirebaseFirestore.instance.collection(tableName!);
   }
 
   CloudTableSchema(
@@ -417,10 +417,10 @@ abstract class CloudTableSchema<T extends CloudObject> {
   }
 
   SchemaAndData<T> convertSnapshotToDataList(QuerySnapshot snapshot) {
-    List<T> result = snapshot.documents.asMap().entries.map((e) {
-      return convertData(e.value.documentID, e.value.data);
+    List<T> result = snapshot.docs.asMap().entries.map((e) {
+      return convertData(e.value.id, e.value.data);
     }).toList();
-    return SchemaAndData<T>(this, result, snapshot.documents);
+    return SchemaAndData<T>(this, result, snapshot.docs);
   }
 
   Stream<List<T>> getStream() {

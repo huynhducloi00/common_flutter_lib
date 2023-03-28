@@ -138,11 +138,12 @@ class _ImageValuePickerState extends State<ImageValuePicker> {
   }
 
   Future getImageFromCamera(ImageValueNotifier imageValueNotifier) async {
-    var xFile = await ImagePicker.pickImage(
+    var xFile = await imagePicker.pickImage(
       source: ImageSource.camera,
       maxHeight: imageMaxHeight,
       imageQuality: imageQuality, //compress later
     );
+    if(xFile == null) return;
     var bytes = await xFile.readAsBytes();
     imageValueNotifier.value =
         await imageValueNotifier.value.deduceFromBytes(bytes);
@@ -210,7 +211,7 @@ class _ImageValuePickerState extends State<ImageValuePicker> {
       });
       var metaData =
           await ImageCombo.firestore.ref().child(imageCombo.imageLink!).getMetadata();
-      fileSize = getFileSizeWidget(metaData.sizeBytes! / 1024.0);
+      fileSize = getFileSizeWidget(metaData.size! / 1024.0);
     }
     return [image, fileSize];
   }

@@ -47,18 +47,18 @@ class AutoForm extends StatefulWidget {
           inputInfoMap.relatedTables!.map((relatedTable) {
         Stream<QuerySnapshot> streams;
         if (relatedTable.query == null) {
-          streams = Firestore.instance
+          streams = FirebaseFirestore.instance
               .collection(relatedTable.tableName)
               .snapshots();
         } else {
           streams = relatedTable.query!.snapshots();
         }
         return streams.map((event) {
-          List<Map> a = event.documents.map((doc) {
+          List<Map> a = event.docs.map((doc) {
             if (relatedTable.documentSnapshotConversion != null) {
               return relatedTable.documentSnapshotConversion!(doc);
             }
-            return doc.data;
+           return doc.data() as Map;
           }).toList();
           return DataBundle(relatedTable.tableName, a);
         });

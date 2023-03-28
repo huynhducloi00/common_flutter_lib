@@ -15,14 +15,14 @@ class AuthService<T> {
   static const String USER_TABLE_NAME = 'users';
   final FirebaseAuth auth = FirebaseAuth.instance;
   final CollectionReference _ref =
-      Firestore.instance.collection(USER_TABLE_NAME);
+      FirebaseFirestore.instance.collection(USER_TABLE_NAME);
   final GoogleSignIn googleSignIn = GoogleSignIn();
   ConvertToUserFunc convertToUser;
 
   AuthService(this.convertToUser);
 
   Stream<T?> getUserStream() async* {
-    Stream<FirebaseUser> stream = auth.onAuthStateChanged;
+    Stream<User?> stream = auth.userChanges();
     await for (var returnedUser in stream) {
       if (returnedUser == null) {
         yield null;
@@ -33,11 +33,11 @@ class AuthService<T> {
   }
 
   Future<T?> _getUserWithEmail<T>(String? email) async {
-    QuerySnapshot snapshot = await _ref.where("email", isEqualTo: email).getDocuments();
-    if (snapshot.documents.isEmpty) {
+    QuerySnapshot snapshot = await _ref.where("email", isEqualTo: email).get();
+    if (snapshot.docs.isEmpty) {
       return null;
     } else {
-      Map data = snapshot.documents[0].data;
+      Map data = snapshot.docs[0].data() as Map;
       T user = convertToUser(data as Map<String, dynamic>);
       return user;
     }
@@ -92,7 +92,7 @@ class AuthService<T> {
     }
     final GoogleSignInAuthentication googleSignInAuthentication =
         await googleSignInAccount.authentication;
-    final AuthCredential credential = GoogleAuthProvider.getCredential(
+    final AuthCredential credential = GoogleAuthProvider.credential(
       accessToken: googleSignInAuthentication.accessToken,
       idToken: googleSignInAuthentication.idToken,
     );

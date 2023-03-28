@@ -56,8 +56,8 @@ class ExcelOperation {
   }
 
   Future<bool> _deleteAllData() async {
-    QuerySnapshot result = await collectionReference!.getDocuments();
-    List<Future<bool>> list = result.documents.map((doc) {
+    QuerySnapshot result = await collectionReference!.get();
+    List<Future<bool>> list = result.docs.map((doc) {
       return _createDeleteFuture(doc);
     }).toList();
     _wholeProcess.sink.add("Tạo danh mục xoá thành công");
@@ -66,7 +66,7 @@ class ExcelOperation {
   }
 
   Future<void> _createAddFuture(row) async {
-    await collectionReference!.document().setData(row);
+    await collectionReference!.doc().set(row);
     _wholeProcess.sink.add("Thêm $row");
   }
 

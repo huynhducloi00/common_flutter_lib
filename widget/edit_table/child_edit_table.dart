@@ -60,14 +60,14 @@ class _ChildEditTableState
         .limit(1)
         .snapshots()
         .map((QuerySnapshot snapshot) {
-      return snapshot.documents.length > 0;
+      return snapshot.docs.length > 0;
     });
     var hasAfter = originalQuery
         .startAfterDocument(schemaAndData.documentSnapshots.last)
         .limit(1)
         .snapshots()
         .map((QuerySnapshot event) {
-      return event.documents.length > 0;
+      return event.docs.length > 0;
     });
     return Column(
         children: [

@@ -2,8 +2,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/widgets.dart' as pw;
 
 class PdfUtils {
-  static late pw.TextStyle lightTextStyle;
-  static late pw.TextStyle regularTextStyle;
+  static pw.TextStyle? lightTextStyle;
+  static pw.TextStyle? regularTextStyle;
 
   static Future init() async {
     lightTextStyle = pw.TextStyle(
@@ -15,11 +15,11 @@ class PdfUtils {
   static pw.Text writeLight(String text,
       {double fontSize = 12, int maxLine = 2}) {
     return pw.Text(text,
-        maxLines: maxLine, style: lightTextStyle.copyWith(fontSize: fontSize));
+        maxLines: maxLine, style: lightTextStyle?.copyWith(fontSize: fontSize));
   }
 
   static pw.Text writeRegular(String text, {double fontSize = 12}) {
-    return pw.Text(text, style: regularTextStyle.copyWith(fontSize: fontSize));
+    return pw.Text(text, style: regularTextStyle?.copyWith(fontSize: fontSize));
   }
 
   static pw.Widget center(pw.Widget widget) {
