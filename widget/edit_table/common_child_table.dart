@@ -1,14 +1,18 @@
-import '../../utils.dart';
+import 'dart:async';
 
-import '../../data/cloud_obj.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
 
+import '../../data/cloud_obj.dart';
+import '../../data/cloud_table.dart';
 // import '../../pdf/no_op_create_pdf.dart'
 //     if (dart.library.html) '../../pdf/pdf_creator.dart' as create_pdf;
+import '../../excel/excel_creator.dart';
 import '../../pdf/pdf_creator.dart' as create_pdf;
-import '../../data/cloud_table.dart';
+import '../../utils.dart';
 import '../../utils/auto_form.dart';
+import '../../utils/html/html_utils.dart';
 import '../common.dart';
 import 'parent_param.dart';
 
@@ -40,10 +44,47 @@ class ChildTableUtils {
         });
         data.forEach((row) {
           row.dataMap = SchemaAndData.fillInOptionData(
-              row.dataMap, printInfo.inputInfoMap.map) as Map<String, dynamic>;
+              row.dataMap, printInfo.inputInfoMap.map);
         });
         await creator.createPdfSummary(
             context, DateTime.now(), printInfo, data);
+      });
+    },
+        title: printInfo.buttonTitle,
+        iconData: Icons.print,
+        isDense: isDense,
+        regularColor: backgroundColor);
+  }
+
+  static Widget exportExcelByDate(context, CollectionReference databaseRef,
+      PrintInfo printInfo, ParentParam fallBackParentParam,
+      {isDense = false, Color? backgroundColor}) {
+    return CommonButton.getButtonAsync(context, () async {
+      var parentParam = printInfo.parentParam ?? fallBackParentParam;
+      var allQuery = applyFilterToQuery(databaseRef, parentParam).orderBy(
+          parentParam.sortKey,
+          descending: parentParam.sortKeyDescending) as Query;
+      return allQuery.get().then((querySnapshot) async {
+        List<CloudObject> data = querySnapshot.docs
+            .map((e) => CloudObject(e.id, e.data() as Map<String, dynamic>))
+            .toList();
+
+        parentParam.filterDataWrappers?.forEach((fieldName, filter) {
+          if (filter?.postFilterFunction != null) {
+            data = data
+                .where((row) => filter!.postFilterFunction!(row.dataMap))
+                .toList();
+          }
+        });
+
+        Excel excel = ExcelCreator.createFile(context, printInfo, data);
+        excel.save(fileName: "phieu_can.xlsx");
+        // Completer<String> completer = Completer();
+        // excel.encode().then((bytes) {
+        //   (HtmlUtils()).downloadWeb(bytes, 'phieu_can.xlsx');
+        //   completer.complete(null);
+        // });
+        // await completer.future;
       });
     },
         title: printInfo.buttonTitle,

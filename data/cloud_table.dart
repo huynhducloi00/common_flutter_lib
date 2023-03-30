@@ -452,7 +452,7 @@ class SchemaAndData<T extends CloudObject> {
     });
   }
 
-  static Map fillInOptionData(Map row, Map<String, InputInfo>? inputInfoMap) {
+  static Map<String, dynamic> fillInOptionData(Map row, Map<String, InputInfo>? inputInfoMap) {
     Map<String, dynamic> result = {};
     row.keys.forEach((fieldName) {
       var inputInfo = inputInfoMap![fieldName];
