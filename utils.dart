@@ -65,7 +65,7 @@ String formatDateOnly(context, DateTime dt) {
   return localizations.formatCompactDate(dt);
 }
 
-String formatDatetime(context, DateTime dateTime) {
+String formatDatetime(context, DateTime? dateTime) {
   if (dateTime == null) return "";
 
   final MaterialLocalizations localizations = MaterialLocalizations.of(context);
@@ -189,7 +189,7 @@ Widget tableOfInfinite(Map<String, List<String>> map) {
       }).toList());
 }
 
-getMinDate(DateTime a, DateTime b) {
+getMinDate(DateTime? a, DateTime? b) {
   if (a == null) return b;
   if (b == null) return a;
   if (a.isAfter(b)) {
@@ -198,7 +198,7 @@ getMinDate(DateTime a, DateTime b) {
   return a;
 }
 
-getMaxDate(DateTime a, DateTime b) {
+getMaxDate(DateTime? a, DateTime? b) {
   if (a == null) return b;
   if (b == null) return a;
   if (a.isAfter(b)) return a;
