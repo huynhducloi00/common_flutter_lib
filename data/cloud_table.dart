@@ -418,7 +418,7 @@ abstract class CloudTableSchema<T extends CloudObject> {
 
   SchemaAndData<T> convertSnapshotToDataList(QuerySnapshot snapshot) {
     List<T> result = snapshot.docs.asMap().entries.map((e) {
-      return convertData(e.value.id, e.value.data);
+      return convertData(e.value.id, e.value.data());
     }).toList();
     return SchemaAndData<T>(this, result, snapshot.docs);
   }
