@@ -3,9 +3,9 @@ import '../data/cloud_table.dart';
 import '../data/cloud_obj.dart';
 
 class User extends CloudObject {
-  String name;
-  String email;
-  String photoUrl;
+  String? name;
+  String? email;
+  String? photoUrl;
 
   User(docId, dataMap):super(docId, dataMap){
     name= dataMap['name'];

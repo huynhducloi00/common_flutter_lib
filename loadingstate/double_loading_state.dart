@@ -9,8 +9,8 @@ abstract class DoubleLoadingState<T extends StatefulWidget, L1,L2> extends State
   bool isRequireData = false;
   Loading loadingScreen = Loading();
   bool keepAlive;
-  L1 data1;
-  L2 data2;
+  L1? data1;
+  L2? data2;
   DoubleLoadingState({this.isRequireData = false, this.tag="", this.keepAlive = false}):super();
 
   void markLoading() {

@@ -2,10 +2,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/widgets.dart' as pw;
 
 class PdfUtils {
-  static String REPORT_TITLE = 'CÔNG TY TNHH MTV HUỲNH HIỆP HƯNG';
-  static String REPORT_SUBTITLE = 'XUÂN ĐỊNH- XUÂN LỘC-ĐỒNG NAI';
-  static pw.TextStyle lightTextStyle;
-  static pw.TextStyle regularTextStyle;
+  static pw.TextStyle? lightTextStyle;
+  static pw.TextStyle? regularTextStyle;
 
   static Future init() async {
     lightTextStyle = pw.TextStyle(
@@ -17,11 +15,11 @@ class PdfUtils {
   static pw.Text writeLight(String text,
       {double fontSize = 12, int maxLine = 2}) {
     return pw.Text(text,
-        maxLines: maxLine, style: lightTextStyle.copyWith(fontSize: fontSize));
+        maxLines: maxLine, style: lightTextStyle?.copyWith(fontSize: fontSize));
   }
 
   static pw.Text writeRegular(String text, {double fontSize = 12}) {
-    return pw.Text(text, style: regularTextStyle.copyWith(fontSize: fontSize));
+    return pw.Text(text, style: regularTextStyle?.copyWith(fontSize: fontSize));
   }
 
   static pw.Widget center(pw.Widget widget) {
@@ -35,15 +33,15 @@ class PdfUtils {
   }
 
   // pass width as null to shrink as much as possible.
-  static pw.Widget tableOfTwo(Map<String, String> map,
-      {bool boldLeft = false, bool boldRight = false, double width=200}) {
+  static pw.Widget tableOfTwo(Map<String?, String?> map,
+      {bool boldLeft = false, bool boldRight = false, double? width=200}) {
     List<pw.TableRow> list = [];
     for (int i = 0; i < map.entries.length; i++) {
       var e = map.entries.elementAt(i);
       list.add(pw.TableRow(children: [writeLight('${e.key}:'), pw.Container(
         margin: pw.EdgeInsets.only(left: 10),
           alignment: pw.Alignment.centerRight,
-          child:writeLight(e.value))]));
+          child:writeLight(e.value!))]));
     }
     if (width==null) {
       return pw.Table(

@@ -1,41 +1,44 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
 
 // firebase_auth: 0.16.0
 //  cloud_firestore: ^0.13.5
 //#web dep:
 //firebase: ^7.3.0
-typedef ConvertToUserFunc= dynamic Function(Map<String, dynamic>);
+typedef ConvertToUserFunc = dynamic Function(Map<String, dynamic>);
+
 class AuthService<T> {
-  static final String USER_TABLE_NAME='users';
+  static const String USER_TABLE_NAME = 'users';
   final FirebaseAuth auth = FirebaseAuth.instance;
-  CollectionReference _ref = Firestore.instance.collection(USER_TABLE_NAME);
+  final CollectionReference _ref =
+      FirebaseFirestore.instance.collection(USER_TABLE_NAME);
   final GoogleSignIn googleSignIn = GoogleSignIn();
   ConvertToUserFunc convertToUser;
 
   AuthService(this.convertToUser);
 
-  Stream<T> getUserStream() async* {
-    Stream<FirebaseUser> stream = auth.onAuthStateChanged;
+  Stream<T?> getUserStream() async* {
+    Stream<User?> stream = auth.userChanges();
     await for (var returnedUser in stream) {
       if (returnedUser == null) {
         yield null;
       } else {
-        T user = await _getUserWithEmail(returnedUser.email);
-        yield user;
+        yield await _getUserWithEmail<T>(returnedUser.email);
       }
     }
   }
 
-  Future<T> _getUserWithEmail(String email) async {
-    QuerySnapshot snapshot =
-        await _ref.where("email", isEqualTo: email).getDocuments();
-    if (snapshot.documents.length == 0) {
+  Future<T?> _getUserWithEmail<T>(String? email) async {
+    QuerySnapshot snapshot = await _ref.where("email", isEqualTo: email).get();
+    if (snapshot.docs.isEmpty) {
       return null;
     } else {
-      Map data = snapshot.documents[0].data;
-      T user = convertToUser(data);
+      Map data = snapshot.docs[0].data() as Map;
+      T user = convertToUser(data as Map<String, dynamic>);
       return user;
     }
   }
@@ -52,10 +55,8 @@ class AuthService<T> {
 //  }
 
   Future<void> signOut() async {
-    GoogleSignInAccount googleSignInAccount = googleSignIn.currentUser;
-    if (googleSignInAccount != null) {
-      await googleSignIn.signOut();
-    }
+    GoogleSignInAccount? googleSignInAccount = googleSignIn.currentUser;
+    await googleSignIn.signOut();
     await auth.signOut();
   }
 
@@ -69,30 +70,29 @@ class AuthService<T> {
 //    }
 //  }
 
-  Future<void> signInWithGoogleAccount() async {
-    GoogleSignInAccount currentUser = googleSignIn.currentUser;
-    if (currentUser != null) {
-      await googleSignIn.signOut();
-      await auth.signOut();
-      print('Signed out complete.');
-    }
+  signInWithGoogleAccount() async {
+    GoogleSignInAccount? currentUser = googleSignIn.currentUser;
+    await googleSignIn.signOut();
+    await auth.signOut();
+    print('Signed out complete.');
     // Nullify all errors
     Future signIn = googleSignIn.signIn().catchError((error) {
       print(error);
       return null;
     });
-    final GoogleSignInAccount googleSignInAccount = await signIn;
+    final GoogleSignInAccount? googleSignInAccount =
+        await (signIn as FutureOr<GoogleSignInAccount?>);
     if (googleSignInAccount == null) {
-      return Future.value(null);
+      return null;
     }
-    T inDatabaseUser = await _getUserWithEmail(googleSignInAccount.email);
+    T? inDatabaseUser = await _getUserWithEmail(googleSignInAccount.email);
     if (inDatabaseUser == null) {
-      return Future.error(
+      throw(
           'Người dùng ${googleSignInAccount.email} chưa được phép vào dữ liệu. Xin liên hệ Lợi');
     }
     final GoogleSignInAuthentication googleSignInAuthentication =
         await googleSignInAccount.authentication;
-    final AuthCredential credential = GoogleAuthProvider.getCredential(
+    final AuthCredential credential = GoogleAuthProvider.credential(
       accessToken: googleSignInAuthentication.accessToken,
       idToken: googleSignInAuthentication.idToken,
     );

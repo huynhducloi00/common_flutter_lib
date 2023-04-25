@@ -35,7 +35,7 @@ class CurrentMonthYearNotifier extends ValueNotifier<MonthYear> {
 }
 
 class MonthYearSelector extends StatelessWidget {
-  CurrentMonthYearNotifier currentMonthYearNotifier;
+  late CurrentMonthYearNotifier currentMonthYearNotifier;
   double gap;
 
   MonthYearSelector({this.gap = 100});
@@ -43,7 +43,7 @@ class MonthYearSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<CurrentMonthYearNotifier>(
-        builder: (BuildContext context, _value, Widget child) {
+        builder: (BuildContext context, _value, Widget? child) {
       currentMonthYearNotifier = _value;
 
       return Row(

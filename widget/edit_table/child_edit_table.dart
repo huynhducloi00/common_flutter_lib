@@ -1,278 +1,330 @@
+import '../../loadingstate/loading_state.dart';
 import 'common_child_table.dart';
 
 import '../../data/cloud_obj.dart';
-import '../../loadingstate/loading_stream_builder.dart';
 import '../../utils.dart';
-import '../../widget/edit_table/child_param.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/cloud_table.dart';
 import '../common.dart';
+import 'current_query_notifier.dart';
 import 'edit_table_wrapper.dart';
 import 'parent_param.dart';
+import 'toggle_sort_filter_helper.dart';
 
-class SelectedIndexChangeNotifier extends ValueNotifier<int> {
-  SelectedIndexChangeNotifier(int value) : super(value);
+class SelectedIndicesChangeNotifier extends ValueNotifier<List<bool>> {
+  SelectedIndicesChangeNotifier(List<bool> value) : super(value);
+  static createEmptyBoolList(int length) {
+    return List<bool>.generate(length, (int index) => false);
+  }
 }
 
-class ChildEditTable<SchemaAndData> extends StatefulWidget {
-  CollectionReference databaseRef;
-  bool showAllData;
-  bool showNewButton;
-  ChildEditTable(this.databaseRef, {this.showAllData = false, this.showNewButton=true});
+class ChildEditTable extends StatefulWidget {
+  final CollectionReference databaseRef;
+  final bool showAllData;
+  final bool showNewButton;
+  const ChildEditTable(this.databaseRef,
+      {this.showAllData = false, this.showNewButton = true});
 
   @override
   _ChildEditTableState createState() => _ChildEditTableState();
 }
 
 class _ChildEditTableState
-    extends StreamStatefulChildState<ChildEditTable, SchemaAndData> {
-  SelectedIndexChangeNotifier _selectedIndexChangeNotifier =
-      SelectedIndexChangeNotifier(null);
+    extends LoadingState<ChildEditTable, SchemaAndData<CloudObject>?> {
+  CurrentQueryNotifier? currentQueryNotifier;
+  List<String>? officialColumns;
+  late SchemaAndData<CloudObject> schemaAndData;
 
-  //
-  // String inducedField(val, InputInfo inputInfo) {
-  //   var calculated;
-  //   if (val != null) {
-  //     calculated =
-  //         inputInfo.optionMap == null ? null : inputInfo.optionMap[val];
-  //   }
-  //   return calculated == null ? '${toText(context, val ?? '')}' : '$calculated';
+  _ChildEditTableState() : super(isRequireData: true);
+
+  void onSort(int index, bool ascending) {
+    var newParentParam = currentQueryNotifier!.parentParam.deepClone();
+    newParentParam.sortKey = officialColumns![index];
+    newParentParam.sortKeyDescending = !ascending;
+    currentQueryNotifier!.parentParam = newParentParam;
+  }
+
+  getNavigator(BuildContext context) {
+    ParentParam parentParam = currentQueryNotifier!.parentParam;
+    if (schemaAndData.data.isEmpty) {
+      return CommonButton.getButton(context, () {
+        currentQueryNotifier!.currentPagingQuery =
+            currentQueryNotifier!.originalQuery;
+      }, title: 'Về trang đầu');
+    }
+    var originalQuery = currentQueryNotifier!.originalQuery;
+    var hasBefore = originalQuery
+        .endBeforeDocument(schemaAndData.documentSnapshots.first)
+        .limit(1)
+        .snapshots()
+        .map((QuerySnapshot snapshot) {
+      return snapshot.docs.length > 0;
+    });
+    var hasAfter = originalQuery
+        .startAfterDocument(schemaAndData.documentSnapshots.last)
+        .limit(1)
+        .snapshots()
+        .map((QuerySnapshot event) {
+      return event.docs.length > 0;
+    });
+    return Column(
+        children: [
+      SizedBox(
+        width: screenWidth(context) * 0.3,
+        height: screenHeight(context) * 0.1,
+        child: tableOfTwo({
+          'Trường sắp xếp':
+              '${schemaAndData.cloudTableSchema.inputInfoMap.map![parentParam.sortKey!]!.fieldDes}-${parentParam.sortKeyDescending! ? "Giảm dần" : "Tăng dần"}',
+          // 'Hiển thị sau': toText(
+          //     context, databasePagerNotifier.value.startAfter),
+          // 'Hiển thị trước': toText(
+          //     context, databasePagerNotifier.value.endBefore),
+          'Số lượng hiển thị': '${schemaAndData.data.length}',
+        }, boldRight: true),
+      ),
+      widget.showAllData
+          ? null
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                StreamProvider<bool>.value(
+                  initialData: false,
+                  value: isLoading ? Stream<bool>.value(false) : hasBefore,
+                  catchError: (_,error){
+                    print("Loi 1 $error");
+                    return false;
+                  },
+                  child: Builder(
+                    builder: (BuildContext context) {
+                      bool existBefore = Provider.of<bool>(context);
+                      return CommonButton.getButton(context, () {
+                        // go back
+                        currentQueryNotifier!.currentPagingQuery =
+                            originalQuery.limit(tableTableRowLimit).endBeforeDocument(
+                                schemaAndData.documentSnapshots.first);
+                      },
+                          title: "",
+                          iconData: existBefore ? Icons.navigate_before : null,
+                          isEnabled: existBefore);
+                    },
+                  ),
+                ),
+                SizedBox(
+                  width: 20,
+                ),
+                StreamProvider<bool>.value(
+                  initialData: false,
+                  value: isLoading ? Stream<bool>.value(false) : hasAfter,
+                  catchError: (_,error){
+                    print("Loi 2 $error");
+                    return false;
+                  },
+                  child: Builder(builder: (BuildContext context) {
+                    bool existAfter = Provider.of<bool>(context);
+                    return CommonButton.getButton(context, () {
+                      // go forward
+                      currentQueryNotifier!.currentPagingQuery =
+                          originalQuery.startAfterDocument(
+                              schemaAndData.documentSnapshots.last);
+                    },
+                        title: "",
+                        iconData: existAfter ? Icons.navigate_next : null,
+                        isEnabled: existAfter);
+                  }),
+                ),
+              ],
+            ),
+    ].whereType<Widget>().toList());
+  }
+
+  getTableAndHeader(BuildContext context) {
+    Map<String, InputInfo> filterVisibleFieldMap =
+        schemaAndData.cloudTableSchema.inputInfoMap.filterVisibleFields();
+    var selectedIndicesChangeNotifier =
+        Provider.of<SelectedIndicesChangeNotifier>(context, listen: false);
+    var officialColumnsInputInfo = schemaAndData.cloudTableSchema.inputInfoMap
+        .filterVisibleFields()
+        .entries
+        .map((e) => e.value)
+        .toList();
+
+    List<TableRow> extraDataRow = [];
+    if (schemaAndData.data.length < tableTableRowLimit) {
+      for (int i = 0; i < tableTableRowLimit - schemaAndData.data.length; i++) {
+        extraDataRow.add(TableRow(
+            children: filterVisibleFieldMap.keys
+                .map((e) => Text(
+                      'a',
+                      style: TextStyle(fontSize: 20),
+                    ))
+                .toList()));
+      }
+    }
+
+    return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+            columns: officialColumnsInputInfo
+                .asMap()
+                .entries
+                .map((entry) => DataColumn(
+                        label: Expanded(
+                            child: Column(children: [
+                      Text(entry.value.fieldDes),
+                      Row(children: [
+                        toggleSort(context, currentQueryNotifier!,
+                            officialColumns![entry.key]),
+                        toggleFilter(context, currentQueryNotifier!,
+                            entry.value, officialColumns![entry.key]),
+                      ])
+                    ]))))
+                .toList(),
+            rows: schemaAndData.data.asMap().entries.map((entry) {
+              CloudObject eachRowMap = entry.value;
+              Map inducedRow = SchemaAndData.fillInOptionData(
+                  eachRowMap.dataMap,
+                  schemaAndData.cloudTableSchema.inputInfoMap.map);
+              return DataRow(
+                  selected: selectedIndicesChangeNotifier.value[entry.key],
+                  onSelectChanged: (selected) {
+                    selectedIndicesChangeNotifier.value[entry.key] = selected!;
+                    setState(() {});
+                  },
+                  cells: filterVisibleFieldMap.keys.map((field) {
+                    return DataCell(Text(
+                      toText(context, inducedRow[field] ?? '') ?? '',
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: schemaAndData.cloudTableSchema.inputInfoMap
+                                  .map![field]!.dataType ==
+                              DataType.int
+                          ? TextAlign.right
+                          : TextAlign.left,
+                      style: TextStyle(fontSize: 20),
+                    ));
+                  }).toList());
+            }).toList()
+            // +
+            // extraDataRow
+            ));
+  }
+
+  getPanelButton(BuildContext context) {
+    ParentParam parentParam = currentQueryNotifier!.parentParam;
+    return Consumer<SelectedIndicesChangeNotifier>(builder:
+        (BuildContext buildContext,
+            SelectedIndicesChangeNotifier selectedIndicesChangeNotifier,
+            Widget? child) {
+      PrintInfo defaultWindowPrint = schemaAndData.cloudTableSchema.printInfos!
+          .where((element) => element.isDefault)
+          .toList()[0];
+      List<PrintInfo> otherPrints = schemaAndData.cloudTableSchema.printInfos!
+          .where((element) => !element.isDefault)
+          .toList();
+      var selectedIndices = selectedIndicesChangeNotifier.value
+          .asMap()
+          .entries
+          .where((element) => element.key <schemaAndData.data.length && element.value)
+          .map((e) => e.key)
+          .toList();
+      Map? inducedRow = selectedIndices.length == 1
+          ? SchemaAndData.fillInOptionData(
+              schemaAndData.data[selectedIndices[0]].dataMap,
+              schemaAndData.cloudTableSchema.inputInfoMap.map)
+          : null;
+      return Wrap(
+        runSpacing: 30,
+        alignment: WrapAlignment.spaceAround,
+        children: [
+          ChildTableUtils.printButton(
+            context,
+            widget.databaseRef,
+            defaultWindowPrint,
+            parentParam,
+          ),
+          ChildTableUtils.printLineButton(
+            context,
+            schemaAndData.cloudTableSchema.printTicket,
+            inducedRow,
+            selectedIndices.length == 1,
+          ),
+          otherPrints.isNotEmpty
+              ? Container(
+                  color: getLoiButtonStyle(context).regularColor,
+                  child: DropdownButton(
+                    value:0,
+                    items: otherPrints.asMap().entries
+                        .map((printInfo) => DropdownMenuItem(
+                              child: ChildTableUtils.printButton(context,
+                                  widget.databaseRef, printInfo.value, parentParam,
+                                  backgroundColor: Colors.transparent),
+                    value: printInfo.key,
+                    ))
+                        .toList(),
+                    onChanged: (dynamic value) {},
+                  ),
+                )
+              : null,
+          widget.showNewButton
+              ? ChildTableUtils.newButton(context, widget.databaseRef,
+                  schemaAndData.cloudTableSchema.inputInfoMap)
+              : null,
+          ChildTableUtils.duplicate(
+              context, widget.databaseRef, schemaAndData, selectedIndices),
+          ChildTableUtils.editButton(
+              context, widget.databaseRef, schemaAndData, selectedIndices),
+          ChildTableUtils.deleteButton(
+              context, widget.databaseRef, schemaAndData, selectedIndices,
+              toPopWindow: false)
+        ].whereType<Widget>().toList(),
+      );
+    });
+  }
+
+  // if (widget.parentParam.sortKey == fieldName) {
+  // // change sort direction
+  // widget.parentParam.sortKeyDescending =
+  // !widget.parentParam.sortKeyDescending!;
+  // } else {
+  // widget.parentParam.sortKey = fieldName;
+  // widget.parentParam.sortKeyDescending = false;
   // }
-
+  // if (widget.parentParam.filterDataWrappers![fieldName] != null &&
+  // widget.parentParam.filterDataWrappers![fieldName]!
+  //     .exactMatchValue !=
+  // null) {
+  // // cannot be sorted and have exact value
+  // widget.parentParam.filterDataWrappers!.remove(fieldName);
+  // }
+  // setState(() {});
   @override
   Widget delegateBuild(BuildContext context) {
-    _selectedIndexChangeNotifier.value = null;
-    ParentParam parentParam = Provider.of<ParentParam>(context, listen: false);
-    var schemaAndData = data;
-    Map<String, InputInfo> filterVisibleFieldMap = schemaAndData
-        .cloudTableSchema.inputInfoMap
-        .filterVisibleFields();
-    TableWidthAndSize tableWidthAndSize =
-        getEditTableColWidths(context, filterVisibleFieldMap);
-    return Material(
-      child: ChangeNotifierProvider(
-          create: (BuildContext context) {
-            return _selectedIndexChangeNotifier;
-          },
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Container(
-                width: tableWidthAndSize.width,
-                child: Consumer<SelectedIndexChangeNotifier>(
-                  builder: (BuildContext context,
-                      SelectedIndexChangeNotifier selectedIndexNotifier,
-                      Widget child) {
-                    return Table(
-                        columnWidths: tableWidthAndSize.colWidths,
-                        border: TableBorder(
-                            top: EDIT_TABLE_HORIZONTAL_BORDER_SIDE,
-                            bottom: EDIT_TABLE_HORIZONTAL_BORDER_SIDE,
-                            horizontalInside:
-                                EDIT_TABLE_HORIZONTAL_BORDER_SIDE),
-                        children:
-                            schemaAndData.data.asMap().entries.map((entry) {
-                          int index = entry.key;
-                          CloudObject eachRowMap = entry.value;
-                          Map inducedRow = SchemaAndData.fillInOptionData(
-                              eachRowMap.dataMap,
-                              schemaAndData.cloudTableSchema.inputInfoMap.map);
-
-                          var dataRow = TableRow(
-                              children: filterVisibleFieldMap.keys.map((field) {
-                            return TableCell(
-                                child: GestureDetector(
-                              onTap: () {
-                                selectedIndexNotifier.value = index;
-                              },
-                              child: Container(
-                                padding: EdgeInsets.only(
-                                  right: 8,
-                                ),
-                                color: index == selectedIndexNotifier.value
-                                    ? Colors.red[50]
-                                    : Colors.white,
-                                alignment: schemaAndData.cloudTableSchema
-                                            .inputInfoMap.map[field].dataType ==
-                                        DataType.int
-                                    ? Alignment.centerRight
-                                    : Alignment.centerLeft,
-                                child: Text(
-                                  toText(context, inducedRow[field] ?? ''),
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontSize: 20),
-                                ),
-                              ),
-                            ));
-                          }).toList());
-                          return dataRow;
-                        }).toList());
-                  },
-                )),
-            Consumer<DatabasePagerNotifier>(builder: (BuildContext context,
-                DatabasePagerNotifier databasePagerNotifier, Widget child) {
-              return Consumer<SelectedIndexChangeNotifier>(builder:
-                  (BuildContext context,
-                      SelectedIndexChangeNotifier selectedIndexChangeNotifier,
-                      Widget child) {
-//                print(
-//                    '${isLoading} ${parentParam.sortKeyDescending} ${schemaAndData.data.first.dataMap[parentParam.sortKey]}');
-//                  ' ${StackTrace.current}');
-                if (schemaAndData.data.length == 0) {
-                  return CommonButton.getButton(context, () {
-                    databasePagerNotifier.value = ChildParam();
-                  }, title: 'Về trang đầu');
-                }
-                var beforeQuery =
-                    applyFilterToQuery(widget.databaseRef, parentParam)
-                        .orderBy(parentParam.sortKey,
-                            descending: parentParam.sortKeyDescending)
-                        .endBefore([
-                  schemaAndData.data.first.dataMap[parentParam.sortKey]
-                ]).limit(1) as Query;
-                var afterQuery =
-                    applyFilterToQuery(widget.databaseRef, parentParam)
-                        .orderBy(parentParam.sortKey,
-                            descending: parentParam.sortKeyDescending)
-                        .startAfter([
-                  schemaAndData.data.last.dataMap[parentParam.sortKey]
-                ]).limit(1) as Query;
-                return Column(
-                    children: [
-                  SizedBox(
-                    width: screenWidth(context) * 0.3,
-                    height: screenHeight(context) * 0.1,
-                    child: tableOfTwo({
-                      'Trường sắp xếp':
-                          '${schemaAndData.cloudTableSchema.inputInfoMap.map[parentParam.sortKey].fieldDes}-${parentParam.sortKeyDescending ? "Giảm dần" : "Tăng dần"}',
-                      'Hiển thị sau': toText(
-                          context, databasePagerNotifier.value.startAfter),
-                      'Hiển thị trước': toText(
-                          context, databasePagerNotifier.value.endBefore),
-                      'Số lượng hiển thị': '${schemaAndData.data.length}',
-                    }, boldRight: true),
-                  ),
-                  widget.showAllData
-                      ? null
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            StreamProvider<bool>.value(
-                              value: isLoading
-                                  ? Stream<bool>.value(false)
-                                  : beforeQuery.snapshots().map((event) {
-                                      return event.documents.length > 0;
-                                    }),
-                              child: Builder(
-                                builder: (BuildContext context) {
-                                  bool existBefore =
-                                      Provider.of<bool>(context) ?? false;
-                                  return CommonButton.getButton(context, () {
-                                    // go back
-                                    databasePagerNotifier.value = ChildParam(
-                                        endBefore: schemaAndData.data.first
-                                            .dataMap[parentParam.sortKey]);
-                                  },
-                                      title: "",
-                                      iconData: existBefore
-                                          ? Icons.navigate_before
-                                          : null,
-                                      isEnabled: existBefore);
-                                },
-                              ),
-                            ),
-                            SizedBox(
-                              width: 20,
-                            ),
-                            StreamProvider<bool>.value(
-                              value: isLoading
-                                  ? Stream<bool>.value(false)
-                                  : afterQuery.snapshots().map(
-                                      (event) => event.documents.length > 0),
-                              child: Builder(builder: (BuildContext context) {
-                                bool existAfter =
-                                    Provider.of<bool>(context) ?? false;
-                                return CommonButton.getButton(context, () {
-                                  // go forward
-                                  databasePagerNotifier.value = ChildParam(
-                                      startAfter: schemaAndData.data.last
-                                          .dataMap[parentParam.sortKey]);
-                                },
-                                    title: "",
-                                    iconData:
-                                        existAfter ? Icons.navigate_next : null,
-                                    isEnabled: existAfter);
-                              }),
-                            ),
-                          ],
-                        ),
-                ].where((element) => element != null).toList());
-              });
-            }),
-            SizedBox(
-              height: 20,
-            ),
-            Consumer<SelectedIndexChangeNotifier>(builder:
-                (BuildContext buildContext,
-                    SelectedIndexChangeNotifier selectedIndexChangeNotifier,
-                    Widget child) {
-              PrintInfo defaultWindowPrint = schemaAndData
-                  .cloudTableSchema.printInfos
-                  .where((element) => element.isDefault)
-                  .toList()[0];
-              List<PrintInfo> otherPrints = schemaAndData
-                  .cloudTableSchema.printInfos
-                  .where((element) => !element.isDefault)
-                  .toList();
-              Map inducedRow = selectedIndexChangeNotifier.value != null
-                  ? SchemaAndData.fillInOptionData(
-                      schemaAndData
-                          .data[selectedIndexChangeNotifier.value].dataMap,
-                      schemaAndData.cloudTableSchema.inputInfoMap.map)
-                  : null;
-              return Wrap(runSpacing: 30,
-                alignment: WrapAlignment.spaceAround,
-                children: [
-                  ChildTableUtils.printButton(
-                    context,
-                    widget.databaseRef,
-                    defaultWindowPrint,
-                    parentParam,
-                  ),
-                  ChildTableUtils.printLineButton(
-                    context,
-                    schemaAndData.cloudTableSchema.printTicket,
-                    inducedRow,
-                    selectedIndexChangeNotifier.value != null,
-                  ),
-                  otherPrints.length > 0
-                      ? Container(
-                          color: getLoiButtonStyle(context).regularColor,
-                          child: DropdownButton(
-                            items: otherPrints
-                                .map((printInfo) => DropdownMenuItem(
-                                      child: ChildTableUtils.printButton(
-                                          context,
-                                          widget.databaseRef,
-                                          printInfo,
-                                          parentParam,
-                                          backgroundColor: Colors.transparent),
-                                    ))
-                                .toList(),
-                            onChanged: (value) {},
-                          ),
-                        )
-                      : null,
-                  widget.showNewButton ? ChildTableUtils.newButton(context, widget.databaseRef,
-                      schemaAndData.cloudTableSchema.inputInfoMap) :null,
-                  ChildTableUtils.editButton(context, widget.databaseRef,
-                      schemaAndData, selectedIndexChangeNotifier.value),
-                  ChildTableUtils.deleteButton(context, widget.databaseRef,
-                      schemaAndData, selectedIndexChangeNotifier.value)
-                ].where((element) => element != null).toList(),
-              );
-            })
-          ])),
-    );
+    currentQueryNotifier =
+        Provider.of<CurrentQueryNotifier>(context, listen: false);
+    schemaAndData = data!;
+    officialColumns = schemaAndData.cloudTableSchema.inputInfoMap
+        .filterVisibleFields()
+        .entries
+        .map((e) => e.key)
+        .toList();
+    return ChangeNotifierProvider(create: (_) {
+      return SelectedIndicesChangeNotifier(
+          SelectedIndicesChangeNotifier.createEmptyBoolList(
+              tableTableRowLimit));
+    }, child: Builder(
+      builder: (BuildContext context) {
+        return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              getTableAndHeader(context),
+              getNavigator(context),
+              SizedBox(
+                height: 20,
+              ),
+              getPanelButton(context)
+            ]);
+      },
+    ));
   }
 }

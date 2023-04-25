@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 Widget createStreamBuilder<L, W extends Widget>(
-    {Stream<L> stream, W child}) {
+    {Stream<L>? stream, W? child}) {
   return StreamBuilder(
     builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
       if (snapshot.hasData) {
         // still loading
         return MultiProvider(providers: [
-          Provider<L>.value(value: snapshot.data),
+          Provider<L?>.value(value: snapshot.data),
           Provider<ConnectionState>.value(
             value: snapshot.connectionState,
           )
@@ -23,8 +23,8 @@ Widget createStreamBuilder<L, W extends Widget>(
 }
 
 class StreamStatefulChildState<T extends StatefulWidget, L> extends State<T> {
-  bool isLoading;
-  L data;
+  late bool isLoading;
+  late L data;
 
   @override
   Widget build(BuildContext context) {

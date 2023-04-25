@@ -4,9 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../auth_service.dart';
 import '../sign_in/sign_in_page.dart';
-import 'sign_in_page.dart';
 
-class SignInWrapper<USER extends User, TYPE> extends StatelessWidget {
+class SignInWrapper<USER extends User?, TYPE> extends StatelessWidget {
   bool debugging;
   ConvertToUserFunc convertToUserFunc;
   String appName;
@@ -14,8 +13,14 @@ class SignInWrapper<USER extends User, TYPE> extends StatelessWidget {
   Widget appRender;
   USER Function(TYPE userType) getDebugUser;
 
-  SignInWrapper(this.debugging,this.accountType, this.getDebugUser,
-      this.convertToUserFunc, this.appName, this.appRender);
+  SignInWrapper(
+    this.debugging,
+    this.accountType,
+    this.appName,
+    this.appRender, {
+    required this.getDebugUser,
+    required this.convertToUserFunc,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +36,7 @@ class SignInWrapper<USER extends User, TYPE> extends StatelessWidget {
                 value: AuthService<USER>(convertToUserFunc),
                 child: Builder(builder: (BuildContext context) {
                   return StreamProvider.value(
+                      initialData: null,
                       catchError: (context, error) {
                         print(error);
                       },
@@ -38,11 +44,12 @@ class SignInWrapper<USER extends User, TYPE> extends StatelessWidget {
                           .getUserStream(),
                       child: Builder(
                         builder: (BuildContext context) {
-                          var userData = Provider.of<USER>(context);
+                          var userData = Provider.of<USER?>(context);
                           if (userData == null) {
                             return SignInPage<USER>();
                           } else {
-                            return appRender;
+                            return Provider(
+                                create: (_) => userData, child: appRender);
                           }
                         },
                       ));
@@ -51,8 +58,8 @@ class SignInWrapper<USER extends User, TYPE> extends StatelessWidget {
   }
 }
 
-Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
-  print('back ground ${message}');
+Future<dynamic>? myBackgroundMessageHandler(Map<String, dynamic> message) {
+  print('back ground $message');
   if (message.containsKey('data')) {
     // Handle data message
     final dynamic data = message['data'];
@@ -62,6 +69,7 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) {
     // Handle notification message
     final dynamic notification = message['notification'];
   }
+  return null;
 }
 // OnInit, IF ever need to use notification on Android, on iOS needs to pay a fee.
 //import 'package:firebase_messaging/firebase_messaging.dart';
