@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../../data/customer_model.dart';
 import '../../data/cloud_obj.dart';
 import '../../data/cloud_table.dart';
 // import '../../pdf/no_op_create_pdf.dart'
@@ -105,11 +107,15 @@ class ChildTableUtils {
   static void initiateNew(
       context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
       {bool isPhone = false, Map<String, dynamic>? initialValues}) {
-    var autoForm =
-        AutoForm.createAutoForm(context, inputInfoMap, initialValues ?? {},
-            saveClickFuture: (resultMap) {
-      return databaseRef.doc().set(resultMap);
-    }, isNew: true);
+    var autoForm = AutoForm.createAutoForm(
+      context,
+      inputInfoMap,
+      initialValues ?? {},
+      saveClickFuture: (resultMap) {
+        return databaseRef.doc().set(resultMap);
+      },
+      isNew: true,
+    );
     if (isPhone) {
       Navigator.push(
           context,
@@ -125,15 +131,21 @@ class ChildTableUtils {
 
   static Widget newButton(
       context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
-      {bool isPhone = false,
-      title = 'Mới'}) {
+      {bool isPhone = false, title = 'Mới'}) {
+    final cusMap = Provider.of<CustomerMap?>(context);
     return CommonButton.getButton(context, () {
-      Map<String,dynamic> initialData = {};
+      Map<String, dynamic> initialData = {};
       inputInfoMap.map!.forEach((key, value) {
         if (value.onNewData != null) {
           initialData[key] = value.onNewData!();
         }
       });
+      if (inputInfoMap.map!["cusName"]!.dropdownSearchAdmin != null) {
+        inputInfoMap.map!["cusName"]!.dropdownSearchAdmin = DropdownSearchAdmin(
+            initialData["cusName"] ?? MapEntry("", ""),
+            cusMap?.cusCodeMap ?? Map());
+      }
+
       initiateNew(context, databaseRef, inputInfoMap,
           isPhone: isPhone,
           initialValues: initialData.isEmpty ? null : initialData);
@@ -143,7 +155,17 @@ class ChildTableUtils {
   static Widget duplicate(
       context, databaseRef, SchemaAndData schemaAndData, List<int> rowIndices,
       {bool isPhone = false}) {
+    final cusMap = Provider.of<CustomerMap?>(context);
     return CommonButton.getButton(context, () {
+      var map = schemaAndData.cloudTableSchema.inputInfoMap.map;
+      if (map!["cusName"]?.dropdownSearchAdmin != null) {
+        var cusSelected = cusMap?.cusCodeMap.entries.firstWhere(
+            (e) =>
+                e.value == schemaAndData.data[rowIndices[0]].dataMap["cusName"],
+            orElse: () => MapEntry<String, String>("", ""));
+        map["cusName"]!.dropdownSearchAdmin = DropdownSearchAdmin(
+            cusSelected ?? MapEntry("", ""), cusMap?.cusCodeMap ?? Map());
+      }
       initiateNew(
           context, databaseRef, schemaAndData.cloudTableSchema.inputInfoMap,
           isPhone: isPhone,
@@ -157,6 +179,7 @@ class ChildTableUtils {
   static Widget editButton(
       context, databaseRef, SchemaAndData schemaAndData, List<int> rowIndices,
       {bool isPhone = false}) {
+    final cusMap = Provider.of<CustomerMap?>(context);
     return CommonButton.getButton(context, () {
       if (isPhone) popWindow(context);
       var map = schemaAndData.cloudTableSchema.inputInfoMap.map;
@@ -168,6 +191,14 @@ class ChildTableUtils {
                       fieldDes: 'Mã', canUpdate: false, needSaving: false))
             ] +
             map!.entries.toList());
+      }
+      if (map!["cusName"]?.dropdownSearchAdmin != null) {
+        var cusSelected = cusMap?.cusCodeMap.entries.firstWhere(
+            (e) =>
+                e.value == schemaAndData.data[rowIndices[0]].dataMap["cusName"],
+            orElse: () => MapEntry<String, String>("", ""));
+        map["cusName"]!.dropdownSearchAdmin = DropdownSearchAdmin(
+            cusSelected ?? MapEntry("", ""), cusMap?.cusCodeMap ?? Map());
       }
       var autoForm = AutoForm.createAutoForm(
         context,

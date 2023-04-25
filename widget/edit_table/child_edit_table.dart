@@ -1,3 +1,4 @@
+import '../../../data/customer_model.dart';
 import '../../loadingstate/loading_state.dart';
 import 'common_child_table.dart';
 
@@ -211,6 +212,7 @@ class _ChildEditTableState
   }
 
   getPanelButton(BuildContext context) {
+    final cusMap = Provider.of<CustomerMap?>(context);
     ParentParam parentParam = currentQueryNotifier!.parentParam;
     return Consumer<SelectedIndicesChangeNotifier>(builder:
         (BuildContext buildContext,

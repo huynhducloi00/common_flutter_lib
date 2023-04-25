@@ -26,6 +26,13 @@ typedef UseDataCalculation = UseDataCalculationResult? Function(
 typedef InitialDataCalculation = UseDataCalculationResult Function(
     Map<String, DataBundle> predefined);
 
+class DropdownSearchAdmin {
+  final MapEntry<String, String> itemSelected;
+  final Map<String, String> map;
+
+  DropdownSearchAdmin(this.itemSelected, this.map);
+}
+
 class LinkedData {
   String tableName;
   String linkedFieldName;
@@ -92,6 +99,9 @@ class InputInfo {
 
   // option to option description
   Map<dynamic, String?>? optionMap;
+
+  DropdownSearchAdmin? dropdownSearchAdmin;
+
   bool limitToOptions;
   LinkedData? linkedData;
 
@@ -120,6 +130,7 @@ class InputInfo {
       this.printFlex,
       this.linkedData,
       this.optionMap,
+      this.dropdownSearchAdmin,
       this.limitToOptions = false}) {
     if (displayFlex == null) {
       if (dataType == DataType.int) {
@@ -212,12 +223,14 @@ class InputInfoMap {
   LinkedHashSet<String>? calculatingOrder;
   Map<String, List<String>>? fieldChangedFieldMap;
   List<RelatedTableData>? relatedTables;
+  late List<String> nameTablesReference;
 
-  InputInfoMap(this.map, {this.relatedTables}) {
+  InputInfoMap(this.map,
+      {this.relatedTables, this.nameTablesReference = const []}) {
     _computeCalculatingOrder();
   }
 
-  InputInfoMap._();
+  InputInfoMap._({this.nameTablesReference = const []});
 
   InputInfoMap cloneInputInfoMap(Map<String, InputInfo>? map) {
     var result = InputInfoMap._();
@@ -343,11 +356,11 @@ class PrintInfo {
       this.groupByFields}) {
     printFields ??= inputInfoMap.map!.keys.toList();
     aggregateFields ??= inputInfoMap.map!.entries
-          .where((element) =>
-              element.value.dataType == DataType.int &&
-              element.value.optionMap == null)
-          .map((e) => e.key)
-          .toList();
+        .where((element) =>
+            element.value.dataType == DataType.int &&
+            element.value.optionMap == null)
+        .map((e) => e.key)
+        .toList();
   }
 }
 
@@ -372,28 +385,32 @@ abstract class CloudTableSchema<T extends CloudObject> {
   List<String>? trailingFields;
   IconData? iconData;
   bool showIconDataOnRow;
+  bool isTableSpecial;
 
+  // cache data from
   CollectionReference getCollectionRef() {
     return FirebaseFirestore.instance.collection(tableName!);
   }
 
-  CloudTableSchema(
-      {this.tableName,
-      this.tableDescription,
-      this.printInfos,
-      required this.inputInfoMap,
-      required this.convertData,
-      this.defaultPrintFields,
-      this.showDocumentId = false,
-      this.defaultPrintVertical = true,
-      this.sortKey,
-      this.sortDescending,
-      this.primaryFields,
-      this.subtitleFields,
-      this.trailingFields,
-      this.iconData,
-      this.printTicket,
-      this.showIconDataOnRow = false}) {
+  CloudTableSchema({
+    this.tableName,
+    this.tableDescription,
+    this.printInfos,
+    required this.inputInfoMap,
+    required this.convertData,
+    this.defaultPrintFields,
+    this.showDocumentId = false,
+    this.defaultPrintVertical = true,
+    this.sortKey,
+    this.sortDescending,
+    this.primaryFields,
+    this.subtitleFields,
+    this.trailingFields,
+    this.iconData,
+    this.printTicket,
+    this.showIconDataOnRow = false,
+    this.isTableSpecial = false,
+  }) {
     List<String> allVisibleKeys =
         inputInfoMap.filterVisibleFields().keys.toList();
     defaultPrintFields ??= allVisibleKeys;
@@ -418,7 +435,7 @@ abstract class CloudTableSchema<T extends CloudObject> {
 
   SchemaAndData<T> convertSnapshotToDataList(QuerySnapshot snapshot) {
     List<T> result = snapshot.docs.asMap().entries.map((e) {
-      return convertData(e.value.id, e.value.data);
+      return convertData(e.value.id, e.value.data());
     }).toList();
     return SchemaAndData<T>(this, result, snapshot.docs);
   }
@@ -452,7 +469,8 @@ class SchemaAndData<T extends CloudObject> {
     });
   }
 
-  static Map<String, dynamic> fillInOptionData(Map row, Map<String, InputInfo>? inputInfoMap) {
+  static Map<String, dynamic> fillInOptionData(
+      Map row, Map<String, InputInfo>? inputInfoMap) {
     Map<String, dynamic> result = {};
     row.keys.forEach((fieldName) {
       var inputInfo = inputInfoMap![fieldName];
