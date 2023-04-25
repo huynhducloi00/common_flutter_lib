@@ -52,8 +52,12 @@ class ExcelCreator {
     // parse data to list<row>
     data.forEach((element) {
       List<dynamic> row = printInfo.printFields!.map((key) {
-        if (key == 'dateIn') return formatDate(context, element.dataMap['dateIn']);
-        if (key == 'timeIn') return formatTime(context, element.dataMap['dateIn']);
+        if (key == 'dateIn')
+          return formatDate(context, element.dataMap['dateIn']);
+        if (key == 'timeIn')
+          return formatTime(context, element.dataMap['dateIn']);
+        if (element.dataMap[key] is num)
+          return element.dataMap[key];
         return toText(context, element.dataMap[key]);
       }).toList();
       sheetObject.insertRowIterables(row, indexRowData);

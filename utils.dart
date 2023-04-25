@@ -66,7 +66,7 @@ String formatDateOnly(context, DateTime dt) {
 }
 
 /// ----- [Start] old format for phieu can by car, ...
-/// 
+///
 String formatDatetime(context, DateTime? dateTime) {
   if (dateTime == null) return "";
 
@@ -98,10 +98,10 @@ String formatTimestamp(BuildContext context, Timestamp? timestamp,
 String? toText(BuildContext context, dynamic val) {
   if (val is String) {
     return val;
-  } else if (val is double) {
-    return val.toStringAsFixed(2);
   } else if (val is int) {
     return formatNumber(val);
+  } else if (val is double) {
+    return val.toStringAsFixed(2);
   } else if (val is Timestamp) {
     return formatTimestamp(context, val);
   } else if (val is bool) {
@@ -130,11 +130,27 @@ String formatTime(context, Timestamp? timestamp) {
   return time;
 }
 
-String formatDate(context, Timestamp? timestamp){
+String formatDate(context, Timestamp? timestamp) {
   if (timestamp == null) return "";
   DateTime dateTime = parseTimestampToDateTime(timestamp);
   final MaterialLocalizations localizations = MaterialLocalizations.of(context);
   return localizations.formatCompactDate(dateTime);
+}
+
+String? toTextExportExcel(BuildContext context, dynamic val) {
+  if (val is String) {
+    return val;
+  } else if (val is int) {
+    return formatNumber(val);
+  } else if (val is double) {
+    return val.toStringAsFixed(2);
+  } else if (val is Timestamp) {
+    return formatTimestamp(context, val);
+  } else if (val is bool) {
+    return val ? '\u2713' : '';
+    // throw Exception('Not allowed to have boolean in here, please use Image to show it');
+  }
+  return null;
 }
 
 /// ----- [End]new format for phieu can by date (export excel)
@@ -269,28 +285,20 @@ List<List<T>> partitionListToBin<T>(List<T> list, int binNum) {
   }
   return chunks;
 }
-getLastYearFilterDataWrapper(){
-  var startDateLastYear = Jiffy()
-      .startOf(Units.YEAR)
-      .subtract(years: 1)
-      .dateTime;
-  var endDateLastYear = Jiffy()
-      .endOf(Units.YEAR)
-      .subtract(years: 1)
-      .dateTime;
+
+getLastYearFilterDataWrapper() {
+  var startDateLastYear =
+      Jiffy().startOf(Units.YEAR).subtract(years: 1).dateTime;
+  var endDateLastYear = Jiffy().endOf(Units.YEAR).subtract(years: 1).dateTime;
   return FilterDataWrapper(
       filterStartValue: Timestamp.fromDate(startDateLastYear),
       filterEndValue: Timestamp.fromDate(endDateLastYear),
       filterEndIncludeValue: false);
 }
 
-getThisYearFilterDataWrapper(){
-  var startDateLastYear = Jiffy()
-      .startOf(Units.YEAR)
-      .dateTime;
-  var endDateLastYear = Jiffy()
-      .endOf(Units.YEAR)
-      .dateTime;
+getThisYearFilterDataWrapper() {
+  var startDateLastYear = Jiffy().startOf(Units.YEAR).dateTime;
+  var endDateLastYear = Jiffy().endOf(Units.YEAR).dateTime;
   return FilterDataWrapper(
       filterStartValue: Timestamp.fromDate(startDateLastYear),
       filterEndValue: Timestamp.fromDate(endDateLastYear),
@@ -393,11 +401,12 @@ Widget splitAnyColumns(List<Widget> widgets, int numBin, {double gap = 10}) {
       .map((list) => Expanded(
             child: columnWithGap(list,
                 crossAxisAlignment: CrossAxisAlignment.stretch),
-          ) as Widget) 
+          ) as Widget)
       .toList();
   for (int i = widgetList.length - 1; i >= 1; i--) {
     widgetList.insert(
-        i,SizedBox(
+        i,
+        SizedBox(
           width: gap,
         ));
   }
