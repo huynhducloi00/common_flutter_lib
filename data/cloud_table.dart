@@ -26,9 +26,9 @@ typedef UseDataCalculation = UseDataCalculationResult? Function(
 typedef InitialDataCalculation = UseDataCalculationResult Function(
     Map<String, DataBundle> predefined);
 
-class DropdownSearchAdmin {
-  final MapEntry<String, String> itemSelected;
-  final Map<String, String> map;
+class DropdownSearchAdmin<T> {
+  final MapEntry<String, T> itemSelected;
+  final Map<String, T> map;
 
   DropdownSearchAdmin(this.itemSelected, this.map);
 }
@@ -101,6 +101,7 @@ class InputInfo {
   Map<dynamic, String?>? optionMap;
 
   DropdownSearchAdmin? dropdownSearchAdmin;
+  List<String>? fieldsFilledByDropdownSelected;
 
   bool limitToOptions;
   LinkedData? linkedData;
@@ -131,6 +132,7 @@ class InputInfo {
       this.linkedData,
       this.optionMap,
       this.dropdownSearchAdmin,
+      this.fieldsFilledByDropdownSelected,
       this.limitToOptions = false}) {
     if (displayFlex == null) {
       if (dataType == DataType.int) {
@@ -223,14 +225,13 @@ class InputInfoMap {
   LinkedHashSet<String>? calculatingOrder;
   Map<String, List<String>>? fieldChangedFieldMap;
   List<RelatedTableData>? relatedTables;
-  late List<String> nameTablesReference;
+  List<String>? fieldDropdown;
 
-  InputInfoMap(this.map,
-      {this.relatedTables, this.nameTablesReference = const []}) {
+  InputInfoMap(this.map, {this.relatedTables, this.fieldDropdown}) {
     _computeCalculatingOrder();
   }
 
-  InputInfoMap._({this.nameTablesReference = const []});
+  InputInfoMap._();
 
   InputInfoMap cloneInputInfoMap(Map<String, InputInfo>? map) {
     var result = InputInfoMap._();
@@ -238,6 +239,7 @@ class InputInfoMap {
     result.calculatingOrder = calculatingOrder;
     result.fieldChangedFieldMap = fieldChangedFieldMap;
     result.relatedTables = relatedTables;
+    result.fieldDropdown = fieldDropdown;
     return result;
   }
 
