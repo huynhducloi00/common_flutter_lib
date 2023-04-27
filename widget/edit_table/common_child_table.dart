@@ -140,7 +140,7 @@ class ChildTableUtils {
           initialData[key] = value.onNewData!();
         }
       });
-      if (inputInfoMap.map!["cusName"]!.dropdownSearchAdmin != null) {
+      if (inputInfoMap.map!["cusName"]?.dropdownSearchAdmin != null) {
         inputInfoMap.map!["cusName"]!.dropdownSearchAdmin = DropdownSearchAdmin(
             initialData["cusName"] ?? MapEntry("", ""),
             cusMap?.cusCodeMap ?? Map());
