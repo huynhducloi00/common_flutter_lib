@@ -253,7 +253,7 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
               }
             },
             popupProps: PopupProps.menu(
-              title: Text('Gõ mã khách hàng'),
+              title: Text('Gõ mã hoặc nội dung để tìm kiếm'),
               showSearchBox: true,
               fit: FlexFit.loose,
               //comment this if you want that the items do not takes all available height
