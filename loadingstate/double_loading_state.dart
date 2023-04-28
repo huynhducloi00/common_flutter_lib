@@ -2,8 +2,8 @@ import 'loading.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-abstract class DoubleLoadingState<T extends StatefulWidget, L1,L2> extends State<T>
-    with AutomaticKeepAliveClientMixin<T> {
+abstract class DoubleLoadingState<T extends StatefulWidget, L1, L2>
+    extends State<T> with AutomaticKeepAliveClientMixin<T> {
   bool isLoading = false;
   String tag;
   bool isRequireData = false;
@@ -11,7 +11,9 @@ abstract class DoubleLoadingState<T extends StatefulWidget, L1,L2> extends State
   bool keepAlive;
   L1? data1;
   L2? data2;
-  DoubleLoadingState({this.isRequireData = false, this.tag="", this.keepAlive = false}):super();
+  DoubleLoadingState(
+      {this.isRequireData = false, this.tag = "", this.keepAlive = false})
+      : super();
 
   void markLoading() {
     setState(() {
@@ -31,9 +33,9 @@ abstract class DoubleLoadingState<T extends StatefulWidget, L1,L2> extends State
       super.build(context);
     }
     if (isRequireData) {
-      data1 = Provider.of<L1>(context);
-      data2=Provider.of<L2>(context);
-      if (data1 == null || data2==null) {
+      data1 = Provider.of<L1?>(context);
+      data2 = Provider.of<L2?>(context);
+      if (data1 == null || data2 == null) {
         return loadingScreen;
       }
     }

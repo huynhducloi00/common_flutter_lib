@@ -1,3 +1,4 @@
+import 'package:canxe/home_page.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/customer_model.dart';
@@ -31,8 +32,12 @@ abstract class CommonButton {
       {Map<String, FilterDataWrapper>? filter,
       PostColorDecorationCondition? postColorDecorationCondition}) {
     final cusMap = Provider.of<CustomerMap?>(context);
-    return Provider.value(
-      value: cusMap,
+    final typeDeptMap = Provider.of<TypeDeptMap?>(context);
+    return MultiProvider(
+      providers: [
+        Provider.value(value: cusMap),
+        Provider.value(value: typeDeptMap),
+      ],
       child: EditTableWrapper(
           table,
           ParentParam(

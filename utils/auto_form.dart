@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:async/async.dart';
+import 'package:canxe/data/type_dept_trans.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
@@ -227,14 +228,28 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
         return null;
       case DataType.string:
         if (inputInfo.dropdownSearchAdmin != null) {
-          resultWidget = DropdownSearch<MapEntry<String, String>>(
+          resultWidget = DropdownSearch<MapEntry<String, dynamic>>(
             selectedItem: inputInfo.dropdownSearchAdmin!.itemSelected,
             items: inputInfo.dropdownSearchAdmin!.map.entries.toList(),
-            itemAsString: (item) => item.key + " - " + item.value,
+            itemAsString: (item) => item.key + " - " + item.value.toString(),
             onChanged: (cusChanged) {
               if (cusChanged != null) {
-                (_allNotifiers[fieldName] as TextEditingController).text =
-                    inputInfo.dropdownSearchAdmin!.map[cusChanged.key] ?? "";
+                if (inputInfo.dropdownSearchAdmin!.map[cusChanged.key]
+                    is String) {
+                  (_allNotifiers[fieldName] as TextEditingController).text =
+                      inputInfo.dropdownSearchAdmin?.map[cusChanged.key] ?? "";
+                } else {
+                  var typeDeptTrans = inputInfo.dropdownSearchAdmin!
+                      .map[cusChanged.key] as TypeDeptTrans;
+                  (_allNotifiers[fieldName] as TextEditingController).text =
+                      typeDeptTrans.typeDeptTransId ?? "";
+                  inputInfo.fieldsFilledByDropdownSelected?.forEach((element) {
+                    /// this code for temp, it should be use reflectable
+                    var typeDeptTransMap = typeDeptTrans.toJson();
+                    (_allNotifiers[element] as TextEditingController).text =
+                        typeDeptTransMap[element];
+                  });
+                }
               }
             },
             popupProps: PopupProps.menu(

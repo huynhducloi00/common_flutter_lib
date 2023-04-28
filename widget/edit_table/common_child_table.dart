@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:canxe/data/type_dept_trans.dart';
+import 'package:canxe/home_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
@@ -133,6 +135,7 @@ class ChildTableUtils {
       context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
       {bool isPhone = false, title = 'Mới'}) {
     final cusMap = Provider.of<CustomerMap?>(context);
+    final typeDeptMap = Provider.of<TypeDeptMap?>(context);
     return CommonButton.getButton(context, () {
       Map<String, dynamic> initialData = {};
       inputInfoMap.map!.forEach((key, value) {
@@ -145,6 +148,12 @@ class ChildTableUtils {
             initialData["cusName"] ?? MapEntry("", ""),
             cusMap?.cusCodeMap ?? Map());
       }
+      if (inputInfoMap.map!["typeDeptTransId"]?.dropdownSearchAdmin != null) {
+        inputInfoMap.map!["typeDeptTransId"]!.dropdownSearchAdmin =
+            DropdownSearchAdmin(
+                initialData["typeDeptTransId"] ?? MapEntry("", ""),
+                typeDeptMap?.typeDeptCodeMap ?? Map());
+      }
 
       initiateNew(context, databaseRef, inputInfoMap,
           isPhone: isPhone,
@@ -156,6 +165,7 @@ class ChildTableUtils {
       context, databaseRef, SchemaAndData schemaAndData, List<int> rowIndices,
       {bool isPhone = false}) {
     final cusMap = Provider.of<CustomerMap?>(context);
+    final typeDeptMap = Provider.of<TypeDeptMap?>(context);
     return CommonButton.getButton(context, () {
       var map = schemaAndData.cloudTableSchema.inputInfoMap.map;
       if (map!["cusName"]?.dropdownSearchAdmin != null) {
@@ -165,6 +175,17 @@ class ChildTableUtils {
             orElse: () => MapEntry<String, String>("", ""));
         map["cusName"]!.dropdownSearchAdmin = DropdownSearchAdmin(
             cusSelected ?? MapEntry("", ""), cusMap?.cusCodeMap ?? Map());
+      }
+      if (map["typeDeptTransId"]?.dropdownSearchAdmin != null) {
+        var typeDeptSelected = typeDeptMap?.typeDeptCodeMap.entries.firstWhere(
+            (e) =>
+                e.value.typeDeptTransId ==
+                schemaAndData.data[rowIndices[0]].dataMap["typeDeptTransId"],
+            orElse: () =>
+                MapEntry<String, TypeDeptTrans>("", TypeDeptTrans("", Map())));
+        map["typeDeptTransId"]!.dropdownSearchAdmin = DropdownSearchAdmin(
+            typeDeptSelected ?? MapEntry("", TypeDeptTrans("", Map())),
+            typeDeptMap?.typeDeptCodeMap ?? Map());
       }
       initiateNew(
           context, databaseRef, schemaAndData.cloudTableSchema.inputInfoMap,
@@ -180,6 +201,7 @@ class ChildTableUtils {
       context, databaseRef, SchemaAndData schemaAndData, List<int> rowIndices,
       {bool isPhone = false}) {
     final cusMap = Provider.of<CustomerMap?>(context);
+    final typeDeptMap = Provider.of<TypeDeptMap?>(context);
     return CommonButton.getButton(context, () {
       if (isPhone) popWindow(context);
       var map = schemaAndData.cloudTableSchema.inputInfoMap.map;
@@ -199,6 +221,17 @@ class ChildTableUtils {
             orElse: () => MapEntry<String, String>("", ""));
         map["cusName"]!.dropdownSearchAdmin = DropdownSearchAdmin(
             cusSelected ?? MapEntry("", ""), cusMap?.cusCodeMap ?? Map());
+      }
+      if (map["typeDeptTransId"]?.dropdownSearchAdmin != null) {
+        var typeDeptSelected = typeDeptMap?.typeDeptCodeMap.entries.firstWhere(
+            (e) =>
+                e.value.typeDeptTransId ==
+                schemaAndData.data[rowIndices[0]].dataMap["typeDeptTransId"],
+            orElse: () =>
+                MapEntry<String, TypeDeptTrans>("", TypeDeptTrans("", Map())));
+        map["typeDeptTransId"]!.dropdownSearchAdmin = DropdownSearchAdmin(
+            typeDeptSelected ?? MapEntry("", TypeDeptTrans("", Map())),
+            typeDeptMap?.typeDeptCodeMap ?? Map());
       }
       var autoForm = AutoForm.createAutoForm(
         context,
