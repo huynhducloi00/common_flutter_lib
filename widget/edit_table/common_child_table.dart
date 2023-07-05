@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../data/customer_model.dart';
+import '../../../data/employee.dart';
 import '../../data/cloud_obj.dart';
 import '../../data/cloud_table.dart';
 // import '../../pdf/no_op_create_pdf.dart'
@@ -131,11 +132,17 @@ class ChildTableUtils {
     }
   }
 
-  static Widget newButton(
+static Widget newButton(
       context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
       {bool isPhone = false, title = 'Mới'}) {
     final cusMap = Provider.of<CustomerMap?>(context);
     final typeDeptMap = Provider.of<TypeDeptMap?>(context);
+    final employeeList = Provider.of<List<Employee>>(context);
+    Map<String, dynamic> employeeMap = Map();
+
+    employeeList.forEach((element) {
+      employeeMap[element.employeeName] = element.employeeName;
+    });
     return CommonButton.getButton(context, () {
       Map<String, dynamic> initialData = {};
       inputInfoMap.map!.forEach((key, value) {
@@ -153,6 +160,11 @@ class ChildTableUtils {
             DropdownSearchAdmin(
                 initialData["typeDeptTransId"] ?? MapEntry("", ""),
                 typeDeptMap?.typeDeptCodeMap ?? Map());
+      }
+      if (inputInfoMap.map!["employeeName"]?.dropdownSearchAdmin != null) {
+        inputInfoMap.map!["employeeName"]!.dropdownSearchAdmin =
+            DropdownSearchAdmin(
+                initialData["employeeName"] ?? MapEntry("", ""), employeeMap);
       }
 
       initiateNew(context, databaseRef, inputInfoMap,

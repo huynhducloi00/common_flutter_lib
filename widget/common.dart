@@ -1,3 +1,4 @@
+import 'package:canxe/data/employee.dart';
 import 'package:canxe/home_page.dart';
 import 'package:provider/provider.dart';
 
@@ -33,10 +34,12 @@ abstract class CommonButton {
       PostColorDecorationCondition? postColorDecorationCondition}) {
     final cusMap = Provider.of<CustomerMap?>(context);
     final typeDeptMap = Provider.of<TypeDeptMap?>(context);
+    final listEmployee = Provider.of<List<Employee>>(context);
     return MultiProvider(
       providers: [
         Provider.value(value: cusMap),
         Provider.value(value: typeDeptMap),
+        Provider.value(value: listEmployee),
       ],
       child: EditTableWrapper(
           table,
