@@ -137,6 +137,22 @@ String formatDate(context, Timestamp? timestamp) {
   return localizations.formatCompactDate(dateTime);
 }
 
+String? toTextExportExcel(BuildContext context, dynamic val) {
+  if (val is String) {
+    return val;
+  } else if (val is int) {
+    return formatNumber(val);
+  } else if (val is double) {
+    return val.toStringAsFixed(2);
+  } else if (val is Timestamp) {
+    return formatTimestamp(context, val);
+  } else if (val is bool) {
+    return val ? '\u2713' : '';
+    // throw Exception('Not allowed to have boolean in here, please use Image to show it');
+  }
+  return null;
+}
+
 /// ----- [End]new format for phieu can by date (export excel)
 
 double screenHeight(context) {

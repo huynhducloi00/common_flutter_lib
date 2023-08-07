@@ -5,7 +5,7 @@ enum DataType {
   timestamp,
   boolean,
   double,
-  firebaseImage,
+  firebaseImage
 }
 
 class CloudObject{

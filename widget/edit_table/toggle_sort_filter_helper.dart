@@ -67,6 +67,12 @@ Widget toggleFilter(
       case DataType.boolean:
         usedMap = booleanFilterInfoMap;
         break;
+      case DataType.double:
+        // TODO: Handle this case.
+        break;
+      case DataType.firebaseImage:
+        // TODO: Handle this case.
+        break;
     }
     showAlertDialog(context, title: "Bộ loc ${inputInfo.fieldDes}",
         builder: (_) {
@@ -88,6 +94,12 @@ Widget toggleFilter(
             break;
           case DataType.boolean:
             filterResult = convertFromBooleanFilterMap(valueMap);
+            break;
+          case DataType.double:
+            // TODO: Handle this case.
+            break;
+          case DataType.firebaseImage:
+            // TODO: Handle this case.
             break;
         }
 

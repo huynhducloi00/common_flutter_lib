@@ -1,3 +1,8 @@
+import 'package:canxe/data/employee.dart';
+import 'package:canxe/home_page.dart';
+import 'package:provider/provider.dart';
+
+import '../../data/customer_model.dart';
 import '../utils.dart';
 
 import '../data/cloud_table.dart';
@@ -27,20 +32,34 @@ abstract class CommonButton {
   static Widget createDataListWidget(context, CloudTableSchema table,
       {Map<String, FilterDataWrapper>? filter,
       PostColorDecorationCondition? postColorDecorationCondition}) {
-    return EditTableWrapper(
-        table,
-        ParentParam(
-            sortKey: table.sortKey,
-            sortKeyDescending: table.sortDescending,
-            postColorDecorationCondition: postColorDecorationCondition,
-            filterDataWrappers: filter));
+    final cusMap = Provider.of<CustomerMap?>(context);
+    final typeDeptMap = Provider.of<TypeDeptMap?>(context);
+    final listEmployee = Provider.of<List<Employee>>(context);
+    return MultiProvider(
+      providers: [
+        Provider.value(value: cusMap),
+        Provider.value(value: typeDeptMap),
+        Provider.value(value: listEmployee),
+      ],
+      child: EditTableWrapper(
+          table,
+          ParentParam(
+              sortKey: table.sortKey,
+              sortKeyDescending: table.sortDescending,
+              postColorDecorationCondition: postColorDecorationCondition,
+              filterDataWrappers: filter)),
+    );
   }
 
-  static Widget createOpenButton(context, CloudTableSchema table, title,
-      {IconData? icon,
-      Map<String, FilterDataWrapper>? filter,
-      PostColorDecorationCondition? postColorDecorationCondition,
-      bool isDense = false}) {
+  static Widget createOpenButton(
+    context,
+    CloudTableSchema table,
+    title, {
+    IconData? icon,
+    Map<String, FilterDataWrapper>? filter,
+    PostColorDecorationCondition? postColorDecorationCondition,
+    bool isDense = false,
+  }) {
     return CommonButton.getOpenButton(
         context,
         createDataListWidget(context, table,
@@ -153,7 +172,7 @@ abstract class CommonButton {
     var style = getLoiButtonStyle(buildContext);
     regularColor = regularColor ?? style.regularColor;
     hoverColor = hoverColor ?? style.hoverColor;
-    textColor = textColor ?? Colors.black;// style.textColor;
+    textColor = textColor ?? Colors.black; // style.textColor;
     iconColor = iconColor ?? style.iconColor;
     disabledColor = disabledColor ?? style.disabledColor;
     if (isEnabled) {
@@ -212,15 +231,16 @@ class CloudTableUtils {
       {isTwoColumns = true,
       isDense = true,
       CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start}) {
-    List buttons = tables
-        .map((table) => CommonButton.createOpenButton(
-            context, table, table.tableDescription,
-            icon: table.iconData, isDense: isDense))
-        .toList();
-    if (isTwoColumns) {
-      return splitAnyColumns(buttons as List<Widget>, 2);
+    List<Widget> buttons = [];
+    for (var table in tables) {
+      if (table.isTableSpecial) continue;
+      buttons.add(CommonButton.createOpenButton(
+          context, table, table.tableDescription,
+          icon: table.iconData, isDense: isDense));
     }
-    return columnWithGap(buttons as List<Widget>,
-        crossAxisAlignment: crossAxisAlignment);
+    if (isTwoColumns) {
+      return splitAnyColumns(buttons, 2);
+    }
+    return columnWithGap(buttons, crossAxisAlignment: crossAxisAlignment);
   }
 }

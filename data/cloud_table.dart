@@ -26,6 +26,13 @@ typedef UseDataCalculation = UseDataCalculationResult? Function(
 typedef InitialDataCalculation = UseDataCalculationResult Function(
     Map<String, DataBundle> predefined);
 
+class DropdownSearchAdmin<T> {
+  final MapEntry<String, T> itemSelected;
+  final Map<String, T> map;
+
+  DropdownSearchAdmin(this.itemSelected, this.map);
+}
+
 class LinkedData {
   String tableName;
   String linkedFieldName;
@@ -92,6 +99,10 @@ class InputInfo {
 
   // option to option description
   Map<dynamic, String?>? optionMap;
+
+  DropdownSearchAdmin? dropdownSearchAdmin;
+  List<String>? fieldsFilledByDropdownSelected;
+
   bool limitToOptions;
   LinkedData? linkedData;
 
@@ -120,6 +131,8 @@ class InputInfo {
       this.printFlex,
       this.linkedData,
       this.optionMap,
+      this.dropdownSearchAdmin,
+      this.fieldsFilledByDropdownSelected,
       this.limitToOptions = false}) {
     if (displayFlex == null) {
       if (dataType == DataType.int) {
@@ -212,8 +225,9 @@ class InputInfoMap {
   LinkedHashSet<String>? calculatingOrder;
   Map<String, List<String>>? fieldChangedFieldMap;
   List<RelatedTableData>? relatedTables;
+  List<String>? fieldDropdown;
 
-  InputInfoMap(this.map, {this.relatedTables}) {
+  InputInfoMap(this.map, {this.relatedTables, this.fieldDropdown}) {
     _computeCalculatingOrder();
   }
 
@@ -225,6 +239,7 @@ class InputInfoMap {
     result.calculatingOrder = calculatingOrder;
     result.fieldChangedFieldMap = fieldChangedFieldMap;
     result.relatedTables = relatedTables;
+    result.fieldDropdown = fieldDropdown;
     return result;
   }
 
@@ -343,11 +358,11 @@ class PrintInfo {
       this.groupByFields}) {
     printFields ??= inputInfoMap.map!.keys.toList();
     aggregateFields ??= inputInfoMap.map!.entries
-          .where((element) =>
-              element.value.dataType == DataType.int &&
-              element.value.optionMap == null)
-          .map((e) => e.key)
-          .toList();
+        .where((element) =>
+            element.value.dataType == DataType.int &&
+            element.value.optionMap == null)
+        .map((e) => e.key)
+        .toList();
   }
 }
 
@@ -372,28 +387,32 @@ abstract class CloudTableSchema<T extends CloudObject> {
   List<String>? trailingFields;
   IconData? iconData;
   bool showIconDataOnRow;
+  bool isTableSpecial;
 
+  // cache data from
   CollectionReference getCollectionRef() {
     return FirebaseFirestore.instance.collection(tableName!);
   }
 
-  CloudTableSchema(
-      {this.tableName,
-      this.tableDescription,
-      this.printInfos,
-      required this.inputInfoMap,
-      required this.convertData,
-      this.defaultPrintFields,
-      this.showDocumentId = false,
-      this.defaultPrintVertical = true,
-      this.sortKey,
-      this.sortDescending,
-      this.primaryFields,
-      this.subtitleFields,
-      this.trailingFields,
-      this.iconData,
-      this.printTicket,
-      this.showIconDataOnRow = false}) {
+  CloudTableSchema({
+    this.tableName,
+    this.tableDescription,
+    this.printInfos,
+    required this.inputInfoMap,
+    required this.convertData,
+    this.defaultPrintFields,
+    this.showDocumentId = false,
+    this.defaultPrintVertical = true,
+    this.sortKey,
+    this.sortDescending,
+    this.primaryFields,
+    this.subtitleFields,
+    this.trailingFields,
+    this.iconData,
+    this.printTicket,
+    this.showIconDataOnRow = false,
+    this.isTableSpecial = false,
+  }) {
     List<String> allVisibleKeys =
         inputInfoMap.filterVisibleFields().keys.toList();
     defaultPrintFields ??= allVisibleKeys;
@@ -452,7 +471,8 @@ class SchemaAndData<T extends CloudObject> {
     });
   }
 
-  static Map<String, dynamic> fillInOptionData(Map row, Map<String, InputInfo>? inputInfoMap) {
+  static Map<String, dynamic> fillInOptionData(
+      Map row, Map<String, InputInfo>? inputInfoMap) {
     Map<String, dynamic> result = {};
     row.keys.forEach((fieldName) {
       var inputInfo = inputInfoMap![fieldName];

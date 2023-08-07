@@ -1,3 +1,4 @@
+import '../../../data/customer_model.dart';
 import '../../loadingstate/loading_state.dart';
 import 'common_child_table.dart';
 

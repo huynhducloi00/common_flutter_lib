@@ -1,10 +1,13 @@
 import 'dart:collection';
 
 import 'package:async/async.dart';
+import 'package:canxe/data/type_dept_trans.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/customer_model.dart';
 import '../data/cloud_obj.dart';
 import '../data/cloud_table.dart';
 import '../loadingstate/loading_state.dart';
@@ -58,7 +61,7 @@ class AutoForm extends StatefulWidget {
             if (relatedTable.documentSnapshotConversion != null) {
               return relatedTable.documentSnapshotConversion!(doc);
             }
-           return doc.data() as Map;
+            return doc.data() as Map;
           }).toList();
           return DataBundle(relatedTable.tableName, a);
         });
@@ -92,6 +95,10 @@ class AutoForm extends StatefulWidget {
 
   @override
   _AutoFormState createState() => _AutoFormState();
+}
+
+class DropdownValue<T> extends ValueNotifier<T> {
+  DropdownValue(super.value);
 }
 
 class CheckBoxController extends ValueNotifier<bool> {
@@ -136,6 +143,11 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
       ValueNotifier? notifier;
       switch (inputInfo.dataType) {
         case DataType.string:
+          if (widget.inputInfoMap.map?[fieldName]?.dropdownSearchAdmin !=
+              null) {}
+          notifier = TextEditingController(
+              text: widget.initialValue[fieldName]?.toString());
+          break;
         case DataType.int:
         case DataType.double:
           notifier = TextEditingController(
@@ -215,6 +227,41 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
       case DataType.html:
         return null;
       case DataType.string:
+        if (inputInfo.dropdownSearchAdmin != null) {
+          resultWidget = DropdownSearch<MapEntry<String, dynamic>>(
+            selectedItem: inputInfo.dropdownSearchAdmin!.itemSelected,
+            items: inputInfo.dropdownSearchAdmin!.map.entries.toList(),
+            itemAsString: (item) => item.key + " - " + item.value.toString(),
+            onChanged: (cusChanged) {
+              if (cusChanged != null) {
+                if (inputInfo.dropdownSearchAdmin!.map[cusChanged.key]
+                    is String) {
+                  (_allNotifiers[fieldName] as TextEditingController).text =
+                      inputInfo.dropdownSearchAdmin?.map[cusChanged.key] ?? "";
+                } else {
+                  var typeDeptTrans = inputInfo.dropdownSearchAdmin!
+                      .map[cusChanged.key] as TypeDeptTrans;
+                  (_allNotifiers[fieldName] as TextEditingController).text =
+                      typeDeptTrans.typeDeptTransId ?? "";
+                  inputInfo.fieldsFilledByDropdownSelected?.forEach((element) {
+                    /// this code for temp, it should be use reflectable
+                    var typeDeptTransMap = typeDeptTrans.toJson();
+                    (_allNotifiers[element] as TextEditingController).text =
+                        typeDeptTransMap[element];
+                  });
+                }
+              }
+            },
+            popupProps: PopupProps.menu(
+              title: Text('Gõ mã hoặc nội dung để tìm kiếm'),
+              showSearchBox: true,
+              fit: FlexFit.loose,
+              //comment this if you want that the items do not takes all available height
+              constraints: BoxConstraints.tightFor(),
+            ),
+          );
+          break;
+        }
         if (inputInfo.optionMap == null) {
           resultWidget = TextFormField(
             controller: _allNotifiers[fieldName] as TextEditingController?,
@@ -406,7 +453,7 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
                 title: 'Save')
           ],
         ),
-        backgroundColor: Colors.brown[100],
+        backgroundColor: Colors.brown[50],
         body: SingleChildScrollView(
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 10),
