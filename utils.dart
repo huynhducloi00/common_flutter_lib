@@ -286,24 +286,24 @@ List<List<T>> partitionListToBin<T>(List<T> list, int binNum) {
   return chunks;
 }
 
-getLastYearFilterDataWrapper() {
-  var startDateLastYear =
-      Jiffy().startOf(Units.YEAR).subtract(years: 1).dateTime;
-  var endDateLastYear = Jiffy().endOf(Units.YEAR).subtract(years: 1).dateTime;
-  return FilterDataWrapper(
-      filterStartValue: Timestamp.fromDate(startDateLastYear),
-      filterEndValue: Timestamp.fromDate(endDateLastYear),
-      filterEndIncludeValue: false);
-}
+// getLastYearFilterDataWrapper() {
+//   var startDateLastYear =
+//       Jiffy().startOf(Units.YEAR).subtract(years: 1).dateTime;
+//   var endDateLastYear = Jiffy().endOf(Units.YEAR).subtract(years: 1).dateTime;
+//   return FilterDataWrapper(
+//       filterStartValue: Timestamp.fromDate(startDateLastYear),
+//       filterEndValue: Timestamp.fromDate(endDateLastYear),
+//       filterEndIncludeValue: false);
+// }
 
-getThisYearFilterDataWrapper() {
-  var startDateLastYear = Jiffy().startOf(Units.YEAR).dateTime;
-  var endDateLastYear = Jiffy().endOf(Units.YEAR).dateTime;
-  return FilterDataWrapper(
-      filterStartValue: Timestamp.fromDate(startDateLastYear),
-      filterEndValue: Timestamp.fromDate(endDateLastYear),
-      filterEndIncludeValue: false);
-}
+// getThisYearFilterDataWrapper() {
+//   var startDateLastYear = Jiffy().startOf(Units.YEAR).dateTime;
+//   var endDateLastYear = Jiffy().endOf(Units.YEAR).dateTime;
+//   return FilterDataWrapper(
+//       filterStartValue: Timestamp.fromDate(startDateLastYear),
+//       filterEndValue: Timestamp.fromDate(endDateLastYear),
+//       filterEndIncludeValue: false);
+// }
 
 class CurrentLastNextMonthInfo {
   int? month, year, pMonth, pYear, nMonth, nYear;

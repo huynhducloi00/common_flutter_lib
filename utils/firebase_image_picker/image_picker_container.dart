@@ -228,7 +228,7 @@ class _ImageValuePickerState extends State<ImageValuePicker> {
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      jsutil.JsUtilImpl().bindCall(loiDartFunc);
+      // jsutil.JsUtilImpl().bindCall(loiDartFunc);
     }
     return Consumer<ImageValueNotifier>(
         builder: (BuildContext context, imageValueNotifier, Widget? child) {

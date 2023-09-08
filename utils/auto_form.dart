@@ -1,7 +1,6 @@
 import 'dart:collection';
 
 import 'package:async/async.dart';
-import 'package:canxe/data/type_dept_trans.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
@@ -233,24 +232,24 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
             items: inputInfo.dropdownSearchAdmin!.map.entries.toList(),
             itemAsString: (item) => item.key + " - " + item.value.toString(),
             onChanged: (cusChanged) {
-              if (cusChanged != null) {
-                if (inputInfo.dropdownSearchAdmin!.map[cusChanged.key]
-                    is String) {
-                  (_allNotifiers[fieldName] as TextEditingController).text =
-                      inputInfo.dropdownSearchAdmin?.map[cusChanged.key] ?? "";
-                } else {
-                  var typeDeptTrans = inputInfo.dropdownSearchAdmin!
-                      .map[cusChanged.key] as TypeDeptTrans;
-                  (_allNotifiers[fieldName] as TextEditingController).text =
-                      typeDeptTrans.typeDeptTransId ?? "";
-                  inputInfo.fieldsFilledByDropdownSelected?.forEach((element) {
-                    /// this code for temp, it should be use reflectable
-                    var typeDeptTransMap = typeDeptTrans.toJson();
-                    (_allNotifiers[element] as TextEditingController).text =
-                        typeDeptTransMap[element];
-                  });
-                }
-              }
+              // if (cusChanged != null) {
+              //   if (inputInfo.dropdownSearchAdmin!.map[cusChanged.key]
+              //       is String) {
+              //     (_allNotifiers[fieldName] as TextEditingController).text =
+              //         inputInfo.dropdownSearchAdmin?.map[cusChanged.key] ?? "";
+              //   } else {
+              //     var typeDeptTrans = inputInfo.dropdownSearchAdmin!
+              //         .map[cusChanged.key] as TypeDeptTrans;
+              //     (_allNotifiers[fieldName] as TextEditingController).text =
+              //         typeDeptTrans.typeDeptTransId ?? "";
+              //     inputInfo.fieldsFilledByDropdownSelected?.forEach((element) {
+              //       /// this code for temp, it should be use reflectable
+              //       var typeDeptTransMap = typeDeptTrans.toJson();
+              //       (_allNotifiers[element] as TextEditingController).text =
+              //           typeDeptTransMap[element];
+              //     });
+              //   }
+              // }
             },
             popupProps: PopupProps.menu(
               title: Text('Gõ mã hoặc nội dung để tìm kiếm'),

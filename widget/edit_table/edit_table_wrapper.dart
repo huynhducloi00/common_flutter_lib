@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-import '../../../data/customer_model.dart';
 import '../../data/cloud_obj.dart';
 import '../../data/cloud_table.dart';
 import '../../widget/edit_table/child_edit_table.dart';
@@ -63,7 +62,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    final cusMap = Provider.of<CustomerMap?>(context);
+    // final cusMap = Provider.of<CustomerMap?>(context);
     var content = TableWrapper(
       widget.cloudTable,
       widget.dataPickerBundle,
