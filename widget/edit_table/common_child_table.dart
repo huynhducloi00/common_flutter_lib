@@ -7,7 +7,7 @@ import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../data/customer_model.dart';
+import '../../../data/customer_data.dart';
 import '../../../data/employee.dart';
 import '../../data/cloud_obj.dart';
 import '../../data/cloud_table.dart';

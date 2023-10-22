@@ -2,7 +2,7 @@
 // import 'package:canxe/home_page.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/customer_model.dart';
+import '../../data/customer_data.dart';
 import '../utils.dart';
 
 import '../data/cloud_table.dart';

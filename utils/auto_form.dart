@@ -6,7 +6,6 @@ import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/customer_model.dart';
 import '../data/cloud_obj.dart';
 import '../data/cloud_table.dart';
 import '../loadingstate/loading_state.dart';
