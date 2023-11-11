@@ -18,6 +18,7 @@ class HtmlUtils extends HtmlUtilsInterface {
     document.body!.append(anchor);
     anchor.click();
     anchor.remove();
+    return null;
   }
 
   // Only works on Android web, not iOS

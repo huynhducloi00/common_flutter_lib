@@ -187,7 +187,7 @@ class ExcelOperation {
   }
 
   static void downloadWeb(Excel excel, fileName) async {
-    var bytes = await excel.encode()!;
+    var bytes = excel.encode()!;
     (HtmlUtils()).downloadWeb(bytes, '$fileName.xlsx');
   }
 }

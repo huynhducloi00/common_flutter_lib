@@ -12,8 +12,6 @@ import 'package:provider/provider.dart';
 import '../../utils.dart';
 import '../../widget/common.dart';
 import '../image_compression/luban.dart';
-import 'native_interface.dart' if (dart.library.html) 'web_interface.dart'
-    as jsutil;
 
 const double imageMaxHeight = 500;
 const int imageQuality = 75;

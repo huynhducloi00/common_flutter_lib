@@ -3,12 +3,8 @@ import 'dart:async';
 // import 'package:canxe/data/type_dept_trans.dart';
 // import 'package:canxe/home_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../../data/customer_data.dart';
-import '../../../data/employee.dart';
 import '../../data/cloud_obj.dart';
 import '../../data/cloud_table.dart';
 // import '../../pdf/no_op_create_pdf.dart'
@@ -17,7 +13,6 @@ import '../../data/cloud_table.dart';
 import '../../pdf/pdf_creator.dart' as create_pdf;
 import '../../utils.dart';
 import '../../utils/auto_form.dart';
-import '../../utils/html/html_utils.dart';
 import '../common.dart';
 import 'parent_param.dart';
 

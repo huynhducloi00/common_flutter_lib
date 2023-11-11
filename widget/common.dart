@@ -1,12 +1,9 @@
 // import 'package:canxe/data/employee.dart';
 // import 'package:canxe/home_page.dart';
-import 'package:provider/provider.dart';
 
-import '../../data/customer_data.dart';
 import '../utils.dart';
 
 import '../data/cloud_table.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'edit_table/common_child_table.dart';

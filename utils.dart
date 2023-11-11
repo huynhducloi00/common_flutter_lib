@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart' as res_builder;
 
@@ -401,7 +400,7 @@ Widget splitAnyColumns(List<Widget> widgets, int numBin, {double gap = 10}) {
       .map((list) => Expanded(
             child: columnWithGap(list,
                 crossAxisAlignment: CrossAxisAlignment.stretch),
-          ) as Widget)
+          ))
       .toList();
   for (int i = widgetList.length - 1; i >= 1; i--) {
     widgetList.insert(

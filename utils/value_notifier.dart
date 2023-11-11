@@ -70,7 +70,7 @@ Widget valueNotifierDateTime<V extends ValueNotifier<DateTime?>>(
                     ? ''
                     : '${initialTime.format(context)} '),
                 CommonButton.getButton(context, () async {
-                  final TimeOfDay? picked_s = await showTimePicker(
+                  final TimeOfDay? pickedS = await showTimePicker(
                       context: context,
                       initialTime: initialTime == null
                           ? TimeOfDay.fromDateTime(DateTime.now())
@@ -83,13 +83,13 @@ Widget valueNotifierDateTime<V extends ValueNotifier<DateTime?>>(
                         );
                       });
 
-                  if (picked_s != null) {
+                  if (pickedS != null) {
                     valueNotifier.value = DateTime(
                         currentDateTime!.year,
                         currentDateTime.month,
                         currentDateTime.day,
-                        picked_s.hour,
-                        picked_s.minute);
+                        pickedS.hour,
+                        pickedS.minute);
                   }
                 }, isEnabled: currentDateTime != null, iconData: Icons.timer),
               ].whereType<Widget>().toList())
