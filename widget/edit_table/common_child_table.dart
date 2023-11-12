@@ -110,6 +110,9 @@ class ChildTableUtils {
       inputInfoMap,
       initialValues ?? {},
       saveClickFuture: (resultMap) {
+        if(resultMap.containsKey("id")){
+          return databaseRef.doc(resultMap["id"]).set(resultMap);
+        }
         return databaseRef.doc().set(resultMap);
       },
       isNew: true,

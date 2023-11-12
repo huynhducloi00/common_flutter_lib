@@ -144,6 +144,7 @@ class _TableWrapperState extends State<TableWrapper> {
                       showAllData: widget.showAllData,
                       showNewButton: widget.showNewButton,
                     ))
+                    
                 // always use phone pick styles when there is a need to pick
                 : PhoneChildEditTable(
                     currentQueryNotifier.colRef,

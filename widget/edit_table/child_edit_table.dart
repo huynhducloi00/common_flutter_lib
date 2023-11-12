@@ -103,7 +103,7 @@ class _ChildEditTableState
                       return CommonButton.getButton(context, () {
                         // go back
                         currentQueryNotifier!.currentPagingQuery =
-                            originalQuery.limit(tableTableRowLimit).endBeforeDocument(
+                            originalQuery.limitToLast(tableTableRowLimit).endBeforeDocument(
                                 schemaAndData.documentSnapshots.first);
                       },
                           title: "",
