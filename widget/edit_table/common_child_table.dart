@@ -4,6 +4,7 @@ import 'dart:async';
 // import 'package:canxe/home_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/v8.dart';
 
 import '../../data/cloud_obj.dart';
 import '../../data/cloud_table.dart';
@@ -198,10 +199,14 @@ class ChildTableUtils {
       //       typeDeptSelected ?? MapEntry("", TypeDeptTrans("", Map())),
       //       typeDeptMap?.typeDeptCodeMap ?? Map());
       // }
+      var dataMap = schemaAndData.data[rowIndices[0]].dataMap;
+      if(dataMap.containsKey("id")){
+        dataMap["id"] = UuidV8().generate().split("-").last;
+      }
       initiateNew(
           context, databaseRef, schemaAndData.cloudTableSchema.inputInfoMap,
           isPhone: isPhone,
-          initialValues: schemaAndData.data[rowIndices[0]].dataMap);
+          initialValues: dataMap);
     },
         title: "Duplicate",
         iconData: Icons.accessible_forward_outlined,
