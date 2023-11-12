@@ -397,10 +397,11 @@ Column columnWithGap(List<Widget> children,
 Widget splitAnyColumns(List<Widget> widgets, int numBin, {double gap = 10}) {
   List<List<Widget>> lists = partitionListToBin(widgets, numBin);
   List<Widget> widgetList = lists
+      // ignore: unnecessary_cast
       .map((list) => Expanded(
             child: columnWithGap(list,
                 crossAxisAlignment: CrossAxisAlignment.stretch),
-          ))
+          ) as Widget)
       .toList();
   for (int i = widgetList.length - 1; i >= 1; i--) {
     widgetList.insert(
