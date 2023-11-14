@@ -77,15 +77,6 @@ class ChildTableUtils {
                 .toList();
           }
         });
-
-        // Excel excel = ExcelCreator.createFile(context, printInfo, data);
-        // excel.save(fileName: "phieu_can.xlsx");
-        // Completer<String> completer = Completer();
-        // excel.encode().then((bytes) {
-        //   (HtmlUtils()).downloadWeb(bytes, 'phieu_can.xlsx');
-        //   completer.complete(null);
-        // });
-        // await completer.future;
       });
     },
         title: printInfo.buttonTitle,
