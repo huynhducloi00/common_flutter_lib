@@ -184,9 +184,15 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
           print(
               'affecting field: ${widget.inputInfoMap.fieldChangedFieldMap![changedFieldName]}');
         widget.inputInfoMap.fieldChangedFieldMap![changedFieldName]!
-            .forEach((fieldName) {
-          var result = widget.inputInfoMap.map![fieldName]!.calculate!(
-              resultBundle, bundleMap);
+            .forEach((fieldName) async {
+          var result;
+          if (widget.inputInfoMap.map![fieldName]!.calculate != null) {
+            result = widget.inputInfoMap.map![fieldName]!.calculate!(
+                resultBundle, bundleMap);
+          } else {
+            result = await widget.inputInfoMap.map![fieldName]!.fillData!(
+                resultBundle, bundleMap);
+          }
           if (DEBUG) print('$fieldName $result');
           var notifier = _allNotifiers[fieldName];
           if (result != null) {
@@ -230,10 +236,33 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
             selectedItem: inputInfo.dropdownSearchAdmin!.itemSelected,
             items: inputInfo.dropdownSearchAdmin!.map.entries.toList(),
             itemAsString: (item) => item.key + " - " + item.value.toString(),
-            onChanged: (cusChanged) {
-              if (cusChanged != null) {
-                (_allNotifiers[fieldName] as TextEditingController).text =
-                    inputInfo.dropdownSearchAdmin?.map[cusChanged.key] ?? "";
+            onChanged: (valueChanged) {
+              if (valueChanged != null) {
+                inputInfo.fieldsFilledByDropdownSelected
+                    ?.forEach((element) async {
+                  /// this code for temp, it should be use reflectable
+                  if (widget.inputInfoMap.map![element]!.fillData != null) {
+                    Map<String, dynamic> map = Map()
+                      ..addEntries([valueChanged]);
+                    var resultBundle =
+                        getCurrentReturnedMap(filterSavingFields: false)[0];
+                    var result = await widget
+                        .inputInfoMap.map![element]!.fillData!
+                        .call(resultBundle, map);
+                    (_allNotifiers[element] as TextEditingController).text =
+                        result?.value ?? "";
+                  }
+                });
+                if (inputInfo.isDropdownGetKey == null) {
+                  (_allNotifiers[fieldName] as TextEditingController).text =
+                      valueChanged.key + " - " + valueChanged.value.toString();
+                } else if (inputInfo.isDropdownGetKey!) {
+                  (_allNotifiers[fieldName] as TextEditingController).text =
+                      valueChanged.key;
+                } else {
+                  (_allNotifiers[fieldName] as TextEditingController).text =
+                      valueChanged.value;
+                }
               }
             },
             popupProps: PopupProps.menu(

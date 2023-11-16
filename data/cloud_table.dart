@@ -20,6 +20,8 @@ class UseDataCalculationResult {
   }
 }
 
+typedef UseDataCalculationFuture = Future<UseDataCalculationResult>? Function(
+    Map<String, dynamic>? data, Map<String, dynamic>? predefined);
 // returns null to keep the same value as before
 typedef UseDataCalculation = UseDataCalculationResult? Function(
     Map<String, dynamic>? data, Map<String, DataBundle>? predefined);
@@ -84,6 +86,7 @@ class InputInfo {
   // Calculate only happens when initializing data, or when its contributor variables changes.
   UseDataCalculation? calculate;
   InitialDataCalculation? initializeFunc;
+  UseDataCalculationFuture? fillData;
   String? Function(BuildContext, dynamic) displayConverter;
   dynamic Function()? onNewData;
   bool canUpdate;
@@ -100,6 +103,7 @@ class InputInfo {
   // option to option description
   Map<dynamic, String?>? optionMap;
 
+  bool? isDropdownGetKey;
   DropdownSearchAdmin? dropdownSearchAdmin;
   List<String>? fieldsFilledByDropdownSelected;
 
@@ -121,6 +125,7 @@ class InputInfo {
       required this.fieldDes,
       this.fieldsForCalculation,
       this.calculate,
+      this.fillData,
       this.onNewData,
       this.displayConverter = toText,
       this.canUpdate = true,
@@ -132,6 +137,7 @@ class InputInfo {
       this.linkedData,
       this.optionMap,
       this.dropdownSearchAdmin,
+      this.isDropdownGetKey,
       this.fieldsFilledByDropdownSelected,
       this.limitToOptions = false}) {
     if (displayFlex == null) {
