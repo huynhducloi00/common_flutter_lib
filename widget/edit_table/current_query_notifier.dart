@@ -8,6 +8,7 @@ class CurrentQueryNotifier extends ChangeNotifier {
   late Query _originalQuery;
   late Query _currentPagingQuery;
   late ParentParam _parentParam;
+  final int tableTableRowLimit;
   Query _calculateNewQuery(ParentParam parentParam) {
     // Apply both parent and child params.
     var queryTmp = applyFilterToQuery(colRef, parentParam);
@@ -18,7 +19,7 @@ class CurrentQueryNotifier extends ChangeNotifier {
     return query;
   }
 
-  CurrentQueryNotifier(this.colRef, parentParam) {
+  CurrentQueryNotifier(this.colRef, parentParam, this.tableTableRowLimit) {
     _parentParam = parentParam;
     _originalQuery = _calculateNewQuery(parentParam);
     _currentPagingQuery=_originalQuery;

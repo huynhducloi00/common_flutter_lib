@@ -25,8 +25,11 @@ class ChildEditTable extends StatefulWidget {
   final CollectionReference databaseRef;
   final bool showAllData;
   final bool showNewButton;
+  final int tableRowLimit;
   const ChildEditTable(this.databaseRef,
-      {this.showAllData = false, this.showNewButton = true});
+      {this.showAllData = false,
+      this.showNewButton = true,
+      this.tableRowLimit = 7});
 
   @override
   _ChildEditTableState createState() => _ChildEditTableState();
@@ -93,7 +96,7 @@ class _ChildEditTableState
                 StreamProvider<bool>.value(
                   initialData: false,
                   value: isLoading ? Stream<bool>.value(false) : hasBefore,
-                  catchError: (_,error){
+                  catchError: (_, error) {
                     print("Loi 1 $error");
                     return false;
                   },
@@ -102,8 +105,9 @@ class _ChildEditTableState
                       bool existBefore = Provider.of<bool>(context);
                       return CommonButton.getButton(context, () {
                         // go back
-                        currentQueryNotifier!.currentPagingQuery =
-                            originalQuery.limitToLast(tableTableRowLimit).endBeforeDocument(
+                        currentQueryNotifier!.currentPagingQuery = originalQuery
+                            .limitToLast(widget.tableRowLimit)
+                            .endBeforeDocument(
                                 schemaAndData.documentSnapshots.first);
                       },
                           title: "",
@@ -118,7 +122,7 @@ class _ChildEditTableState
                 StreamProvider<bool>.value(
                   initialData: false,
                   value: isLoading ? Stream<bool>.value(false) : hasAfter,
-                  catchError: (_,error){
+                  catchError: (_, error) {
                     print("Loi 2 $error");
                     return false;
                   },
@@ -152,8 +156,8 @@ class _ChildEditTableState
         .toList();
 
     List<TableRow> extraDataRow = [];
-    if (schemaAndData.data.length < tableTableRowLimit) {
-      for (int i = 0; i < tableTableRowLimit - schemaAndData.data.length; i++) {
+    if (schemaAndData.data.length < widget.tableRowLimit) {
+      for (int i = 0; i < widget.tableRowLimit - schemaAndData.data.length; i++) {
         extraDataRow.add(TableRow(
             children: filterVisibleFieldMap.keys
                 .map((e) => Text(
@@ -226,7 +230,8 @@ class _ChildEditTableState
       var selectedIndices = selectedIndicesChangeNotifier.value
           .asMap()
           .entries
-          .where((element) => element.key <schemaAndData.data.length && element.value)
+          .where((element) =>
+              element.key < schemaAndData.data.length && element.value)
           .map((e) => e.key)
           .toList();
       Map? inducedRow = selectedIndices.length == 1
@@ -254,14 +259,19 @@ class _ChildEditTableState
               ? Container(
                   color: getLoiButtonStyle(context).regularColor,
                   child: DropdownButton(
-                    value:0,
-                    items: otherPrints.asMap().entries
+                    value: 0,
+                    items: otherPrints
+                        .asMap()
+                        .entries
                         .map((printInfo) => DropdownMenuItem(
-                              child: ChildTableUtils.printButton(context,
-                                  widget.databaseRef, printInfo.value, parentParam,
+                              child: ChildTableUtils.printButton(
+                                  context,
+                                  widget.databaseRef,
+                                  printInfo.value,
+                                  parentParam,
                                   backgroundColor: Colors.transparent),
-                    value: printInfo.key,
-                    ))
+                              value: printInfo.key,
+                            ))
                         .toList(),
                     onChanged: (dynamic value) {},
                   ),
@@ -312,7 +322,7 @@ class _ChildEditTableState
     return ChangeNotifierProvider(create: (_) {
       return SelectedIndicesChangeNotifier(
           SelectedIndicesChangeNotifier.createEmptyBoolList(
-              tableTableRowLimit));
+              widget.tableRowLimit));
     }, child: Builder(
       builder: (BuildContext context) {
         return Column(

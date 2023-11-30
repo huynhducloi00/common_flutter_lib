@@ -12,8 +12,6 @@ import 'current_query_notifier.dart';
 import 'phone_child_edit_table.dart';
 import 'toggle_sort_filter_helper.dart';
 
-const tableTableRowLimit = 7;
-
 class EditTableWrapper extends StatefulWidget {
   ParentParam parentParam;
   CloudTableSchema? cloudTable;
@@ -86,7 +84,8 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
         create: (_) {
           CollectionReference _databaseRef =
               widget.cloudTable!.getCollectionRef();
-          return CurrentQueryNotifier(_databaseRef, widget.parentParam);
+          return CurrentQueryNotifier(_databaseRef, widget.parentParam,
+              widget.cloudTable!.tableRowLimit);
         },
         child: widget.dataPickerBundle == null
             ? ScreenTypeLayout(
@@ -138,13 +137,14 @@ class _TableWrapperState extends State<TableWrapper> {
                       currentQueryNotifier.colRef,
                       showAllData: widget.showAllData,
                       showNewButton: widget.showNewButton,
+                      tableRowLimit: widget.cloudTable!.tableRowLimit,
                     ),
                     mobile: PhoneChildEditTable(
                       currentQueryNotifier.colRef,
                       showAllData: widget.showAllData,
                       showNewButton: widget.showNewButton,
                     ))
-                    
+
                 // always use phone pick styles when there is a need to pick
                 : PhoneChildEditTable(
                     currentQueryNotifier.colRef,

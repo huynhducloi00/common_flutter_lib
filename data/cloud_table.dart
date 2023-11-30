@@ -394,6 +394,7 @@ abstract class CloudTableSchema<T extends CloudObject> {
   IconData? iconData;
   bool showIconDataOnRow;
   bool isTableSpecial;
+  int tableRowLimit;
 
   // cache data from
   CollectionReference getCollectionRef() {
@@ -418,6 +419,7 @@ abstract class CloudTableSchema<T extends CloudObject> {
     this.printTicket,
     this.showIconDataOnRow = false,
     this.isTableSpecial = false,
+    this.tableRowLimit = 7
   }) {
     List<String> allVisibleKeys =
         inputInfoMap.filterVisibleFields().keys.toList();
