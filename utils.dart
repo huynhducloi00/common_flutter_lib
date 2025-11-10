@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart' as res_builder;
 
@@ -24,16 +23,16 @@ const EDIT_TABLE_HORIZONTAL_BORDER_SIDE =
 
 class LoiAllCloudTables {
   static late List<CloudTableSchema> cloudTables;
-  static late Map<String?, CloudTableSchema> _maps;
+  static late Map<String?, CloudTableSchema> maps;
 
   static void init(List<CloudTableSchema> list) {
     cloudTables = list;
-    _maps = list.asMap().map((_, value) => MapEntry(value.tableName, value));
+    maps = list.asMap().map((_, value) => MapEntry(value.tableName, value));
   }
 
   static CloudTableSchema<T> getValueInMap<T extends CloudObject>(
       String cloudTableName) {
-    return _maps[cloudTableName]! as CloudTableSchema<T>;
+    return maps[cloudTableName]! as CloudTableSchema<T>;
   }
 }
 
@@ -65,7 +64,9 @@ String formatDateOnly(context, DateTime dt) {
   return localizations.formatCompactDate(dt);
 }
 
-String formatDatetime(context, DateTime dateTime) {
+/// ----- [Start] old format for phieu can by car, ...
+///
+String formatDatetime(context, DateTime? dateTime) {
   if (dateTime == null) return "";
 
   final MaterialLocalizations localizations = MaterialLocalizations.of(context);
@@ -76,7 +77,7 @@ String formatDatetime(context, DateTime dateTime) {
   return '${formatDateOnly(context, dateTime)} $time';
 }
 
-String formatNumber(int num) {
+String formatNumber(int? num) {
   return num == null ? "" : NUM_FORMAT.format(num);
 }
 
@@ -96,10 +97,10 @@ String formatTimestamp(BuildContext context, Timestamp? timestamp,
 String? toText(BuildContext context, dynamic val) {
   if (val is String) {
     return val;
-  } else if (val is double) {
-    return val.toStringAsFixed(2);
   } else if (val is int) {
     return formatNumber(val);
+  } else if (val is double) {
+    return val.toStringAsFixed(2);
   } else if (val is Timestamp) {
     return formatTimestamp(context, val);
   } else if (val is bool) {
@@ -108,6 +109,50 @@ String? toText(BuildContext context, dynamic val) {
   }
   return null;
 }
+
+/// ----- [End] old format for phieu can by car, ...
+/// ----- [Start] new format for phieu can by date (export excel)
+DateTime parseTimestampToDateTime(Timestamp? timestamp) {
+  if (timestamp == null) return DateTime.now();
+  DateTime dateTime = timestamp.toDate();
+  return dateTime;
+}
+
+String formatTime(context, Timestamp? timestamp) {
+  if (timestamp == null) return "";
+  DateTime dateTime = parseTimestampToDateTime(timestamp);
+  final MaterialLocalizations localizations = MaterialLocalizations.of(context);
+  final time = localizations.formatTimeOfDay(
+    TimeOfDay.fromDateTime(dateTime),
+    alwaysUse24HourFormat: MediaQuery.of(context).alwaysUse24HourFormat,
+  );
+  return time;
+}
+
+String formatDate(context, Timestamp? timestamp) {
+  if (timestamp == null) return "";
+  DateTime dateTime = parseTimestampToDateTime(timestamp);
+  final MaterialLocalizations localizations = MaterialLocalizations.of(context);
+  return localizations.formatCompactDate(dateTime);
+}
+
+String? toTextExportExcel(BuildContext context, dynamic val) {
+  if (val is String) {
+    return val;
+  } else if (val is int) {
+    return formatNumber(val);
+  } else if (val is double) {
+    return val.toStringAsFixed(2);
+  } else if (val is Timestamp) {
+    return formatTimestamp(context, val);
+  } else if (val is bool) {
+    return val ? '\u2713' : '';
+    // throw Exception('Not allowed to have boolean in here, please use Image to show it');
+  }
+  return null;
+}
+
+/// ----- [End]new format for phieu can by date (export excel)
 
 double screenHeight(context) {
   return MediaQuery.of(context).size.height;
@@ -189,7 +234,7 @@ Widget tableOfInfinite(Map<String, List<String>> map) {
       }).toList());
 }
 
-getMinDate(DateTime a, DateTime b) {
+getMinDate(DateTime? a, DateTime? b) {
   if (a == null) return b;
   if (b == null) return a;
   if (a.isAfter(b)) {
@@ -198,7 +243,7 @@ getMinDate(DateTime a, DateTime b) {
   return a;
 }
 
-getMaxDate(DateTime a, DateTime b) {
+getMaxDate(DateTime? a, DateTime? b) {
   if (a == null) return b;
   if (b == null) return a;
   if (a.isAfter(b)) return a;
@@ -239,33 +284,25 @@ List<List<T>> partitionListToBin<T>(List<T> list, int binNum) {
   }
   return chunks;
 }
-getLastYearFilterDataWrapper(){
-  var startDateLastYear = Jiffy()
-      .startOf(Units.YEAR)
-      .subtract(years: 1)
-      .dateTime;
-  var endDateLastYear = Jiffy()
-      .endOf(Units.YEAR)
-      .subtract(years: 1)
-      .dateTime;
-  return FilterDataWrapper(
-      filterStartValue: Timestamp.fromDate(startDateLastYear),
-      filterEndValue: Timestamp.fromDate(endDateLastYear),
-      filterEndIncludeValue: false);
-}
 
-getThisYearFilterDataWrapper(){
-  var startDateLastYear = Jiffy()
-      .startOf(Units.YEAR)
-      .dateTime;
-  var endDateLastYear = Jiffy()
-      .endOf(Units.YEAR)
-      .dateTime;
-  return FilterDataWrapper(
-      filterStartValue: Timestamp.fromDate(startDateLastYear),
-      filterEndValue: Timestamp.fromDate(endDateLastYear),
-      filterEndIncludeValue: false);
-}
+// getLastYearFilterDataWrapper() {
+//   var startDateLastYear =
+//       Jiffy().startOf(Units.YEAR).subtract(years: 1).dateTime;
+//   var endDateLastYear = Jiffy().endOf(Units.YEAR).subtract(years: 1).dateTime;
+//   return FilterDataWrapper(
+//       filterStartValue: Timestamp.fromDate(startDateLastYear),
+//       filterEndValue: Timestamp.fromDate(endDateLastYear),
+//       filterEndIncludeValue: false);
+// }
+
+// getThisYearFilterDataWrapper() {
+//   var startDateLastYear = Jiffy().startOf(Units.YEAR).dateTime;
+//   var endDateLastYear = Jiffy().endOf(Units.YEAR).dateTime;
+//   return FilterDataWrapper(
+//       filterStartValue: Timestamp.fromDate(startDateLastYear),
+//       filterEndValue: Timestamp.fromDate(endDateLastYear),
+//       filterEndIncludeValue: false);
+// }
 
 class CurrentLastNextMonthInfo {
   int? month, year, pMonth, pYear, nMonth, nYear;
@@ -360,6 +397,7 @@ Column columnWithGap(List<Widget> children,
 Widget splitAnyColumns(List<Widget> widgets, int numBin, {double gap = 10}) {
   List<List<Widget>> lists = partitionListToBin(widgets, numBin);
   List<Widget> widgetList = lists
+      // ignore: unnecessary_cast
       .map((list) => Expanded(
             child: columnWithGap(list,
                 crossAxisAlignment: CrossAxisAlignment.stretch),
@@ -367,7 +405,8 @@ Widget splitAnyColumns(List<Widget> widgets, int numBin, {double gap = 10}) {
       .toList();
   for (int i = widgetList.length - 1; i >= 1; i--) {
     widgetList.insert(
-        i,SizedBox(
+        i,
+        SizedBox(
           width: gap,
         ));
   }
@@ -450,17 +489,17 @@ DateTime stripTime(DateTime dateTime) {
   return DateTime(dateTime.year, dateTime.month, dateTime.day);
 }
 
-int? multiply(int val1, int val2) {
+int? multiply(int? val1, int? val2) {
   if (val1 == null || val2 == null) return null;
   return val1 * val2;
 }
 
-int? minus(int val1, int val2) {
-  if (val1 == null || val2 == null) return null;
+int? minus(int val1, int? val2) {
+  if (val2 == null) return null;
   return val1 - val2;
 }
 
-int? absMinus(int val1, int val2) {
+int? absMinus(int val1, int? val2) {
   int? minusRes = minus(val1, val2);
   return minusRes == null ? null : minusRes.abs();
 }

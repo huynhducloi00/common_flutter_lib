@@ -1,15 +1,18 @@
-import 'package:loi_tenant/common/widget/edit_table/child_edit_table.dart';
+import 'dart:async';
 
-import '../../utils.dart';
-
-import '../../data/cloud_obj.dart';
+// import 'package:canxe/data/type_dept_trans.dart';
+// import 'package:canxe/home_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/v8.dart';
 
+import '../../data/cloud_obj.dart';
+import '../../data/cloud_table.dart';
 // import '../../pdf/no_op_create_pdf.dart'
 //     if (dart.library.html) '../../pdf/pdf_creator.dart' as create_pdf;
+// import '../../../excel/excel_creator.dart';
 import '../../pdf/pdf_creator.dart' as create_pdf;
-import '../../data/cloud_table.dart';
+import '../../utils.dart';
 import '../../utils/auto_form.dart';
 import '../common.dart';
 import 'parent_param.dart';
@@ -42,10 +45,38 @@ class ChildTableUtils {
         });
         data.forEach((row) {
           row.dataMap = SchemaAndData.fillInOptionData(
-              row.dataMap, printInfo.inputInfoMap.map) as Map<String, dynamic>;
+              row.dataMap, printInfo.inputInfoMap.map);
         });
         await creator.createPdfSummary(
             context, DateTime.now(), printInfo, data);
+      });
+    },
+        title: printInfo.buttonTitle,
+        iconData: Icons.print,
+        isDense: isDense,
+        regularColor: backgroundColor);
+  }
+
+  static Widget exportExcelByDate(context, CollectionReference databaseRef,
+      PrintInfo printInfo, ParentParam fallBackParentParam,
+      {isDense = false, Color? backgroundColor}) {
+    return CommonButton.getButtonAsync(context, () async {
+      var parentParam = printInfo.parentParam ?? fallBackParentParam;
+      var allQuery = applyFilterToQuery(databaseRef, parentParam).orderBy(
+          parentParam.sortKey,
+          descending: parentParam.sortKeyDescending) as Query;
+      return allQuery.get().then((querySnapshot) async {
+        List<CloudObject> data = querySnapshot.docs
+            .map((e) => CloudObject(e.id, e.data() as Map<String, dynamic>))
+            .toList();
+
+        parentParam.filterDataWrappers?.forEach((fieldName, filter) {
+          if (filter?.postFilterFunction != null) {
+            data = data
+                .where((row) => filter!.postFilterFunction!(row.dataMap))
+                .toList();
+          }
+        });
       });
     },
         title: printInfo.buttonTitle,
@@ -66,11 +97,18 @@ class ChildTableUtils {
   static void initiateNew(
       context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
       {bool isPhone = false, Map<String, dynamic>? initialValues}) {
-    var autoForm =
-        AutoForm.createAutoForm(context, inputInfoMap, initialValues ?? {},
-            saveClickFuture: (resultMap) {
-      return databaseRef.doc().set(resultMap);
-    }, isNew: true);
+    var autoForm = AutoForm.createAutoForm(
+      context,
+      inputInfoMap,
+      initialValues ?? {},
+      saveClickFuture: (resultMap) {
+        if (resultMap.containsKey("id")) {
+          return databaseRef.doc(resultMap["id"]).set(resultMap);
+        }
+        return databaseRef.doc().set(resultMap);
+      },
+      isNew: true,
+    );
     if (isPhone) {
       Navigator.push(
           context,
@@ -86,15 +124,39 @@ class ChildTableUtils {
 
   static Widget newButton(
       context, CollectionReference databaseRef, InputInfoMap inputInfoMap,
-      {bool isPhone = false,
-      title = 'Mới'}) {
+      {bool isPhone = false, title = 'Mới'}) {
+    // final cusMap = Provider.of<CustomerMap?>(context);
+    // final typeDeptMap = Provider.of<TypeDeptMap?>(context);
+    // final employeeList = Provider.of<List<Employee>>(context);
+    Map<String, dynamic> employeeMap = Map();
+
+    // employeeList.forEach((element) {
+    //   employeeMap[element.employeeName] = element.employeeName;
+    // });
     return CommonButton.getButton(context, () {
-      Map<String,dynamic> initialData = {};
+      Map<String, dynamic> initialData = {};
       inputInfoMap.map!.forEach((key, value) {
         if (value.onNewData != null) {
           initialData[key] = value.onNewData!();
         }
       });
+      // if (inputInfoMap.map!["cusName"]?.dropdownSearchAdmin != null) {
+      //   inputInfoMap.map!["cusName"]!.dropdownSearchAdmin = DropdownSearchAdmin(
+      //       initialData["cusName"] ?? MapEntry("", ""),
+      //       cusMap?.cusCodeMap ?? Map());
+      // }
+      // if (inputInfoMap.map!["typeDeptTransId"]?.dropdownSearchAdmin != null) {
+      //   inputInfoMap.map!["typeDeptTransId"]!.dropdownSearchAdmin =
+      //       DropdownSearchAdmin(
+      //           initialData["typeDeptTransId"] ?? MapEntry("", ""),
+      //           typeDeptMap?.typeDeptCodeMap ?? Map());
+      // }
+      // if (inputInfoMap.map!["employeeName"]?.dropdownSearchAdmin != null) {
+      //   inputInfoMap.map!["employeeName"]!.dropdownSearchAdmin =
+      //       DropdownSearchAdmin(
+      //           initialData["employeeName"] ?? MapEntry("", ""), employeeMap);
+      // }
+
       initiateNew(context, databaseRef, inputInfoMap,
           isPhone: isPhone,
           initialValues: initialData.isEmpty ? null : initialData);
@@ -104,11 +166,37 @@ class ChildTableUtils {
   static Widget duplicate(
       context, databaseRef, SchemaAndData schemaAndData, List<int> rowIndices,
       {bool isPhone = false}) {
+    // final cusMap = Provider.of<CustomerMap?>(context);
+    // final typeDeptMap = Provider.of<TypeDeptMap?>(context);
+
     return CommonButton.getButton(context, () {
+      var map = schemaAndData.cloudTableSchema.inputInfoMap.map;
+      // if (map!["cusName"]?.dropdownSearchAdmin != null) {
+      //   var cusSelected = cusMap?.cusCodeMap.entries.firstWhere(
+      //       (e) =>
+      //           e.value == schemaAndData.data[rowIndices[0]].dataMap["cusName"],
+      //       orElse: () => MapEntry<String, String>("", ""));
+      //   map["cusName"]!.dropdownSearchAdmin = DropdownSearchAdmin(
+      //       cusSelected ?? MapEntry("", ""), cusMap?.cusCodeMap ?? Map());
+      // }
+      // if (map["typeDeptTransId"]?.dropdownSearchAdmin != null) {
+      //   var typeDeptSelected = typeDeptMap?.typeDeptCodeMap.entries.firstWhere(
+      //       (e) =>
+      //           e.value.typeDeptTransId ==
+      //           schemaAndData.data[rowIndices[0]].dataMap["typeDeptTransId"],
+      //       orElse: () =>
+      //           MapEntry<String, TypeDeptTrans>("", TypeDeptTrans("", Map())));
+      //   map["typeDeptTransId"]!.dropdownSearchAdmin = DropdownSearchAdmin(
+      //       typeDeptSelected ?? MapEntry("", TypeDeptTrans("", Map())),
+      //       typeDeptMap?.typeDeptCodeMap ?? Map());
+      // }
+      var dataMap = schemaAndData.data[rowIndices[0]].dataMap;
+      if (dataMap.containsKey("id")) {
+        dataMap["id"] = UuidV8().generate().split("-").last;
+      }
       initiateNew(
           context, databaseRef, schemaAndData.cloudTableSchema.inputInfoMap,
-          isPhone: isPhone,
-          initialValues: schemaAndData.data[rowIndices[0]].dataMap);
+          isPhone: isPhone, initialValues: dataMap);
     },
         title: "Duplicate",
         iconData: Icons.accessible_forward_outlined,
@@ -118,6 +206,14 @@ class ChildTableUtils {
   static Widget editButton(
       context, databaseRef, SchemaAndData schemaAndData, List<int> rowIndices,
       {bool isPhone = false}) {
+    // final cusMap = Provider.of<CustomerMap?>(context);
+    // final typeDeptMap = Provider.of<TypeDeptMap?>(context);
+    // final employeeList = Provider.of<List<Employee>>(context);
+    Map<String, dynamic> employeeMap = Map();
+
+    // employeeList.forEach((element) {
+    //   employeeMap[element.employeeName] = element.employeeName;
+    // });
     return CommonButton.getButton(context, () {
       if (isPhone) popWindow(context);
       var map = schemaAndData.cloudTableSchema.inputInfoMap.map;
@@ -130,6 +226,34 @@ class ChildTableUtils {
             ] +
             map!.entries.toList());
       }
+      // if (map!["cusName"]?.dropdownSearchAdmin != null) {
+      //   var cusSelected = cusMap?.cusCodeMap.entries.firstWhere(
+      //       (e) =>
+      //           e.value == schemaAndData.data[rowIndices[0]].dataMap["cusName"],
+      //       orElse: () => MapEntry<String, String>("", ""));
+      //   map["cusName"]!.dropdownSearchAdmin = DropdownSearchAdmin(
+      //       cusSelected ?? MapEntry("", ""), cusMap?.cusCodeMap ?? Map());
+      // }
+      // if (map["typeDeptTransId"]?.dropdownSearchAdmin != null) {
+      //   var typeDeptSelected = typeDeptMap?.typeDeptCodeMap.entries.firstWhere(
+      //       (e) =>
+      //           e.value.typeDeptTransId ==
+      //           schemaAndData.data[rowIndices[0]].dataMap["typeDeptTransId"],
+      //       orElse: () =>
+      //           MapEntry<String, TypeDeptTrans>("", TypeDeptTrans("", Map())));
+      //   map["typeDeptTransId"]!.dropdownSearchAdmin = DropdownSearchAdmin(
+      //       typeDeptSelected ?? MapEntry("", TypeDeptTrans("", Map())),
+      //       typeDeptMap?.typeDeptCodeMap ?? Map());
+      // }
+      // if (map["employeeName"]?.dropdownSearchAdmin != null) {
+      //   final employeeSelected = employeeMap.entries.firstWhere(
+      //       (element) =>
+      //           element.value ==
+      //           schemaAndData.data[rowIndices[0]].dataMap["employeeName"],
+      //       orElse: () => MapEntry("", ""));
+      //   map["employeeName"]!.dropdownSearchAdmin =
+      //       DropdownSearchAdmin(employeeSelected, employeeMap);
+      // }
       var autoForm = AutoForm.createAutoForm(
         context,
         schemaAndData.cloudTableSchema.inputInfoMap.cloneInputInfoMap(map),

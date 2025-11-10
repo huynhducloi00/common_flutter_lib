@@ -1,13 +1,12 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:loi_tenant/common/data/cloud_obj.dart';
-import 'package:loi_tenant/common/data/cloud_table.dart';
-import 'package:loi_tenant/common/utils/auto_form.dart';
-import 'package:loi_tenant/common/widget/edit_table/current_query_notifier.dart';
-import 'package:loi_tenant/common/widget/edit_table/parent_param.dart';
 
+import '../../data/cloud_obj.dart';
+import '../../data/cloud_table.dart';
 import '../../utils.dart';
+import '../../utils/auto_form.dart';
 import '../common.dart';
+import 'current_query_notifier.dart';
+import 'parent_param.dart';
 
 Widget toggleSort(BuildContext context,
     CurrentQueryNotifier currentQueryNotifier, String fieldName) {
@@ -68,6 +67,12 @@ Widget toggleFilter(
       case DataType.boolean:
         usedMap = booleanFilterInfoMap;
         break;
+      case DataType.double:
+        // TODO: Handle this case.
+        break;
+      case DataType.firebaseImage:
+        // TODO: Handle this case.
+        break;
     }
     showAlertDialog(context, title: "Bộ loc ${inputInfo.fieldDes}",
         builder: (_) {
@@ -89,6 +94,12 @@ Widget toggleFilter(
             break;
           case DataType.boolean:
             filterResult = convertFromBooleanFilterMap(valueMap);
+            break;
+          case DataType.double:
+            // TODO: Handle this case.
+            break;
+          case DataType.firebaseImage:
+            // TODO: Handle this case.
             break;
         }
 
