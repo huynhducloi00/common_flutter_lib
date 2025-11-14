@@ -20,11 +20,20 @@ class UseDataCalculationResult {
   }
 }
 
+typedef UseDataCalculationFuture = Future<UseDataCalculationResult>? Function(
+    Map<String, dynamic>? data, Map<String, dynamic>? predefined);
 // returns null to keep the same value as before
 typedef UseDataCalculation = UseDataCalculationResult? Function(
     Map<String, dynamic>? data, Map<String, DataBundle>? predefined);
 typedef InitialDataCalculation = UseDataCalculationResult Function(
     Map<String, DataBundle> predefined);
+
+class DropdownSearchAdmin<T> {
+  final MapEntry<String, T> itemSelected;
+  final Map<String, T> map;
+
+  DropdownSearchAdmin(this.itemSelected, this.map);
+}
 
 class LinkedData {
   String tableName;
@@ -77,6 +86,7 @@ class InputInfo {
   // Calculate only happens when initializing data, or when its contributor variables changes.
   UseDataCalculation? calculate;
   InitialDataCalculation? initializeFunc;
+  UseDataCalculationFuture? fillData;
   String? Function(BuildContext, dynamic) displayConverter;
   dynamic Function()? onNewData;
   bool canUpdate;
@@ -92,6 +102,11 @@ class InputInfo {
 
   // option to option description
   Map<dynamic, String?>? optionMap;
+
+  bool? isDropdownGetKey;
+  DropdownSearchAdmin? dropdownSearchAdmin;
+  List<String>? fieldsFilledByDropdownSelected;
+
   bool limitToOptions;
   LinkedData? linkedData;
 
@@ -110,6 +125,7 @@ class InputInfo {
       required this.fieldDes,
       this.fieldsForCalculation,
       this.calculate,
+      this.fillData,
       this.onNewData,
       this.displayConverter = toText,
       this.canUpdate = true,
@@ -120,6 +136,9 @@ class InputInfo {
       this.printFlex,
       this.linkedData,
       this.optionMap,
+      this.dropdownSearchAdmin,
+      this.isDropdownGetKey,
+      this.fieldsFilledByDropdownSelected,
       this.limitToOptions = false}) {
     if (displayFlex == null) {
       if (dataType == DataType.int) {
@@ -212,8 +231,9 @@ class InputInfoMap {
   LinkedHashSet<String>? calculatingOrder;
   Map<String, List<String>>? fieldChangedFieldMap;
   List<RelatedTableData>? relatedTables;
+  List<String>? fieldDropdown;
 
-  InputInfoMap(this.map, {this.relatedTables}) {
+  InputInfoMap(this.map, {this.relatedTables, this.fieldDropdown}) {
     _computeCalculatingOrder();
   }
 
@@ -225,6 +245,7 @@ class InputInfoMap {
     result.calculatingOrder = calculatingOrder;
     result.fieldChangedFieldMap = fieldChangedFieldMap;
     result.relatedTables = relatedTables;
+    result.fieldDropdown = fieldDropdown;
     return result;
   }
 
@@ -343,11 +364,11 @@ class PrintInfo {
       this.groupByFields}) {
     printFields ??= inputInfoMap.map!.keys.toList();
     aggregateFields ??= inputInfoMap.map!.entries
-          .where((element) =>
-              element.value.dataType == DataType.int &&
-              element.value.optionMap == null)
-          .map((e) => e.key)
-          .toList();
+        .where((element) =>
+            element.value.dataType == DataType.int &&
+            element.value.optionMap == null)
+        .map((e) => e.key)
+        .toList();
   }
 }
 
@@ -372,7 +393,10 @@ abstract class CloudTableSchema<T extends CloudObject> {
   List<String>? trailingFields;
   IconData? iconData;
   bool showIconDataOnRow;
+  bool isTableSpecial;
+  int tableRowLimit;
 
+  // cache data from
   CollectionReference getCollectionRef() {
     return FirebaseFirestore.instance.collection(tableName!);
   }
@@ -393,7 +417,9 @@ abstract class CloudTableSchema<T extends CloudObject> {
       this.trailingFields,
       this.iconData,
       this.printTicket,
-      this.showIconDataOnRow = false}) {
+      this.showIconDataOnRow = false,
+      this.isTableSpecial = false,
+      this.tableRowLimit = 7}) {
     List<String> allVisibleKeys =
         inputInfoMap.filterVisibleFields().keys.toList();
     defaultPrintFields ??= allVisibleKeys;
@@ -452,7 +478,8 @@ class SchemaAndData<T extends CloudObject> {
     });
   }
 
-  static Map fillInOptionData(Map row, Map<String, InputInfo>? inputInfoMap) {
+  static Map<String, dynamic> fillInOptionData(
+      Map row, Map<String, InputInfo>? inputInfoMap) {
     Map<String, dynamic> result = {};
     row.keys.forEach((fieldName) {
       var inputInfo = inputInfoMap![fieldName];
