@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart';
@@ -78,7 +79,7 @@ class Luban {
     quality,
     targetSize,
     step,
-    bool isJpg = true,
+    bool isJpg: true,
   }) {
     if (isJpg) {
       var im = encodeJpg(image, quality: quality);
@@ -94,7 +95,7 @@ class Luban {
         );
         return;
       }
-      print('quality cuoi $quality');
+      print('quality cuoi ${quality}');
       resultWrapper.finalImage = im;
     } else {
       _compressPng(
@@ -111,7 +112,7 @@ class Luban {
     quality,
     targetSize,
     step,
-    bool isJpg = true,
+    bool isJpg: true,
   }) {
     if (isJpg) {
       var im = encodeJpg(image, quality: quality);
@@ -191,9 +192,9 @@ class CompressObject {
   CompressObject({
     required this.bytes,
     this.outputPath,
-    this.mode = CompressMode.AUTO,
-    this.quality = 80,
-    this.step = 6,
+    this.mode: CompressMode.AUTO,
+    this.quality: 80,
+    this.step: 6,
     this.autoRatio = true,
   });
 }

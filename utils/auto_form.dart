@@ -2,18 +2,18 @@ import 'dart:collection';
 
 import 'package:async/async.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:loi_tenant/common/utils/firebase_image_picker/image_picker_container.dart';
 import 'package:provider/provider.dart';
 
 import '../data/cloud_obj.dart';
 import '../data/cloud_table.dart';
 import '../loadingstate/loading_state.dart';
 import '../utils.dart';
+import '../utils/auto_form_helper.dart';
 import '../utils/value_notifier.dart';
 import '../widget/common.dart';
-import 'auto_form_helper.dart';
-import 'firebase_image_picker/image_picker_container.dart';
 
 const InputDecoration EDIT_TEXT_INPUT_DECORATION = InputDecoration(
     fillColor: Colors.white,
@@ -59,8 +59,8 @@ class AutoForm extends StatefulWidget {
             if (relatedTable.documentSnapshotConversion != null) {
               return relatedTable.documentSnapshotConversion!(doc);
             }
-            return doc.data() as Map;
-          }).toList();
+            return doc.data;
+          }).toList() as List<Map<dynamic, dynamic>>;
           return DataBundle(relatedTable.tableName, a);
         });
       }).toList();
@@ -93,10 +93,6 @@ class AutoForm extends StatefulWidget {
 
   @override
   _AutoFormState createState() => _AutoFormState();
-}
-
-class DropdownValue<T> extends ValueNotifier<T> {
-  DropdownValue(super.value);
 }
 
 class CheckBoxController extends ValueNotifier<bool> {
@@ -141,11 +137,6 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
       ValueNotifier? notifier;
       switch (inputInfo.dataType) {
         case DataType.string:
-          if (widget.inputInfoMap.map?[fieldName]?.dropdownSearchAdmin !=
-              null) {}
-          notifier = TextEditingController(
-              text: widget.initialValue[fieldName]?.toString());
-          break;
         case DataType.int:
         case DataType.double:
           notifier = TextEditingController(
@@ -184,15 +175,9 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
           print(
               'affecting field: ${widget.inputInfoMap.fieldChangedFieldMap![changedFieldName]}');
         widget.inputInfoMap.fieldChangedFieldMap![changedFieldName]!
-            .forEach((fieldName) async {
-          var result;
-          if (widget.inputInfoMap.map![fieldName]!.calculate != null) {
-            result = widget.inputInfoMap.map![fieldName]!.calculate!(
-                resultBundle, bundleMap);
-          } else {
-            result = await widget.inputInfoMap.map![fieldName]!.fillData!(
-                resultBundle, bundleMap);
-          }
+            .forEach((fieldName) {
+          var result = widget.inputInfoMap.map![fieldName]!.calculate!(
+              resultBundle, bundleMap);
           if (DEBUG) print('$fieldName $result');
           var notifier = _allNotifiers[fieldName];
           if (result != null) {
@@ -231,50 +216,6 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
       case DataType.html:
         return null;
       case DataType.string:
-        if (inputInfo.dropdownSearchAdmin != null) {
-          resultWidget = DropdownSearch<MapEntry<String, dynamic>>(
-            selectedItem: inputInfo.dropdownSearchAdmin!.itemSelected,
-            items: inputInfo.dropdownSearchAdmin!.map.entries.toList(),
-            itemAsString: (item) => item.key + " - " + item.value.toString(),
-            onChanged: (valueChanged) {
-              if (valueChanged != null) {
-                inputInfo.fieldsFilledByDropdownSelected
-                    ?.forEach((element) async {
-                  /// this code for temp, it should be use reflectable
-                  if (widget.inputInfoMap.map![element]!.fillData != null) {
-                    Map<String, dynamic> map = Map()
-                      ..addEntries([valueChanged]);
-                    var resultBundle =
-                        getCurrentReturnedMap(filterSavingFields: false)[0];
-                    var result = await widget
-                        .inputInfoMap.map![element]!.fillData!
-                        .call(resultBundle, map);
-                    (_allNotifiers[element] as TextEditingController).text =
-                        result?.value ?? "";
-                  }
-                });
-                if (inputInfo.isDropdownGetKey == null) {
-                  (_allNotifiers[fieldName] as TextEditingController).text =
-                      valueChanged.key + " - " + valueChanged.value.toString();
-                } else if (inputInfo.isDropdownGetKey!) {
-                  (_allNotifiers[fieldName] as TextEditingController).text =
-                      valueChanged.key;
-                } else {
-                  (_allNotifiers[fieldName] as TextEditingController).text =
-                      valueChanged.value;
-                }
-              }
-            },
-            popupProps: PopupProps.menu(
-              title: Text('Gõ mã hoặc nội dung để tìm kiếm'),
-              showSearchBox: true,
-              fit: FlexFit.loose,
-              //comment this if you want that the items do not takes all available height
-              constraints: BoxConstraints.tightFor(),
-            ),
-          );
-          break;
-        }
         if (inputInfo.optionMap == null) {
           resultWidget = TextFormField(
             controller: _allNotifiers[fieldName] as TextEditingController?,
@@ -466,7 +407,7 @@ class _AutoFormState extends LoadingState<AutoForm, List<DataBundle>?> {
                 title: 'Save')
           ],
         ),
-        backgroundColor: Colors.brown[50],
+        backgroundColor: Colors.brown[100],
         body: SingleChildScrollView(
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 10),

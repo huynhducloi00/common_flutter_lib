@@ -1,16 +1,21 @@
-import '../../loadingstate/loading_state.dart';
+import 'package:loi_tenant/common/loadingstate/loading_state.dart';
+import 'package:loi_tenant/common/utils/auto_form.dart';
+import 'package:loi_tenant/common/widget/edit_table/toggle_sort_filter_helper.dart';
+
 import 'common_child_table.dart';
 
 import '../../data/cloud_obj.dart';
+import '../../loadingstate/loading_stream_builder.dart';
 import '../../utils.dart';
+import '../../widget/edit_table/child_param.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/cloud_table.dart';
 import '../common.dart';
 import 'current_query_notifier.dart';
+import 'edit_table_wrapper.dart';
 import 'parent_param.dart';
-import 'toggle_sort_filter_helper.dart';
 
 class SelectedIndicesChangeNotifier extends ValueNotifier<List<bool>> {
   SelectedIndicesChangeNotifier(List<bool> value) : super(value);
@@ -23,11 +28,8 @@ class ChildEditTable extends StatefulWidget {
   final CollectionReference databaseRef;
   final bool showAllData;
   final bool showNewButton;
-  final int tableRowLimit;
   const ChildEditTable(this.databaseRef,
-      {this.showAllData = false,
-      this.showNewButton = true,
-      this.tableRowLimit = 7});
+      {this.showAllData = false, this.showNewButton = true});
 
   @override
   _ChildEditTableState createState() => _ChildEditTableState();
@@ -62,14 +64,14 @@ class _ChildEditTableState
         .limit(1)
         .snapshots()
         .map((QuerySnapshot snapshot) {
-      return snapshot.docs.length > 0;
+      return snapshot.size > 0;
     });
     var hasAfter = originalQuery
         .startAfterDocument(schemaAndData.documentSnapshots.last)
         .limit(1)
         .snapshots()
         .map((QuerySnapshot event) {
-      return event.docs.length > 0;
+      return event.size > 0;
     });
     return Column(
         children: [
@@ -94,8 +96,8 @@ class _ChildEditTableState
                 StreamProvider<bool>.value(
                   initialData: false,
                   value: isLoading ? Stream<bool>.value(false) : hasBefore,
-                  catchError: (_, error) {
-                    print("Loi 1 $error");
+                  catchError: (_,error){
+                    print("Loi 1 ${error}");
                     return false;
                   },
                   child: Builder(
@@ -103,9 +105,8 @@ class _ChildEditTableState
                       bool existBefore = Provider.of<bool>(context);
                       return CommonButton.getButton(context, () {
                         // go back
-                        currentQueryNotifier!.currentPagingQuery = originalQuery
-                            .limitToLast(widget.tableRowLimit)
-                            .endBeforeDocument(
+                        currentQueryNotifier!.currentPagingQuery =
+                            originalQuery.limitToLast(tableTableRowLimit).endBeforeDocument(
                                 schemaAndData.documentSnapshots.first);
                       },
                           title: "",
@@ -120,8 +121,8 @@ class _ChildEditTableState
                 StreamProvider<bool>.value(
                   initialData: false,
                   value: isLoading ? Stream<bool>.value(false) : hasAfter,
-                  catchError: (_, error) {
-                    print("Loi 2 $error");
+                  catchError: (_,error){
+                    print("Loi 2 ${error}");
                     return false;
                   },
                   child: Builder(builder: (BuildContext context) {
@@ -154,10 +155,8 @@ class _ChildEditTableState
         .toList();
 
     List<TableRow> extraDataRow = [];
-    if (schemaAndData.data.length < widget.tableRowLimit) {
-      for (int i = 0;
-          i < widget.tableRowLimit - schemaAndData.data.length;
-          i++) {
+    if (schemaAndData.data.length < tableTableRowLimit) {
+      for (int i = 0; i < tableTableRowLimit - schemaAndData.data.length; i++) {
         extraDataRow.add(TableRow(
             children: filterVisibleFieldMap.keys
                 .map((e) => Text(
@@ -230,8 +229,7 @@ class _ChildEditTableState
       var selectedIndices = selectedIndicesChangeNotifier.value
           .asMap()
           .entries
-          .where((element) =>
-              element.key < schemaAndData.data.length && element.value)
+          .where((element) => element.key <schemaAndData.data.length && element.value)
           .map((e) => e.key)
           .toList();
       Map? inducedRow = selectedIndices.length == 1
@@ -259,19 +257,14 @@ class _ChildEditTableState
               ? Container(
                   color: getLoiButtonStyle(context).regularColor,
                   child: DropdownButton(
-                    value: 0,
-                    items: otherPrints
-                        .asMap()
-                        .entries
+                    value:0,
+                    items: otherPrints.asMap().entries
                         .map((printInfo) => DropdownMenuItem(
-                              child: ChildTableUtils.printButton(
-                                  context,
-                                  widget.databaseRef,
-                                  printInfo.value,
-                                  parentParam,
+                              child: ChildTableUtils.printButton(context,
+                                  widget.databaseRef, printInfo.value, parentParam,
                                   backgroundColor: Colors.transparent),
-                              value: printInfo.key,
-                            ))
+                    value: printInfo.key,
+                    ))
                         .toList(),
                     onChanged: (dynamic value) {},
                   ),
@@ -322,7 +315,7 @@ class _ChildEditTableState
     return ChangeNotifierProvider(create: (_) {
       return SelectedIndicesChangeNotifier(
           SelectedIndicesChangeNotifier.createEmptyBoolList(
-              widget.tableRowLimit));
+              tableTableRowLimit));
     }, child: Builder(
       builder: (BuildContext context) {
         return Column(

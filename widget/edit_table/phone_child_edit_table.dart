@@ -1,15 +1,20 @@
 // import 'dart:html';
 
-import '../../data/cloud_obj.dart';
-import '../../loadingstate/loading_state.dart';
+import 'package:loi_tenant/common/data/cloud_obj.dart';
+import 'package:loi_tenant/common/loadingstate/loading_state.dart';
+import 'package:loi_tenant/common/widget/edit_table/current_query_notifier.dart';
+
+import '../../loadingstate/loading_stream_builder.dart';
 import '../../utils.dart';
+import '../../widget/edit_table/child_param.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/cloud_table.dart';
 import '../common.dart';
 import 'common_child_table.dart';
-import 'current_query_notifier.dart';
+import 'edit_table_wrapper.dart';
+import 'parent_param.dart';
 
 class PhoneChildEditTable<SchemaAndData> extends StatefulWidget {
   final CollectionReference databaseRef;
@@ -51,12 +56,8 @@ class _PhoneChildEditTableState
           children: schemaAndData.cloudTableSchema.printInfos!
               .map(
                 (printInfo) => ChildTableUtils.printButton(
-                  context,
-                  widget.databaseRef,
-                  printInfo,
-                  parentParam,
-                  isDense: true,
-                ),
+                    context, widget.databaseRef, printInfo, parentParam,
+                    isDense: true, ),
               )
               .toList()),
       SizedBox(
@@ -94,14 +95,14 @@ class _PhoneChildEditTableState
           .limit(1)
           .snapshots()
           .map((QuerySnapshot snapshot) {
-        return snapshot.docs.length > 0;
+        return snapshot.size > 0;
       });
       var hasAfter = originalQuery
           .startAfterDocument(schemaAndData.documentSnapshots.last)
           .limit(1)
           .snapshots()
           .map((QuerySnapshot event) {
-        return event.docs.length > 0;
+        return event.size > 0;
       });
       return Column(
           mainAxisSize: MainAxisSize.min,

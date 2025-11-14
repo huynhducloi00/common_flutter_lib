@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:loi_tenant/common/widget/edit_table/toggle_sort_filter_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -10,7 +11,8 @@ import '../../widget/edit_table/parent_param.dart';
 import 'common_child_table.dart';
 import 'current_query_notifier.dart';
 import 'phone_child_edit_table.dart';
-import 'toggle_sort_filter_helper.dart';
+
+const tableTableRowLimit = 7;
 
 class EditTableWrapper extends StatefulWidget {
   ParentParam parentParam;
@@ -60,7 +62,6 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    // final cusMap = Provider.of<CustomerMap?>(context);
     var content = TableWrapper(
       widget.cloudTable,
       widget.dataPickerBundle,
@@ -84,8 +85,7 @@ class _EditTableWrapperState extends State<EditTableWrapper> {
         create: (_) {
           CollectionReference _databaseRef =
               widget.cloudTable!.getCollectionRef();
-          return CurrentQueryNotifier(_databaseRef, widget.parentParam,
-              widget.cloudTable!.tableRowLimit);
+          return CurrentQueryNotifier(_databaseRef, widget.parentParam);
         },
         child: widget.dataPickerBundle == null
             ? ScreenTypeLayout(
@@ -127,7 +127,7 @@ class _TableWrapperState extends State<TableWrapper> {
             value: newSnapshotStream,
             initialData: null,
             catchError: (context, error) {
-              print("Stream Error $error");
+              print("Stream Error ${error}");
               return null;
             },
             child: widget.dataPickerBundle == null
@@ -137,14 +137,12 @@ class _TableWrapperState extends State<TableWrapper> {
                       currentQueryNotifier.colRef,
                       showAllData: widget.showAllData,
                       showNewButton: widget.showNewButton,
-                      tableRowLimit: widget.cloudTable!.tableRowLimit,
                     ),
                     mobile: PhoneChildEditTable(
                       currentQueryNotifier.colRef,
                       showAllData: widget.showAllData,
                       showNewButton: widget.showNewButton,
                     ))
-
                 // always use phone pick styles when there is a need to pick
                 : PhoneChildEditTable(
                     currentQueryNotifier.colRef,
