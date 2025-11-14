@@ -22,10 +22,10 @@ const EDIT_TABLE_HORIZONTAL_BORDER_SIDE =
     BorderSide(width: 1, color: Colors.brown, style: BorderStyle.solid);
 
 class LoiAllCloudTables {
-  static late List<CloudTableSchema> cloudTables;
-  static late Map<String?, CloudTableSchema> maps;
+  static late List<CloudTableSchema<CloudObject>> cloudTables;
+  static late Map<String?, CloudTableSchema<CloudObject>> maps;
 
-  static void init(List<CloudTableSchema> list) {
+  static void init(List<CloudTableSchema<CloudObject>> list) {
     cloudTables = list;
     maps = list.asMap().map((_, value) => MapEntry(value.tableName, value));
   }
