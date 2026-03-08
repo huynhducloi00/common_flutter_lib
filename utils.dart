@@ -81,6 +81,29 @@ String formatNumber(int? num) {
   return num == null ? "" : NUM_FORMAT.format(num);
 }
 
+/// Làm tròn thành tiền đến hàng nghìn: <500 tròn xuống, >=500 tròn lên
+/// Ví dụ: 157600 -> 158000, 157400 -> 157000
+int roundToThousand(int amount) {
+  if (amount < 0) {
+    return -roundToThousand(-amount);
+  }
+  final hundreds = amount % 1000;
+  if (hundreds < 500) {
+    // Tròn xuống: bỏ phần trăm
+    return amount ~/ 1000 * 1000;
+  } else {
+    // Tròn lên: cộng thêm để đủ nghìn
+    return (amount ~/ 1000 + 1) * 1000;
+  }
+}
+
+/// Format số đã được làm tròn đến hàng nghìn
+String formatRoundedNumber(int? num) {
+  if (num == null) return "";
+  final rounded = roundToThousand(num);
+  return NUM_FORMAT.format(rounded);
+}
+
 double? sum(List args) {
   return args.reduce((value, element) {
     return (value ?? 0) + (element ?? 0);

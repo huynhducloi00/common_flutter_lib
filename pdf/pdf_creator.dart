@@ -97,6 +97,11 @@ class PdfCreator extends PdfCreatorInterface {
     // Kiểm tra xem có item nào có isTonCategory == true không
     final hasTonCategory = items.any((item) => item.isTonCategory == true);
 
+    // Tổng tiền làm tròn nghìn; Còn lại = tổng tròn - đã thanh toán (cũng làm tròn)
+    final roundedTotal = roundToThousand(cart.totalPrice.round());
+    final deptFromRounded =
+        roundToThousand((roundedTotal - cart.paidNumber).round());
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -271,7 +276,7 @@ class PdfCreator extends PdfCreatorInterface {
                               child: pw.Center(
                                 child: PdfUtils.textLight(
                                   item.isTonCategory == true
-                                      ? item.soLuongMet.toStringAsFixed(0)
+                                      ? item.soLuongMet.toStringAsFixed(2)
                                       : '',
                                 ),
                               ),
@@ -281,7 +286,9 @@ class PdfCreator extends PdfCreatorInterface {
                             padding: pw.EdgeInsets.all(4),
                             child: pw.Center(
                               child: PdfUtils.textLight(
-                                item.quantity.toStringAsFixed(0),
+                                item.isTonCategory == true
+                                    ? item.quantity.toStringAsFixed(2)
+                                    : item.quantity.toStringAsFixed(0),
                               ),
                             ),
                           ),
@@ -298,7 +305,7 @@ class PdfCreator extends PdfCreatorInterface {
                             padding: pw.EdgeInsets.all(4),
                             alignment: pw.Alignment.centerRight,
                             child: PdfUtils.textLight(
-                              formatNumber(item.totalPrice.toInt()),
+                              NUM_FORMAT.format(item.totalPrice),
                             ),
                           ),
                         ],
@@ -384,7 +391,7 @@ class PdfCreator extends PdfCreatorInterface {
                                 child: pw.Center(
                                   child: PdfUtils.textLight(
                                     ci.isTonCategory == true
-                                        ? ci.soLuongMet.toStringAsFixed(0)
+                                        ? ci.soLuongMet.toStringAsFixed(2)
                                         : '',
                                   ),
                                 ),
@@ -394,7 +401,9 @@ class PdfCreator extends PdfCreatorInterface {
                               padding: pw.EdgeInsets.all(4),
                               child: pw.Center(
                                 child: PdfUtils.textLight(
-                                  ci.quantity.toStringAsFixed(0),
+                                  ci.isTonCategory == true
+                                      ? ci.quantity.toStringAsFixed(2)
+                                      : ci.quantity.toStringAsFixed(0),
                                 ),
                               ),
                             ),
@@ -408,7 +417,7 @@ class PdfCreator extends PdfCreatorInterface {
                               padding: pw.EdgeInsets.all(4),
                               alignment: pw.Alignment.centerRight,
                               child: PdfUtils.textLight(
-                                  formatNumber(ci.totalPrice.toInt())),
+                                  NUM_FORMAT.format(ci.totalPrice)),
                             ),
                           ],
                         ),
@@ -430,7 +439,7 @@ class PdfCreator extends PdfCreatorInterface {
               },
               border: pw.TableBorder.all(width: 1, color: PdfColors.black),
               children: [
-                // Hàng 1: Tổng tiền
+                // Hàng 1: Tổng tiền (làm tròn nghìn)
                 pw.TableRow(
                   children: [
                     pw.Container(
@@ -448,7 +457,7 @@ class PdfCreator extends PdfCreatorInterface {
                       ),
                       alignment: pw.Alignment.centerRight,
                       child: PdfUtils.textLight(
-                          formatNumber(cart.totalPrice.toInt())),
+                          NUM_FORMAT.format(roundedTotal)),
                     ),
                   ],
                 ),
@@ -467,7 +476,7 @@ class PdfCreator extends PdfCreatorInterface {
                           horizontal: 6, vertical: 4),
                       alignment: pw.Alignment.centerRight,
                       child: PdfUtils.textLight(
-                          formatNumber(cart.paidNumber.toInt())),
+                          NUM_FORMAT.format(cart.paidNumber)),
                     ),
                   ],
                 ),
@@ -497,7 +506,7 @@ class PdfCreator extends PdfCreatorInterface {
                 //   ],
                 // ),
 
-                // Hàng 4: Còn lại (đậm hơn, font to hơn)
+                // Hàng 4: Còn lại = Tổng tiền (tròn) - Đã thanh toán (tròn)
                 pw.TableRow(
                   children: [
                     pw.Container(
@@ -515,7 +524,7 @@ class PdfCreator extends PdfCreatorInterface {
                       ),
                       alignment: pw.Alignment.centerRight,
                       child: PdfUtils.textBold(
-                        formatNumber(cart.deptNumber.toInt()),
+                        NUM_FORMAT.format(deptFromRounded),
                         fontSize: 11,
                       ),
                     ),
