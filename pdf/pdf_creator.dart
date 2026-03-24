@@ -248,7 +248,7 @@ class PdfCreator extends PdfCreatorInterface {
                           pw.Container(
                             alignment: pw.Alignment.centerLeft,
                             padding: pw.EdgeInsets.all(4),
-                            child: PdfUtils.textLight(item.name ?? ''),
+                            child: PdfUtils.textLightProductName(item.name),
                           ),
                           pw.Container(
                             padding: pw.EdgeInsets.all(4),
@@ -359,7 +359,7 @@ class PdfCreator extends PdfCreatorInterface {
                               pw.Container(
                                 padding: pw.EdgeInsets.all(4),
                                 alignment: pw.Alignment.centerLeft,
-                                child: PdfUtils.textLight(repo.name ?? ''),
+                                child: PdfUtils.textLightProductName(repo.name),
                               )
                             else
                               pw.SizedBox(),

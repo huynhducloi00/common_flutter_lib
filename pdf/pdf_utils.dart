@@ -1,5 +1,4 @@
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class PdfUtils {
@@ -75,9 +74,28 @@ class PdfUtils {
     double fontSize = 10,
     int maxLine = 1,
     pw.FontWeight fontWeight = pw.FontWeight.normal,
+    pw.TextOverflow? overflow,
+    bool softWrap = true,
   }) {
-    return pw.Text(text,
-        maxLines: maxLine, style: lightTextStyle?.copyWith(fontSize: fontSize));
+    return pw.Text(
+      text,
+      maxLines: maxLine,
+      overflow: overflow,
+      softWrap: softWrap,
+      style: lightTextStyle?.copyWith(fontSize: fontSize),
+    );
+  }
+
+  /// Tên mặt hàng trên PDF: [trim], tối đa 2 dòng — khớp logic `cart_item_list` (UI dùng ellipsis; PDF dùng [clip]).
+  static pw.Text textLightProductName(String? rawName) {
+    final t = (rawName ?? '').trim();
+    return pw.Text(
+      t,
+      maxLines: 2,
+      softWrap: true,
+      overflow: pw.TextOverflow.clip,
+      style: lightTextStyle?.copyWith(fontSize: 10),
+    );
   }
 
   static pw.Text textBold(
