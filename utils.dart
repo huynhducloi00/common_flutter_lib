@@ -81,6 +81,24 @@ String formatNumber(int? num) {
   return num == null ? "" : NUM_FORMAT.format(num);
 }
 
+/// Hiển thị số lượng kho — giữ đủ chữ số có nghĩa, bỏ nhiễu [double] (vd. 439.9196999998 → 439.9197).
+String formatQuantityForDisplay(double value) {
+  if (value.isNaN || value.isInfinite) {
+    return '0';
+  }
+  const int maxDecimals = 10;
+  String text = value.abs().toStringAsFixed(maxDecimals);
+  text = text.replaceFirst(RegExp(r'\.?0+$'), '');
+  final List<String> parts = text.split('.');
+  final String groupedInt =
+      NumberFormat('#,##0', 'en_US').format(int.parse(parts[0]));
+  final String sign = value < 0 ? '-' : '';
+  if (parts.length < 2) {
+    return '$sign$groupedInt';
+  }
+  return '$sign$groupedInt.${parts[1]}';
+}
+
 /// Làm tròn thành tiền đến hàng nghìn: <500 tròn xuống, >=500 tròn lên
 /// Ví dụ: 157600 -> 158000, 157400 -> 157000
 int roundToThousand(int amount) {
