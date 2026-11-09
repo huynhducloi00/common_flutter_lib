@@ -2,9 +2,10 @@ enum DataType { string, html, int, timestamp, boolean, double, firebaseImage }
 
 class CloudObject {
   String? documentId;
-  Map<String, dynamic> dataMap;
+  late Map<String, dynamic> dataMap;
 
-  CloudObject(this.documentId, this.dataMap) {
+  CloudObject(this.documentId, Map<dynamic, dynamic>? rawDataMap) {
+    dataMap = Map<String, dynamic>.from(rawDataMap ?? <String, dynamic>{});
     dataMap['documentId'] = documentId;
   }
 
